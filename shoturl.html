@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short URL & QR Code Generator (No Ads)</title>
+	<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3PW0YL6TG8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3PW0YL6TG8');
+</script>
+    
+    <!-- 1. เพิ่มไลบรารีสำหรับสร้าง QR Code -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --secondary-color: #6c757d;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px
+            15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--secondary-color);
+            margin-bottom: 30px;
+        }
+
+        .url-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            text-align: left;
+            display: none; /* ซ่อนไว้ก่อน */
+        }
+        
+        #result p {
+            margin: 0 0 10px 0;
+            font-weight: 700;
+            color: var(--dark-color);
+            text-align: center;
+        }
+
+        .short-url-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        #shortUrl {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            background-color: #fff;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .copy-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .copy-btn:hover {
+            background-color: #1e7e34;
+        }
+
+        #error {
+            color: var(--error-color);
+            margin-top: 15px;
+            font-weight: 700;
+            height: 20px;
+        }
+
+      
+        .qr-code-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 25px;
+            gap: 15px;
+        }
+
+        #qrcode {
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: var(--border-radius);
+        }
+
+        .download-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 700;
+            transition: background-color 0.3s;
+        }
+
+        .download-btn:hover {
+            background-color: var(--dark-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>ย่อลิงก์ & สร้าง QR Code</h1>
+        <h3 style="color: #FF0000;">* ไม่สามารถย่อ Link ของ google from *</h3>
+        <p> </p>
+
+        <form id="urlForm" class="url-form">
+            <input type="url" id="longUrl" class="url-input" placeholder="วาง URL ยาวๆ ของคุณที่นี่..." required>
+            <button type="submit" id="submitBtn" class="submit-btn">สร้างลิงก์และ QR Code</button>
+        </form>
+        
+        <div id="error"></div>
+
+      
+        <div id="result">
+            <p>ลิงก์และ QR Code ของคุณพร้อมแล้ว:</p>
+            <div class="short-url-container">
+                <input type="text" id="shortUrl" readonly>
+                <button id="copyBtn" class="copy-btn">คัดลอก</button>
+            </div>
+            <div class="qr-code-container">
+                <div id="qrcode"></div>
+                <a id="downloadBtn" class="download-btn" href="#" download="qrcode.png">ดาวน์โหลด QR Code</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+       
+        const urlForm = document.getElementById('urlForm');
+        const longUrlInput = document.getElementById('longUrl');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        const shortUrlInput = document.getElementById('shortUrl');
+        const copyBtn = document.getElementById('copyBtn');
+        const errorDiv = document.getElementById('error');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        
+        let qrcode = null;
+
+        urlForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const longUrl = longUrlInput.value.trim();
+            if (!longUrl) {
+                showError('กรุณาใส่ URL ก่อน');
+                return;
+            }
+
+            setLoading(true);
+            clearResults();
+
+            try {
+                const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data.shorturl) {
+                    showResult(data.shorturl);
+                } else {
+                    showError(data.errormessage || 'เกิดข้อผิดพลาดที่ไม่รู้จัก');
+                }
+
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                showError('ไม่สามารถเชื่อมต่อกับบริการได้');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        copyBtn.addEventListener('click', function() {
+            navigator.clipboard.writeText(shortUrlInput.value)
+                .then(() => {
+                    copyBtn.textContent = 'คัดลอกแล้ว!';
+                    setTimeout(() => { copyBtn.textContent = 'คัดลอก'; }, 2000);
+                })
+                .catch(err => {
+                    console.error('Copy Error:', err);
+                    showError('ไม่สามารถคัดลอกได้');
+                });
+        });
+
+  
+
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            submitBtn.textContent = isLoading ? 'กำลังสร้าง...' : 'สร้างลิงก์และ QR Code';
+        }
+
+        function showResult(shortUrl) {
+         
+            shortUrlInput.value = shortUrl;
+            resultDiv.style.display = 'block';
+            errorDiv.textContent = '';
+
+           
+            qrcodeDiv.innerHTML = ''; 
+            qrcode = new QRCode(qrcodeDiv, {
+                text: shortUrl,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H 
+            });
+
+    
+            setTimeout(() => {
+                const canvas = qrcodeDiv.querySelector('canvas');
+                if (canvas) {
+                    downloadBtn.href = canvas.toDataURL('image/png');
+             
+                    const shortCode = shortUrl.split('/').pop();
+                    downloadBtn.download = `qrcode-${shortCode}.png`;
+                }
+            }, 100);
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            resultDiv.style.display = 'none';
+        }
+        
+        function clearResults() {
+            errorDiv.textContent = '';
+            resultDiv.style.display = 'none';
+            qrcodeDiv.innerHTML = ''; 
+            downloadBtn.href = '#'; 
+        }
+    </script>
+
+</body>
+</html>
