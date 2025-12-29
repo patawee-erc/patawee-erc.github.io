@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสุ่มจับรางวัล Lucky Draw</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;500;700&display=swap');
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: linear-gradient(135deg, #1e272e, #485460);
+            background-size: 200% 200%;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            overflow: hidden;
+            transition: background 0.8s ease;
+        }
+
+        /* Background Modes */
+        body.spinning { background: radial-gradient(circle at center, #2c3e50 10%, #000000 90%); }
+        body.winner-mode { 
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab, #f1c40f);
+            background-size: 400% 400%;
+            animation: gradientBG 3s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Layout */
+        .machine-wrapper {
+            display: flex;
+            align-items: flex-start;
+            position: relative;
+            margin-top: 50px;
+            transition: transform 0.5s;
+        }
+        
+        body.spinning .machine-wrapper { transform: scale(1.05); }
+
+        .container {
+            background: #ecf0f1;
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 8px solid #34495e;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 { color: #2c3e50; margin-bottom: 25px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* Slot Machine Screen */
+        .slot-machine {
+            background: #222;
+            border: 12px solid #f39c12;
+            border-radius: 15px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            box-shadow: inset 0 0 40px #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot-text {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 15px #f1c40f;
+            white-space: nowrap;
+        }
+
+        /* Animations */
+        .fast-spin { animation: slideDownBlur 0.1s linear infinite; filter: blur(4px); opacity: 0.7; }
+        .slide-in { animation: slideDownEntry 0.2s ease-out forwards; }
+        .winner-anim { animation: pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite alternate; color: #f1c40f; filter: blur(0) !important; transform: scale(1.1); }
+
+        @keyframes slideDownBlur { 0% { transform: translateY(-80%); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(80%); opacity: 0; } }
+        @keyframes slideDownEntry { 0% { transform: translateY(-50px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        @keyframes pop { from { transform: scale(1); text-shadow: 0 0 10px #f1c40f; } to { transform: scale(1.15); text-shadow: 0 0 25px #ffeb3b; } }
+
+        /* LEVER CSS */
+        .lever-container {
+            position: relative;
+            width: 60px;
+            height: 250px;
+            margin-left: 5px;
+            margin-top: 50px;
+            z-index: 5;
+        }
+        .lever-base {
+            width: 40px;
+            height: 100px;
+            background: linear-gradient(to right, #7f8c8d, #bdc3c7);
+            border-radius: 0 10px 10px 0;
+            border: 4px solid #34495e;
+            border-left: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: -5px;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+        }
+        .lever-stick {
+            width: 12px;
+            height: 120px;
+            background: linear-gradient(to right, #95a5a6, #ecf0f1, #95a5a6);
+            position: absolute;
+            bottom: 45%;
+            left: 20px;
+            border-radius: 5px;
+            transform-origin: bottom center;
+            transition: transform 0.3s cubic-bezier(0.5, 0.05, 0.1, 0.3);
+            z-index: 1;
+        }
+        .lever-knob {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #ff7675, #c0392b);
+            border-radius: 50%;
+            position: absolute;
+            top: -60px;
+            left: -24px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4), inset 0 0 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+            z-index: 2;
+        }
+        .lever-knob:hover { filter: brightness(1.1); }
+        .lever-container.pulled .lever-stick { transform: scaleY(0.3); }
+        .lever-container.pulled .lever-knob { transform: translateY(80px); }
+        .lever-container.disabled { pointer-events: none; filter: grayscale(0.8); }
+
+        /* Controls */
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; align-items: center; }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        #toggleBtn { background: #3498db; color: white; }
+        #resetBtn { background: #bdc3c7; color: #2c3e50; }
+        
+        /* ปุ่มเปิดปิดเสียง */
+        #soundBtn {
+            background: #2ecc71;
+            color: white;
+            width: 45px;
+            height: 45px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+        #soundBtn.muted { background: #e74c3c; }
+
+        .status-bar {
+            background: #dfe6e9;
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 600;
+            border: 1px solid #b2bec3;
+        }
+        .status-bar span { color: #e74c3c; font-size: 1.2rem; font-weight: 800; }
+
+        .input-area {
+            text-align: left;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #bdc3c7;
+            transition: all 0.4s ease;
+            overflow: hidden;
+            max-height: 500px;
+            opacity: 1;
+            padding: 15px;
+        }
+        body.spinning .input-area { opacity: 0.3; }
+        .input-area.hidden { max-height: 0; opacity: 0; padding: 0 15px; border-width: 0; margin: 0; }
+
+        textarea {
+            width: 95%;
+            height: 100px;
+            padding: 10px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            resize: vertical;
+            outline: none;
+            font-family: 'Sarabun', sans-serif;
+        }
+        textarea:focus { border-color: #3498db; }
+
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 200%; pointer-events: none; z-index: 99; }
+        
+        @media (max-width: 600px) {
+            .machine-wrapper { flex-direction: column; align-items: center; }
+            .lever-container { transform: rotate(90deg); margin: -40px 0 20px 0; height: 150px; }
+            .lever-base { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="machine-wrapper">
+        <div class="container">
+            <h1>Lucky Draw</h1>
+
+            <div class="slot-machine">
+                <div class="slot-text" id="slotText">PULL LEVER</div>
+            </div>
+
+            <div class="status-bar">
+                ผู้โชคดีคงเหลือ: <span id="count">10</span> คน
+            </div>
+
+            <div class="controls">
+                <button id="toggleBtn" onclick="toggleInput()">ซ่อนรายชื่อ</button>
+                <button id="resetBtn" onclick="resetList()">คืนค่าเดิม</button>
+                <button id="soundBtn" onclick="toggleSound()">🔊</button>
+            </div>
+
+            <div class="input-area" id="inputContainer">
+                <label for="nameList">แก้ไขรายชื่อ (แยกบรรทัด):</label>
+                <textarea id="nameList" placeholder="ใส่รายชื่อที่นี่..." oninput="updateCount()">สมชาย
+สมหญิง
+ประวิทย์
+สุดา
+มานะ
+ปิติ
+วีระ
+ชูใจ
+เก่งกาจ
+วันเพ็ญ</textarea>
+            </div>
+        </div>
+
+        <div class="lever-container" id="lever" onclick="pullLever()">
+            <div class="lever-base"></div>
+            <div class="lever-stick">
+                <div class="lever-knob"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const slotText = document.getElementById('slotText');
+        const nameInput = document.getElementById('nameList');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const inputContainer = document.getElementById('inputContainer');
+        const countSpan = document.getElementById('count');
+        const lever = document.getElementById('lever');
+        const body = document.body;
+        const soundBtn = document.getElementById('soundBtn');
+        
+        let isSpinning = false;
+        let namesArray = [];
+        let originalNames = ""; 
+        let isMuted = false;
+
+        // --- Sound System (AudioContext) ---
+        // ใช้สร้างเสียงจาก Code ไม่ต้องโหลดไฟล์
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function toggleSound() {
+            isMuted = !isMuted;
+            if(isMuted) {
+                soundBtn.innerText = "🔇";
+                soundBtn.classList.add('muted');
+            } else {
+                soundBtn.innerText = "🔊";
+                soundBtn.classList.remove('muted');
+                // ต้อง Resume AudioContext เมื่อผู้ใช้ Interact
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
+        }
+
+        // เสียงสั้น (Beep)
+        function playTone(freq, type, duration) {
+            if (isMuted) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; // 'sine', 'square', 'sawtooth', 'triangle'
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playLeverSound() {
+            if (isMuted) return;
+            playTone(150, 'sawtooth', 0.1);
+            setTimeout(() => playTone(100, 'square', 0.2), 100);
+        }
+
+        function playSpinTick() {
+            // เสียงติ๊กตอนหมุน
+            playTone(800 + Math.random()*200, 'square', 0.3);
+        }
+
+        function playWinSound() {
+            if (isMuted) return;
+            // Fanfare Melody
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+            const times = [0, 0.15, 0.3, 0.45];
+            
+            notes.forEach((note, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(note, now + times[i]);
+                gain.gain.setValueAtTime(0.8, now + times[i]);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + times[i] + 0.4);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + times[i]);
+                osc.stop(now + times[i] + 0.5);
+            });
+        }
+        // -----------------------------------
+
+        window.onload = function() {
+            originalNames = nameInput.value;
+            updateCount();
+        };
+
+        function toggleInput() {
+            if (inputContainer.classList.contains('hidden')) {
+                inputContainer.classList.remove('hidden');
+                toggleBtn.innerText = "ซ่อนรายชื่อ";
+            } else {
+                inputContainer.classList.add('hidden');
+                toggleBtn.innerText = "แสดงรายชื่อ";
+            }
+        }
+
+        function updateCount() {
+            const list = getNamesFromInput();
+            countSpan.innerText = list.length;
+        }
+
+        function getNamesFromInput() {
+            return nameInput.value.split('\n')
+                .map(name => name.trim())
+                .filter(name => name !== "");
+        }
+
+        function pullLever() {
+            if (isSpinning) return;
+            
+            // Resume Audio Context หากยังไม่ได้เริ่ม
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            namesArray = getNamesFromInput();
+            if (namesArray.length === 0) {
+                alert("กรุณาใส่รายชื่อก่อนครับ");
+                if(inputContainer.classList.contains('hidden')) toggleInput();
+                return;
+            }
+
+            // 1. Play Sound & Animation
+            playLeverSound();
+            lever.classList.add('pulled');
+            
+            setTimeout(() => {
+                lever.classList.remove('pulled');
+                startSpinProcess();
+            }, 300);
+        }
+
+        function startSpinProcess() {
+            if (!inputContainer.classList.contains('hidden')) {
+                toggleInput(); 
+            }
+
+            isSpinning = true;
+            lever.classList.add('disabled');
+            slotText.classList.remove('winner-anim', 'slide-in');
+            nameInput.disabled = true;
+
+            body.className = "spinning";
+
+            // Phase 1: Fast Spin
+            slotText.classList.add('fast-spin');
+            
+            let fastSpinDuration = 2000;
+            let startTime = Date.now();
+            let speed = 50; 
+            let lastSoundTime = 0;
+
+            function fastLoop() {
+                slotText.innerText = namesArray[Math.floor(Math.random() * namesArray.length)];
+                
+                // เล่นเสียงติ๊กๆ (ไม่ให้ถี่เกินไปจนเสียงแตก)
+                if(Date.now() - lastSoundTime > 80) {
+                     playSpinTick();
+                     lastSoundTime = Date.now();
+                }
+
+                if (Date.now() - startTime < fastSpinDuration) {
+                    requestAnimationFrame(fastLoop);
+                } else {
+                    slotText.classList.remove('fast-spin');
+                    slowDownLoop(speed);
+                }
+            }
+            
+            fastLoop();
+
+            // Phase 2: Slow Motion
+            let maxSpeed = 800; 
+            let acceleration = 1.15; 
+
+            function slowDownLoop(currentDelay) {
+                const randomIndex = Math.floor(Math.random() * namesArray.length);
+                slotText.innerText = namesArray[randomIndex];
+                
+                // เล่นเสียงติ๊กตามจังหวะช้าๆ
+                playSpinTick();
+
+                slotText.classList.remove('slide-in');
+                void slotText.offsetWidth; 
+                slotText.classList.add('slide-in');
+
+                if (currentDelay < maxSpeed) {
+                    let nextDelay = currentDelay * acceleration;
+                    setTimeout(() => slowDownLoop(nextDelay), currentDelay);
+                } else {
+                    setTimeout(finalizeWinner, currentDelay);
+                }
+            }
+        }
+
+        function finalizeWinner() {
+            const winnerIndex = Math.floor(Math.random() * namesArray.length);
+            const winnerName = namesArray[winnerIndex];
+
+            slotText.innerText = winnerName;
+            slotText.classList.remove('slide-in');
+            slotText.classList.add('winner-anim');
+            
+            // เล่นเสียงชนะ
+            playWinSound();
+
+            body.className = "winner-mode";
+
+            namesArray.splice(winnerIndex, 1);
+            nameInput.value = namesArray.join('\n');
+            updateCount(); 
+
+            isSpinning = false;
+            lever.classList.remove('disabled');
+            nameInput.disabled = false;
+
+            fireConfetti();
+        }
+
+        function resetList() {
+            if(confirm('รีเซ็ตรายชื่อใหม่ทั้งหมด?')) {
+                nameInput.value = originalNames;
+                updateCount();
+                slotText.innerText = "PULL LEVER";
+                slotText.classList.remove('winner-anim', 'slide-in', 'fast-spin');
+                
+                body.className = "";
+                
+                if (inputContainer.classList.contains('hidden')) toggleInput();
+            }
+        }
+
+        // --- Confetti ---
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const pieces = [];
+            const numberOfPieces = 200;
+            const colors = ['#ffffff', '#f1c40f', '#e74c3c']; 
+
+            for (let i = 0; i < numberOfPieces; i++) {
+                pieces.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 12 + 4,
+                    speed: Math.random() * 6 + 3,
+                    angle: Math.random() * 2 * Math.PI,
+                    rotationSpeed: (Math.random() - 0.5) * 0.2
+                });
+            }
+
+            function update() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let activePieces = 0;
+                pieces.forEach(p => {
+                    p.y += p.speed;
+                    p.angle += p.rotationSpeed;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                    if (p.y < canvas.height) activePieces++;
+                });
+                if (activePieces > 0) requestAnimationFrame(update);
+                else ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            update();
+        }
+    </script>
+</body>
+</html>
