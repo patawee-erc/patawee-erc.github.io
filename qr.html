@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code Generator with Logo</title>
+  <link href="https://fonts.googleapis.com/css?family=Kanit&display=swap" rel="stylesheet">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3PW0YL6TG8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3PW0YL6TG8');
+</script>
+
+  <style>
+
+    body {
+    font-family: 'Sarabun', sans-serif;
+    background: #f0f2f5; /* เปลี่ยนพื้นหลังเป็นสีเทา */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #333;
+    overflow: true; /* Prevent scrollbar from gradient */
+    }
+    .container {
+      background: #fff;
+      max-width: 420px;
+      margin: 40px auto 0 auto;
+      padding: 32px 28px 28px 28px;
+      border-radius: 20px;
+      box-shadow: 0 4px 32px rgba(80,80,160,0.10), 0 1.5px 8px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.8s ease; /* เพิ่ม animation */
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2 {
+      color: #3949ab;
+      margin-bottom: 24px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    label {
+      font-size: 1rem;
+      color: #1a237e;
+      margin-bottom: 4px;
+      display: block;
+      font-weight: 600;
+    }
+    .form-group {
+      width: 100%;
+      margin-bottom: 18px;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #bfc7d1;
+      border-radius: 7px;
+      font-size: 1rem;
+      margin-top: 4px;
+      margin-bottom: 0;
+      box-sizing: border-box;
+      outline: none;
+      background: #f6f8ff;
+      transition: border .2s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: #5c6bc0;
+    }
+    input[type="file"] {
+      display: block;
+      margin-top: 7px;
+      font-size: 1rem;
+    }
+    .button-group {
+      display: flex;
+      width: 100%;
+      gap: 16px;
+      margin: 16px 0 0 0;
+      justify-content: center;
+    }
+    button {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 10px 24px;
+      background: linear-gradient(90deg,#536dfe 0%, #8c9eff 100%);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: .5px;
+      box-shadow: 0 2px 8px rgba(80,80,160,0.09);
+      transition: background .18s, box-shadow .18s;
+    }
+    button:hover, button:focus {
+      background: linear-gradient(90deg,#3d5afe 0%, #7986cb 100%);
+      box-shadow: 0 4px 14px rgba(80,80,160,0.15);
+    }
+    #qr {
+      margin: 28px 0 0 0;
+      min-height: 220px;
+      min-width: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f2f4fb;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(100,100,180,0.08);
+      padding: 18px;
+    }
+    @media (max-width: 520px) {
+      .container { max-width: 98vw; padding: 16px 4vw;}
+      #qr { min-width: 0; }
+    }
+    .note {
+      font-size: .98em;
+      color: #6371d6;
+      margin-top: -10px;
+      margin-bottom: 6px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+  <center><img src="https://www.erc.or.th/web-upload/200xf869baf82be74c18cc110e974eea8d5c/filecenter/admin_patawee/L/ERC%20New%20Logo%202014.png"  width=60% alt="ภาพประชาสัมพันธ์"></center>
+    <h2>สร้าง QR Code พร้อมโลโก้</h2>
+    <div class="form-group">
+      <label for="qr-data">ข้อความหรือ URL</label>
+      <input type="text" id="qr-data" placeholder="ใส่ข้อความหรือ URL">
+    </div>
+    <div class="form-group">
+      <label for="qr-logo">โลโก้ (ตรงกลาง)</label>
+      <label for="qr-logo" style="color: red; font-weight: normal;"> *หากไม่ต้องการให้เว้นว่าง</label>
+      <input type="file" id="qr-logo" accept="image/*"><br>
+      <div class="note">รองรับไฟล์ PNG, JPG, SVG</div>
+    </div>
+    <div class="form-group">
+      <label for="qr-size">ขนาด</label>
+      <select id="qr-size">
+        <option value="200">เล็ก (200x200)</option>
+        <option value="300" selected>กลาง (300x300)</option>
+        <option value="400">ใหญ่ (400x400)</option>
+      </select>
+    </div>
+    <div class="button-group">
+      <button id="generate">สร้าง QR</button>
+      <button id="download">ดาวน์โหลด PNG</button>
+    </div>
+    <div id="qr"></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+  <script>
+    const qrContainer = document.getElementById("qr");
+    let qrCode = null;
+    let logoDataUrl = "";
+    let lastOptions = {};
+
+    function createQrCode(options) {
+      qrCode = new QRCodeStyling(options);
+      qrContainer.innerHTML = "";
+      qrCode.append(qrContainer);
+    }
+
+    document.getElementById("qr-logo").addEventListener("change", function(e){
+      const file = e.target.files[0];
+      if (!file) { logoDataUrl = ""; return; }
+      const reader = new FileReader();
+      reader.onload = function(ev) { logoDataUrl = ev.target.result; };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("generate").addEventListener("click", function(){
+      const data = document.getElementById("qr-data").value || " ";
+      const size = parseInt(document.getElementById("qr-size").value);
+      const options = {
+        width: size,
+        height: size,
+        type: "canvas",
+        data: data,
+        image: logoDataUrl,
+        dotsOptions: { color: "#232946", type: "rounded" },
+        imageOptions: { crossOrigin: "anonymous", margin: 10 }
+      };
+      lastOptions = {...options, extension: "png"};
+      createQrCode(options);
+    });
+
+    document.getElementById("download").addEventListener("click", function(){
+      if (!qrCode) {
+        alert("กรุณาสร้าง QR ก่อน");
+        return;
+      }
+      qrCode.download({ extension: "png" });
+    });
+  </script>
+</body>
+</html>
