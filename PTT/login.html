@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ERC Project Planning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+        }
+        .login-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { margin-bottom: 0.5rem; font-size: 1.8rem; }
+        p { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem; }
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--primary-color); background: rgba(255, 255, 255, 0.1); }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: var(--primary-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 1rem; min-height: 1.2rem; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>ERC Project</h1>
+        <p>Enter 5-digit Employee ID</p>
+        <form id="login-form">
+            <input type="text" id="employee-id" placeholder="10XXX" maxlength="5" pattern="\d{5}" required autocomplete="off">
+            <button type="submit" id="login-btn">Login</button>
+        </form>
+        <div id="login-error" class="error-msg"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzQ6dapjAmqtx-Ud2l3E84C1Zg8Bsjh8ewPbPOOcCce9Ay6AMBGyHSjEq3GzP0aTW_ZYQ/exec';
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const loginBtn = document.getElementById('login-btn');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('employee-id').value;
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Verifying...';
+            loginError.textContent = '';
+
+            try {
+                // ดึงข้อมูล Users มาเช็ค
+                const res = await fetch(`${API_URL}?action=getUsers`);
+                const users = await res.json();
+                const user = users.find(u => u.EmployeeID == id);
+
+                if (user) {
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    window.location.href = 'index.html';
+                } else {
+                    loginError.textContent = 'Invalid Employee ID. Please try again.';
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login';
+                }
+            } catch (err) {
+                loginError.textContent = 'Connection error. Please check your API URL.';
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+    </script>
+</body>
+</html>
