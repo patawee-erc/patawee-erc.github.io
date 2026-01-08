@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถานะคิวประชุม</title>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        h1 { text-align: center; color: #333; font-size: 1.5rem; margin-bottom: 5px; }
+        
+        /* Date Header Style */
+        .date-header { text-align: center; color: #007bff; font-size: 1rem; font-weight: bold; margin-bottom: 20px; }
+
+        .agenda-item { border-bottom: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 8px; transition: 0.3s; position: relative; overflow: hidden; }
+        .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; color: #333; }
+        .speaker { font-size: 0.9rem; display: flex; align-items: center; gap: 5px; color: #555; }
+        .status-label { position: absolute; top: 15px; right: 15px; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; color: white; font-weight: bold; }
+
+        /* Colors */
+        .st-waiting { background: #f9f9f9; border-left: 5px solid #bdc3c7; color: #888; }
+        .st-waiting .status-label { background: #bdc3c7; color: #fff; }
+
+        .st-prepare { background: #ffebee; border-left: 5px solid #ef5350; animation: softPulse 2s infinite; }
+        .st-prepare .status-label { background: #ef5350; }
+        .st-prepare .title { color: #c62828; }
+
+        .st-current { background: #e3f2fd; border-left: 5px solid #2196f3; }
+        .st-current .status-label { background: #2196f3; }
+        .st-current .title { color: #1565c0; }
+
+        .st-wrapping_up { background: #fffde7; border-left: 5px solid #ffca28; }
+        .st-wrapping_up .status-label { background: #ffca28; color: #333; }
+        .st-wrapping_up .title { color: #f57f17; }
+
+        .st-finished { background: #e8f5e9; border-left: 5px solid #4caf50; opacity: 0.9; }
+        .st-finished .status-label { background: #4caf50; }
+        .st-finished .title { color: #2e7d32; }
+
+        #alert-popup { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 85%; padding: 15px; border-radius: 10px; text-align: center; color: white; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.3); display: none; z-index: 1000; font-size: 1.1rem; }
+        .alert-prepare { background: #ef5350; }
+        .alert-wrap { background: #ffca28; color: #333 !important; }
+
+        @keyframes softPulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="alert-popup"></div>
+
+    <div class="container">
+        <h1>📅 รายการวาระประชุม กกพ.</h1>
+        <!-- ส่วนแสดงวันที่ -->
+        <div id="date-display" class="date-header"></div>
+        
+        <div id="agenda-list" style="text-align: center; color: #999;">🔄 กำลังโหลด...</div>
+    </div>
+
+    <audio id="sound-alert" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3"></audio>
+
+    <script>
+        // ⚠️ ใส่ URL Google Apps Script เดิม
+        const API_URL = "https://script.google.com/macros/s/AKfycbwxEfmj93cut4GJCIXNehjcJaO5XA9zRvpmpmzPH9977ZH6L0Qux1tgcDkU4OgaX9PZJQ/exec"; 
+
+        // --- ฟังก์ชันแสดงวันที่แบบไทย ---
+        function showThaiDate() {
+            const date = new Date();
+            const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            const months = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+            
+            const dayName = days[date.getDay()];
+            const dayNum = date.getDate();
+            const monthName = months[date.getMonth()];
+            const year = date.getFullYear() + 543;
+
+            document.getElementById('date-display').innerText = `วัน ${dayName}ที่ ${dayNum} ${monthName} ${year}`;
+        }
+        showThaiDate(); // เรียกใช้งาน
+
+        let previousStatusMap = {}; 
+
+        function fetchData() {
+            fetch(API_URL)
+                .then(response => response.json())
+                .then(data => { renderList(data); checkAlerts(data); })
+                .catch(error => console.error('Error:', error));
+        }
+
+        setInterval(fetchData, 3000);
+        fetchData();
+
+        function renderList(data) {
+            const list = document.getElementById('agenda-list');
+            list.innerHTML = '';
+            data.forEach((item, index) => {
+                // Auto Logic: ถ้าก่อนหน้า = wrapping_up -> ตัวนี้เป็น prepare
+                let prevItem = data[index - 1];
+                let displayStatus = item.status;
+                if (prevItem && prevItem.status === 'wrapping_up' && item.status === 'waiting') {
+                    displayStatus = 'prepare';
+                }
+
+                let statusText = '';
+                switch(displayStatus) {
+                    case 'waiting': statusText = 'รอ'; break;
+                    case 'prepare': statusText = '🔔 เตรียมตัวหน้าห้อง'; break;
+                    case 'current': statusText = 'กำลังดำเนินการ'; break;
+                    case 'wrapping_up': statusText = '⏳ ใกล้จบวาระ'; break;
+                    case 'finished': statusText = 'จบวาระแล้ว'; break;
+                    default: statusText = displayStatus;
+                }
+
+                const div = document.createElement('div');
+                div.className = `agenda-item st-${displayStatus}`;
+                div.innerHTML = `
+                    <div class="title">${item.title}</div>
+                    <div class="speaker">🗣 ${item.speaker}</div>
+                    <span class="status-label">${statusText}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function checkAlerts(data) {
+            data.forEach((item, index) => {
+                let currentStatus = item.status;
+                let prevStatus = previousStatusMap[item.id];
+                if (currentStatus !== prevStatus) {
+                    if (currentStatus === 'wrapping_up') {
+                        if (index + 1 < data.length) {
+                            let nextItem = data[index + 1];
+                            showAlert(`🔔 เตรียมตัวลำดับถัดไป:\nฝ่าย ${nextItem.speaker}`, 'alert-prepare');
+                        }
+                    }
+                    if (currentStatus === 'prepare') {
+                        showAlert(`🔔 ขอเชิญฝ่าย ${item.speaker}\nเตรียมตัวที่หน้าห้องประชุม`, 'alert-prepare');
+                    }
+                    previousStatusMap[item.id] = currentStatus;
+                }
+            });
+        }
+
+        function showAlert(msg, colorClass) {
+            document.getElementById('sound-alert').play().catch(() => {});
+            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            const popup = document.getElementById('alert-popup');
+            popup.innerText = msg;
+            popup.className = ''; 
+            popup.classList.add(colorClass);
+            popup.style.display = 'block';
+            setTimeout(() => { popup.style.display = 'none'; }, 8000);
+        }
+    </script>
+</body>
+</html>
