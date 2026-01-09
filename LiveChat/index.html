@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Web Chat</title>
+  <style>
+    /* --- CSS ตกแต่งหน้าเว็บ --- */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #e5ddd5; /* สีพื้นหลังคล้าย WhatsApp */ }
+    
+    /* พื้นที่แสดงข้อความ */
+    #messages { 
+      list-style-type: none; 
+      margin: 0; 
+      padding: 20px; 
+      padding-bottom: 90px; /* เว้นที่ให้ช่องพิมพ์ด้านล่าง */
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow-y: scroll; /* ให้เลื่อนดูข้อความเก่าได้ */
+    }
+
+    /* แถวของข้อความ */
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+      max-width: 75%;
+      position: relative;
+    }
+
+    /* ชื่อคนส่ง */
+    .sender-name {
+      font-size: 0.75rem;
+      color: #555;
+      margin-bottom: 2px;
+      margin-left: 8px;
+    }
+
+    /* กล่องข้อความ (Bubble) */
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 1rem;
+      line-height: 1.4;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      word-wrap: break-word;
+    }
+
+    /* === สไตล์คนอื่น (ซ้าย) === */
+    .message-left { align-self: flex-start; }
+    .message-left .bubble {
+      background: #ffffff;
+      color: #333;
+      border-bottom-left-radius: 4px;
+    }
+
+    /* === สไตล์เรา (ขวา) === */
+    .message-right { align-self: flex-end; align-items: flex-end; }
+    .message-right .sender-name { display: none; /* ซ่อนชื่อเราเอง */ }
+    .message-right .bubble {
+      background: #dcf8c6; /* สีเขียวอ่อน */
+      color: #333;
+      border-bottom-right-radius: 4px;
+    }
+
+    /* ส่วนล่าง: ช่องพิมพ์และปุ่ม */
+    #form-container { 
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+      background: #f0f0f0; 
+      padding: 10px; 
+      display: flex; 
+      align-items: center;
+      box-shadow: 0 -1px 5px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    /* ปุ่ม Emoji */
+    #emoji-btn {
+      background: none; border: none; font-size: 1.6rem; cursor: pointer;
+      padding: 0 10px; transition: transform 0.2s;
+    }
+    #emoji-btn:hover { transform: scale(1.2); }
+
+    /* ช่อง Input */
+    input { 
+      flex: 1; 
+      padding: 12px 15px; 
+      border: none; 
+      border-radius: 25px; 
+      outline: none;
+      font-size: 1rem;
+    }
+
+    /* ปุ่มส่ง */
+    #send-btn { 
+      margin-left: 10px; 
+      background: #128C7E; 
+      color: white; 
+      border: none; 
+      border-radius: 50%; 
+      width: 45px; height: 45px; 
+      cursor: pointer; 
+      font-weight: bold;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    #send-btn:hover { background: #075E54; }
+
+    /* กล่องเลือก Emoji */
+    #emoji-picker {
+      position: fixed;
+      bottom: 75px;
+      left: 10px;
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      width: 300px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      display: none; /* ซ่อนไว้ก่อน */
+      flex-wrap: wrap;
+      gap: 5px;
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .emoji-item {
+      font-size: 1.5rem; padding: 5px; cursor: pointer; border-radius: 5px;
+      user-select: none;
+    }
+    .emoji-item:hover { background-color: #eee; }
+
+  </style>
+</head>
+<body>
+
+  <!-- พื้นที่แชท -->
+  <div id="messages"></div>
+
+  <!-- กล่อง Emoji (ซ่อนอยู่) -->
+  <div id="emoji-picker"></div>
+
+  <!-- แถบพิมพ์ข้อความ -->
+  <form id="form-container">
+    <button type="button" id="emoji-btn">😊</button>
+    <input id="input" autocomplete="off" placeholder="พิมพ์ข้อความ..." />
+    <button type="submit" id="send-btn">➤</button>
+  </form>
+
+  <!-- ============================================ -->
+  <!-- ส่วนของ Script การทำงาน -->
+  <!-- ============================================ -->
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    // -----------------------------------------------------------
+    // 1. ตั้งค่า Firebase (สำคัญมาก! ต้องแก้ตรงนี้)
+    // -----------------------------------------------------------
+    const firebaseConfig = {
+  apiKey: "AIzaSyCnX049F08ewwCLXOCa3NrKsG499Qce6bI",
+  authDomain: "livechat-75751.firebaseapp.com",
+  databaseURL: "https://livechat-75751-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "livechat-75751",
+  storageBucket: "livechat-75751.firebasestorage.app",
+  messagingSenderId: "314131503440",
+  appId: "1:314131503440:web:53d6918b7645630bf5f455",
+  measurementId: "G-MVP0BBDFQV"
+};
+
+    // เริ่มต้นใช้งาน Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    var database = firebase.database();
+
+    // -----------------------------------------------------------
+    // 2. ระบบชื่อและ ID (สุ่มชื่อสัตว์+สี)
+    // -----------------------------------------------------------
+    const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "กระต่าย", "ช้าง", "ลิง", "หมา"];
+    const adjs = ["ซ่า", "น้อย", "ใหญ่", "บินได้", "ง่วง", "หิว", "จอมพลัง", "อินดี้", "น่ารัก"];
+
+    function getRandomName() {
+      const animal = animals[Math.floor(Math.random() * animals.length)];
+      const adj = adjs[Math.floor(Math.random() * adjs.length)];
+      return animal + adj;
+    }
+
+    // ตรวจสอบ localStorage ว่ามีชื่อเดิมไหม
+    let myId = localStorage.getItem('chat_id');
+    let myName = localStorage.getItem('chat_name');
+
+    if (!myId) {
+      myId = 'user_' + Date.now() + Math.random().toString(36).substr(2, 9);
+      myName = getRandomName();
+      localStorage.setItem('chat_id', myId);
+      localStorage.setItem('chat_name', myName);
+    }
+    
+    // แสดงชื่อเราในช่องพิมพ์
+    document.getElementById('input').placeholder = `คุณคือ "${myName}" ...`;
+
+    // -----------------------------------------------------------
+    // 3. จัดการ Emoji
+    // -----------------------------------------------------------
+    const emojiList = [
+      "😀","😂","😍","😎","😭","😡","👍","👎",
+      "🙏","❤️","💔","🎉","🔥","✨","👀","👻",
+      "🐷","🐶","🐱","🐔","🌹","☀️","🌙","⭐",
+      "✅","❌","❓","❗","🍔","🍺","⚽","🎮"
+    ];
+    const emojiPicker = document.getElementById('emoji-picker');
+    const emojiBtn = document.getElementById('emoji-btn');
+    const inputField = document.getElementById('input');
+
+    // สร้างรายการ Emoji
+    emojiList.forEach(emoji => {
+      let span = document.createElement('span');
+      span.textContent = emoji;
+      span.className = 'emoji-item';
+      span.addEventListener('click', () => {
+        inputField.value += emoji;
+        inputField.focus();
+      });
+      emojiPicker.appendChild(span);
+    });
+
+    // ปุ่มเปิด/ปิด Emoji
+    emojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // กันไม่ให้ไปชน event คลิก body
+      emojiPicker.style.display = (emojiPicker.style.display === 'flex') ? 'none' : 'flex';
+    });
+
+    // คลิกที่อื่นเพื่อปิด Emoji
+    document.body.addEventListener('click', (e) => {
+      if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+        emojiPicker.style.display = 'none';
+      }
+    });
+
+    // -----------------------------------------------------------
+    // 4. ระบบรับ-ส่ง ข้อความ
+    // -----------------------------------------------------------
+    var form = document.getElementById('form-container');
+    var messagesDiv = document.getElementById('messages');
+
+    // [ส่ง]
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var msg = inputField.value.trim();
+
+      if (msg) {
+        // เช็คคำสั่งลับ
+        if (msg === '/ลบหมด') {
+            if(confirm("⚠️ ลบประวัติแชททั้งหมดของทุกคน?")) {
+                database.ref('chats').remove();
+            }
+            inputField.value = '';
+            return;
+        }
+
+        // ส่งเข้า Firebase
+        database.ref('chats').push({
+          message: msg,
+          senderName: myName,
+          senderId: myId,
+          time: Date.now()
+        });
+        inputField.value = '';
+        emojiPicker.style.display = 'none'; // ปิด emoji ถ้าเปิดอยู่
+      }
+    });
+
+    // [รับ] เมื่อมีข้อความใหม่เข้ามา
+    database.ref('chats').on('child_added', function(snapshot) {
+      var data = snapshot.val();
+      createMessageBubble(data);
+    });
+
+    // [ล้างจอ] เมื่อข้อมูลถูกลบหมด
+    database.ref('chats').on('value', function(snapshot) {
+      if (!snapshot.exists()) {
+        messagesDiv.innerHTML = '';
+      }
+    });
+
+    // ฟังก์ชันสร้าง Bubble ข้อความ
+    function createMessageBubble(data) {
+      var row = document.createElement('div');
+      var nameSpan = document.createElement('div');
+      var bubble = document.createElement('div');
+
+      nameSpan.textContent = data.senderName;
+      nameSpan.className = 'sender-name';
+      
+      bubble.textContent = data.message;
+      bubble.className = 'bubble';
+
+      row.className = 'message-row';
+
+      // เช็คว่าเป็นของใคร
+      if (data.senderId === myId) {
+        row.classList.add('message-right');
+      } else {
+        row.classList.add('message-left');
+      }
+
+      row.appendChild(nameSpan);
+      row.appendChild(bubble);
+      messagesDiv.appendChild(row);
+      
+      // เลื่อนลงล่างสุด
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  </script>
+</body>
+</html>
