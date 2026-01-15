@@ -2,110 +2,197 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Web Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super Chat Online</title>
   <style>
-    /* --- CSS ตกแต่งหน้าเว็บ --- */
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #e5ddd5; }
-    
+    /* --- CSS ตกแต่ง --- */
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #ece5dd; }
+
+    /* พื้นที่แสดงข้อความ */
     #messages { 
-      list-style-type: none; margin: 0; padding: 20px; padding-bottom: 90px; 
-      display: flex; flex-direction: column; height: 100vh; 
-      box-sizing: border-box; overflow-y: scroll; 
+      list-style-type: none; 
+      margin: 0; 
+      padding: 15px; 
+      padding-bottom: 80px; /* เผื่อที่ให้แถบพิมพ์ */
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      height: 100vh;
+      box-sizing: border-box;
     }
 
-    .message-row { display: flex; flex-direction: column; margin-bottom: 10px; max-width: 75%; position: relative; }
-    .sender-name { font-size: 0.75rem; color: #555; margin-bottom: 2px; margin-left: 8px; }
-    .bubble { padding: 10px 14px; border-radius: 18px; font-size: 1rem; line-height: 1.4; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; }
+    /* แถวข้อความ */
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+      max-width: 80%;
+      position: relative;
+    }
 
+    /* ชื่อคนส่ง */
+    .sender-name { font-size: 0.7rem; color: #777; margin-bottom: 2px; margin-left: 5px; }
+
+    /* กล่องข้อความ */
+    .bubble {
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      word-wrap: break-word;
+    }
+
+    /* ฝั่งคนอื่น (ซ้าย) */
     .message-left { align-self: flex-start; }
-    .message-left .bubble { background: #ffffff; color: #333; border-bottom-left-radius: 4px; }
+    .message-left .bubble { background: #fff; color: #000; border-bottom-left-radius: 2px; }
 
+    /* ฝั่งเรา (ขวา) */
     .message-right { align-self: flex-end; align-items: flex-end; }
-    .message-right .sender-name { display: none; }
-    .message-right .bubble { background: #dcf8c6; color: #333; border-bottom-right-radius: 4px; }
+    .message-right .sender-name { display: none; } /* ซ่อนชื่อเรา */
+    .message-right .bubble { background: #dcf8c6; color: #000; border-bottom-right-radius: 2px; }
 
-    #form-container { position: fixed; bottom: 0; left: 0; right: 0; background: #f0f0f0; padding: 10px; display: flex; align-items: center; box-shadow: 0 -1px 5px rgba(0,0,0,0.1); z-index: 100; }
+    /* ข้อความระบบ (System) */
+    .message-system { align-self: center; max-width: 90%; margin: 10px 0; }
+    .message-system .bubble { background: #ffeecd; color: #555; font-size: 0.8rem; text-align: center; border-radius: 20px; }
+    .message-system .sender-name { display: none; }
+
+    /* แถบพิมพ์ด้านล่าง */
+    #form-container { 
+      position: fixed; bottom: 0; left: 0; right: 0; 
+      background: #f0f0f0; padding: 8px; display: flex; align-items: center;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.1); z-index: 100;
+    }
+
+    input { 
+      flex: 1; padding: 10px 15px; border: none; border-radius: 20px; 
+      outline: none; font-size: 1rem; background: #fff;
+    }
+
+    button { border: none; background: none; cursor: pointer; }
     
-    #emoji-btn { background: none; border: none; font-size: 1.6rem; cursor: pointer; padding: 0 10px; transition: transform 0.2s; }
-    #emoji-btn:hover { transform: scale(1.2); }
+    #emoji-btn { font-size: 1.5rem; padding: 0 10px; transition: transform 0.1s; }
+    #emoji-btn:active { transform: scale(0.9); }
 
-    input { flex: 1; padding: 12px 15px; border: none; border-radius: 25px; outline: none; font-size: 1rem; }
+    #send-btn { 
+      margin-left: 8px; background: #128C7E; color: white; 
+      border-radius: 50%; width: 40px; height: 40px; 
+      font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
 
-    #send-btn { margin-left: 10px; background: #128C7E; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-    #send-btn:hover { background: #075E54; }
+    /* กล่อง Emoji */
+    #emoji-picker {
+      position: fixed; bottom: 70px; left: 10px; right: 10px; /* เต็มจอในมือถือ */
+      max-width: 350px; /* จำกัดความกว้างในจอคอม */
+      background: white; border-radius: 10px; padding: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none;
+      flex-wrap: wrap; gap: 5px; z-index: 200;
+      max-height: 250px; overflow-y: auto;
+    }
+    .emoji-item { font-size: 1.6rem; padding: 5px; cursor: pointer; user-select: none; }
+    .emoji-item:hover { background-color: #f2f2f2; border-radius: 5px; }
 
-    #emoji-picker { position: fixed; bottom: 75px; left: 10px; background: white; border-radius: 10px; padding: 10px; width: 300px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none; flex-wrap: wrap; gap: 5px; z-index: 1000; max-height: 300px; overflow-y: auto; }
-    .emoji-item { font-size: 1.5rem; padding: 5px; cursor: pointer; border-radius: 5px; user-select: none; }
-    .emoji-item:hover { background-color: #eee; }
   </style>
 </head>
 <body>
 
+  <!-- พื้นที่แชท -->
   <div id="messages"></div>
+
+  <!-- Emoji Popup -->
   <div id="emoji-picker"></div>
 
+  <!-- แถบพิมพ์ -->
   <form id="form-container">
     <button type="button" id="emoji-btn">😊</button>
     <input id="input" autocomplete="off" placeholder="พิมพ์ข้อความ..." />
     <button type="submit" id="send-btn">➤</button>
   </form>
-  
+
+  <!-- FIREBASE SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    // 1. Config Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyCnX049F08ewwCLXOCa3NrKsG499Qce6bI",
-      authDomain: "livechat-75751.firebaseapp.com",
-      databaseURL: "https://livechat-75751-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "livechat-75751",
-      storageBucket: "livechat-75751.firebasestorage.app",
-      messagingSenderId: "314131503440",
-      appId: "1:314131503440:web:53d6918b7645630bf5f455",
-      measurementId: "G-MVP0BBDFQV"
+    // ======================================================
+    // 1. CONFIGURATION (แก้ไขตรงนี้!)
+    // ======================================================
+    var firebaseConfig = {
+      apiKey: "ใส่_API_KEY_ของคุณ_ที่นี่",
+      authDomain: "xxxx.firebaseapp.com",
+      databaseURL: "https://xxxx-default-rtdb.firebaseio.com", 
+      projectId: "xxxx",
+      storageBucket: "xxxx.appspot.com",
+      messagingSenderId: "xxxx",
+      appId: "xxxx"
     };
 
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     var database = firebase.database();
 
-    // รายการคำหยาบ
-    const badWords = [
-      "เหี้ย", "สัส", "ไอ้เหี้ย", "ไอ้สัส", "ควย", 
-      "เย็ด", "hee", "kuy", "หี", "fuck", 
-      "เลว", "โง่", "บ้า" 
-    ];
+    // ======================================================
+    // 2. ตั้งค่าตัวแปรระบบ
+    // ======================================================
+    const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "ตุ่น", "ช้าง", "ลิง", "หมา", "แพนด้า"];
+    const adjs = ["ซ่า", "น้อย", "ใหญ่", "บินได้", "ง่วง", "หิว", "จอมพลัง", "อินดี้", "น่ารัก", "หัวร้อน"];
+    
+    // รายการคำหยาบ (เพิ่มได้)
+    const badWords = ["กู", "มึง", "เหี้ย", "สัส", "ควย", "เย็ด", "fuck", "shit", "hee", "tuy", "เลว"];
 
-    // 2. ฟังก์ชันแปลงร่างคำหยาบ
-    function censorText(text) {
-      let cleanText = text;
-      
-      badWords.forEach(word => {
-        // สร้าง Regex เพื่อค้นหาคำ (g = หาทางประโยค, i = ไม่สนตัวเล็กตัวใหญ่)
-        let regex = new RegExp(word, "gi");
-        
-        // แทนที่ด้วยดอกจัน (*) ตามความยาวคำ
-        let stars = "*".repeat(word.length); 
-        
-        // หรือจะแทนที่ด้วย Emoji น่ารักๆ ก็แก้บรรทัดบนเป็น: let stars = "🌸";
-        
-        cleanText = cleanText.replace(regex, stars);
-      });
-      
-      return cleanText;
-    }
-
-    // 2. ชื่อและ ID
-    const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "กระต่าย", "ช้าง", "ลิง", "หมา"];
-    const adjs = ["ซ่า", "น้อย", "ใหญ่", "บินได้", "ง่วง", "หิว", "จอมพลัง", "อินดี้", "น่ารัก"];
-
+    // ======================================================
+    // 3. ฟังก์ชัน Utility (สุ่มชื่อ, กรองคำ, Auto Clear)
+    // ======================================================
+    
+    // สุ่มชื่อ
     function getRandomName() {
       const animal = animals[Math.floor(Math.random() * animals.length)];
       const adj = adjs[Math.floor(Math.random() * adjs.length)];
       return animal + adj;
     }
 
+    // กรองคำหยาบ
+    function censorText(text) {
+      let cleanText = text;
+      badWords.forEach(word => {
+        let regex = new RegExp(word, "gi");
+        cleanText = cleanText.replace(regex, "*".repeat(word.length));
+      });
+      return cleanText;
+    }
+
+    // Auto Delete: ตรวจสอบวันที่เมื่อเปิดเว็บ
+    function autoClearChat() {
+      var today = new Date().toLocaleDateString('th-TH');
+      var dateRef = database.ref('system/lastClearDate');
+
+      dateRef.once('value', function(snapshot) {
+        var lastSavedDate = snapshot.val();
+        if (lastSavedDate !== today) {
+          console.log("New Day! Clearing chat...");
+          database.ref('chats').remove(); // ลบแชท
+          dateRef.set(today); // อัปเดตวันที่
+          
+          // แจ้งเตือนระบบ
+          setTimeout(() => {
+            database.ref('chats').push({
+              message: "🧹 ขึ้นวันใหม่แล้ว! ระบบเคลียร์แชทอัตโนมัติ",
+              senderName: "System",
+              senderId: "system_bot",
+              time: Date.now()
+            });
+          }, 1000);
+        }
+      });
+    }
+
+    // ======================================================
+    // 4. เริ่มการทำงาน (Main Logic)
+    // ======================================================
+    
+    // ตรวจสอบตัวตน (User Identity)
     let myId = localStorage.getItem('chat_id');
     let myName = localStorage.getItem('chat_name');
 
@@ -115,151 +202,100 @@
       localStorage.setItem('chat_id', myId);
       localStorage.setItem('chat_name', myName);
     }
+    
     document.getElementById('input').placeholder = `คุณคือ "${myName}" ...`;
 
-    // 3. Emoji
-    const emojiList = ["😀","😂","😍","😎","😭","😡","👍","👎","🙏","❤️","💔","🎉","🔥","✨","👀","👻","🐷","🐶","🐱","🐔","🌹","☀️","🌙","⭐","✅","❌","❓","❗","🍔","🍺","⚽","🎮"];
+    // เรียก Auto Clear ทันทีที่เข้าเว็บ
+    autoClearChat();
+
+    // DOM Elements
+    const form = document.getElementById('form-container');
+    const inputField = document.getElementById('input');
+    const messagesDiv = document.getElementById('messages');
     const emojiPicker = document.getElementById('emoji-picker');
     const emojiBtn = document.getElementById('emoji-btn');
-    const inputField = document.getElementById('input');
 
-    emojiList.forEach(emoji => {
+    // สร้าง Emoji
+    const emojis = ["😀","😂","😍","😎","😭","😡","👍","👎","🙏","❤️","💔","🎉","🔥","✨","👻","🐷","🐶","🐱","🐔","🌹","☀️","✅","❌","❓"];
+    emojis.forEach(char => {
       let span = document.createElement('span');
-      span.textContent = emoji;
+      span.textContent = char;
       span.className = 'emoji-item';
-      span.addEventListener('click', () => {
-        inputField.value += emoji;
+      span.onclick = () => {
+        inputField.value += char;
         inputField.focus();
-      });
+      };
       emojiPicker.appendChild(span);
     });
 
-    emojiBtn.addEventListener('click', (e) => {
+    // ปุ่มเปิดปิด Emoji
+    emojiBtn.onclick = (e) => {
       e.stopPropagation();
       emojiPicker.style.display = (emojiPicker.style.display === 'flex') ? 'none' : 'flex';
-    });
-    document.body.addEventListener('click', (e) => {
-      if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
-        emojiPicker.style.display = 'none';
-      }
-    });
+    };
+    document.body.onclick = (e) => {
+      if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) emojiPicker.style.display = 'none';
+    };
 
-    // 4. รับ-ส่ง ข้อความ
-    var form = document.getElementById('form-container');
-    var messagesDiv = document.getElementById('messages');
-
-    // === ฟังก์ชันเรียก Gemini (Netlify) ===
-    async function askGemini(question) {
-      try {
-        // สร้าง Bubble ว่ากำลังคิด
-        database.ref('chats').push({
-          message: "กำลังคิด... 🤖",
-          senderName: "น้อง Gemini ✨",
-          senderId: "gemini_bot",
-          time: Date.now()
-        });
-
-        // ยิงไปหา Netlify Function
-        const response = await fetch('/.netlify/functions/gemini', {
-          method: 'POST',
-          body: JSON.stringify({ message: question })
-        });
-        
-        const data = await response.json();
-
-        // ส่งคำตอบเข้า Firebase
-        if (data.reply) {
-           database.ref('chats').push({
-            message: data.reply,
-            senderName: "น้อง Gemini ✨",
-            senderId: "gemini_bot",
-            time: Date.now()
-          });
-        }
-      } catch (error) {
-        console.error("Error calling Gemini:", error);
-      }
-    }
-
-    // === Event Listener เดียว (รวม Logic ทั้งหมดไว้ที่นี่) ===
+    // --- ส่งข้อความ ---
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       var msg = inputField.value.trim();
 
       if (msg) {
-        // CASE 1: ลบหมด
-        if (msg === '/ลบหมด') {
-            if(confirm("⚠️ ลบประวัติแชททั้งหมดของทุกคน?")) {
-                database.ref('chats').remove();
-            }
-            inputField.value = '';
-            return;
+        // เช็คคำสั่งลับ
+        if (msg === '/ลบให้หมด') {
+          if (confirm("⚠️ ลบประวัติแชททั้งหมด?")) {
+             database.ref('chats').remove();
+          }
+          inputField.value = '';
+          return;
         }
 
-        // CASE 2: คุยกับบอท (/bot)
-        if (msg.startsWith('/bot')) {
-            // ส่งข้อความเราขึ้นไปโชว์ก่อน
-            database.ref('chats').push({
-                message: msg,
-                senderName: myName,
-                senderId: myId,
-                time: Date.now()
-            });
-            
-            // ตัดคำแล้วส่งไปถาม
-            var question = msg.replace('/bot', '').trim();
-            if(question) {
-                askGemini(question); 
-            }
-            
-            inputField.value = '';
-            emojiPicker.style.display = 'none';
-            return;
-        }
+        // กรองคำหยาบ
+        msg = censorText(msg);
 
-        // CASE 3: ส่งข้อความปกติ
+        // ส่งเข้า Firebase
         database.ref('chats').push({
           message: msg,
           senderName: myName,
           senderId: myId,
           time: Date.now()
         });
-        
+
         inputField.value = '';
         emojiPicker.style.display = 'none';
       }
     });
 
-    // รับข้อความ
+    // --- รับข้อความ (Realtime) ---
     database.ref('chats').on('child_added', function(snapshot) {
       createMessageBubble(snapshot.val());
     });
 
-    // เคลียร์จอเมื่อถูกลบ
+    // --- เมื่อข้อมูลถูกลบ (ล้างหน้าจอ) ---
     database.ref('chats').on('value', function(snapshot) {
-      if (!snapshot.exists()) { messagesDiv.innerHTML = ''; }
+      if (!snapshot.exists()) messagesDiv.innerHTML = '';
     });
 
+    // ฟังก์ชันสร้าง Bubble
     function createMessageBubble(data) {
       var row = document.createElement('div');
-      var nameSpan = document.createElement('div');
-      var bubble = document.createElement('div');
-
-      nameSpan.textContent = data.senderName;
-      nameSpan.className = 'sender-name';
-      
-      bubble.textContent = data.message;
-      bubble.className = 'bubble';
-
       row.className = 'message-row';
 
-      if (data.senderId === myId) {
+      var nameSpan = document.createElement('div');
+      nameSpan.className = 'sender-name';
+      nameSpan.textContent = data.senderName;
+
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = data.message;
+
+      // เช็คว่าเป็นข้อความประเภทไหน
+      if (data.senderId === 'system_bot') {
+        row.classList.add('message-system');
+      } else if (data.senderId === myId) {
         row.classList.add('message-right');
-      } else if (data.senderId === "gemini_bot") {
-        row.classList.add('message-left'); 
-        // เพิ่มลูกเล่นให้บอทนิดนึง (เช่น เปลี่ยนสี Bubble บอท ถ้าต้องการ)
-        bubble.style.backgroundColor = "#fff"; 
-        bubble.style.border = "1px solid #ddd";
       } else {
         row.classList.add('message-left');
       }
@@ -267,8 +303,11 @@
       row.appendChild(nameSpan);
       row.appendChild(bubble);
       messagesDiv.appendChild(row);
+      
+      // Scroll ลงล่าง
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
+
   </script>
 </body>
 </html>
