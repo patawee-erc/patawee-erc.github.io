@@ -52,11 +52,6 @@
     .message-right .sender-name { display: none; } /* ซ่อนชื่อเรา */
     .message-right .bubble { background: #dcf8c6; color: #000; border-bottom-right-radius: 2px; }
 
-    /* ข้อความระบบ (System) */
-    .message-system { align-self: center; max-width: 90%; margin: 10px 0; }
-    .message-system .bubble { background: #ffeecd; color: #555; font-size: 0.8rem; text-align: center; border-radius: 20px; }
-    .message-system .sender-name { display: none; }
-
     /* แถบพิมพ์ด้านล่าง */
     #form-container { 
       position: fixed; bottom: 0; left: 0; right: 0; 
@@ -82,8 +77,8 @@
 
     /* กล่อง Emoji */
     #emoji-picker {
-      position: fixed; bottom: 70px; left: 10px; right: 10px; /* เต็มจอในมือถือ */
-      max-width: 350px; /* จำกัดความกว้างในจอคอม */
+      position: fixed; bottom: 70px; left: 10px; right: 10px;
+      max-width: 350px;
       background: white; border-radius: 10px; padding: 10px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none;
       flex-wrap: wrap; gap: 5px; z-index: 200;
@@ -118,13 +113,14 @@
     // 1. CONFIGURATION (แก้ไขตรงนี้!)
     // ======================================================
     var firebaseConfig = {
-      apiKey: "ใส่_API_KEY_ของคุณ_ที่นี่",
-      authDomain: "xxxx.firebaseapp.com",
-      databaseURL: "https://xxxx-default-rtdb.firebaseio.com", 
-      projectId: "xxxx",
-      storageBucket: "xxxx.appspot.com",
-      messagingSenderId: "xxxx",
-      appId: "xxxx"
+      apiKey: "AIzaSyCnX049F08ewwCLXOCa3NrKsG499Qce6bI",
+      authDomain: "livechat-75751.firebaseapp.com",
+      databaseURL: "https://livechat-75751-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "livechat-75751",
+      storageBucket: "livechat-75751.firebasestorage.app",
+      messagingSenderId: "314131503440",
+      appId: "1:314131503440:web:53d6918b7645630bf5f455",
+      measurementId: "G-MVP0BBDFQV"
     };
 
     // Initialize Firebase
@@ -137,13 +133,13 @@
     // 2. ตั้งค่าตัวแปรระบบ
     // ======================================================
     const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "ตุ่น", "ช้าง", "ลิง", "หมา", "แพนด้า"];
-    const adjs = ["ซ่า", "น้อย", "ใหญ่", "บินได้", "ง่วง", "หิว", "จอมพลัง", "อินดี้", "น่ารัก", "หัวร้อน"];
+    const adjs = ["ซ่า", "ติดเทอร์โบ", "ภูเขา", "บินได้", "ง่วง", "หิว", "จอมซน", "อินดี้", "น่ารัก", "หัวร้อน"];
     
     // รายการคำหยาบ (เพิ่มได้)
-    const badWords = ["กู", "มึง", "เหี้ย", "สัส", "ควย", "เย็ด", "fuck", "shit", "hee", "tuy", "เลว"];
+    const badWords = [ "เหี้ย", "สัส", "ควย", "เย็ด", "หี", "แตด", "hee", "kuy"];
 
     // ======================================================
-    // 3. ฟังก์ชัน Utility (สุ่มชื่อ, กรองคำ, Auto Clear)
+    // 3. ฟังก์ชัน Utility
     // ======================================================
     
     // สุ่มชื่อ
@@ -163,31 +159,6 @@
       return cleanText;
     }
 
-    // Auto Delete: ตรวจสอบวันที่เมื่อเปิดเว็บ
-    function autoClearChat() {
-      var today = new Date().toLocaleDateString('th-TH');
-      var dateRef = database.ref('system/lastClearDate');
-
-      dateRef.once('value', function(snapshot) {
-        var lastSavedDate = snapshot.val();
-        if (lastSavedDate !== today) {
-          console.log("New Day! Clearing chat...");
-          database.ref('chats').remove(); // ลบแชท
-          dateRef.set(today); // อัปเดตวันที่
-          
-          // แจ้งเตือนระบบ
-          setTimeout(() => {
-            database.ref('chats').push({
-              message: "🧹 ขึ้นวันใหม่แล้ว! ระบบเคลียร์แชทอัตโนมัติ",
-              senderName: "System",
-              senderId: "system_bot",
-              time: Date.now()
-            });
-          }, 1000);
-        }
-      });
-    }
-
     // ======================================================
     // 4. เริ่มการทำงาน (Main Logic)
     // ======================================================
@@ -204,9 +175,6 @@
     }
     
     document.getElementById('input').placeholder = `คุณคือ "${myName}" ...`;
-
-    // เรียก Auto Clear ทันทีที่เข้าเว็บ
-    autoClearChat();
 
     // DOM Elements
     const form = document.getElementById('form-container');
@@ -243,8 +211,8 @@
       var msg = inputField.value.trim();
 
       if (msg) {
-        // เช็คคำสั่งลับ
-        if (msg === '/ลบให้หมด') {
+        // เช็คคำสั่งลับเพื่อลบด้วยมือ
+        if (msg === '/ลบหมด') {
           if (confirm("⚠️ ลบประวัติแชททั้งหมด?")) {
              database.ref('chats').remove();
           }
@@ -292,9 +260,7 @@
       bubble.textContent = data.message;
 
       // เช็คว่าเป็นข้อความประเภทไหน
-      if (data.senderId === 'system_bot') {
-        row.classList.add('message-system');
-      } else if (data.senderId === myId) {
+      if (data.senderId === myId) {
         row.classList.add('message-right');
       } else {
         row.classList.add('message-left');
