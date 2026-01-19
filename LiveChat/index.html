@@ -13,7 +13,7 @@
       list-style-type: none; 
       margin: 0; 
       padding: 15px; 
-      padding-bottom: 80px; /* เผื่อที่ให้แถบพิมพ์ */
+      padding-bottom: 80px; 
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -21,7 +21,6 @@
       box-sizing: border-box;
     }
 
-    /* แถวข้อความ */
     .message-row {
       display: flex;
       flex-direction: column;
@@ -30,17 +29,25 @@
       position: relative;
     }
 
-    /* ชื่อคนส่ง */
     .sender-name { font-size: 0.7rem; color: #777; margin-bottom: 2px; margin-left: 5px; }
 
-    /* กล่องข้อความ */
+    /* --- กล่องข้อความปกติ --- */
     .bubble {
-      padding: 8px 12px;
-      border-radius: 12px;
-      font-size: 0.95rem;
-      line-height: 1.4;
+      padding: 10px 14px; /* เพิ่มพื้นที่ */
+      border-radius: 16px;
+      font-size: 1 em; /* ขยายตัวหนังสือปกติให้ใหญ่นิดหน่อย */
+      line-height: 1.5;
       box-shadow: 0 1px 1px rgba(0,0,0,0.1);
       word-wrap: break-word;
+    }
+
+    /* --- สไตล์สำหรับ Emoji ล้วนๆ (ตัวใหญ่เหมือนสติ๊กเกอร์) --- */
+    .bubble.only-emoji {
+      background: none !important; /* เอาพื้นหลังออก */
+      box-shadow: none !important; /* เอาเงาออก */
+      font-size: 4em; /* ขยาย Emoji ให้ใหญ่มาก */
+      padding: 0;
+      line-height: 1.1;
     }
 
     /* ฝั่งคนอื่น (ซ้าย) */
@@ -49,7 +56,7 @@
 
     /* ฝั่งเรา (ขวา) */
     .message-right { align-self: flex-end; align-items: flex-end; }
-    .message-right .sender-name { display: none; } /* ซ่อนชื่อเรา */
+    .message-right .sender-name { display: none; } 
     .message-right .bubble { background: #dcf8c6; color: #000; border-bottom-right-radius: 2px; }
 
     /* แถบพิมพ์ด้านล่าง */
@@ -60,32 +67,36 @@
     }
 
     input { 
-      flex: 1; padding: 10px 15px; border: none; border-radius: 20px; 
-      outline: none; font-size: 1rem; background: #fff;
+      flex: 1; padding: 12px 15px; border: none; border-radius: 25px; 
+      outline: none; font-size: 1.1rem; background: #fff;
     }
 
     button { border: none; background: none; cursor: pointer; }
     
-    #emoji-btn { font-size: 1.5rem; padding: 0 10px; transition: transform 0.1s; }
+    #emoji-btn { font-size: 2rem; padding: 0 10px; transition: transform 0.1s; }
     #emoji-btn:active { transform: scale(0.9); }
 
     #send-btn { 
       margin-left: 8px; background: #128C7E; color: white; 
-      border-radius: 50%; width: 40px; height: 40px; 
+      border-radius: 50%; width: 48px; height: 48px; 
       font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      font-size: 1.2rem;
     }
 
-    /* กล่อง Emoji */
+    /* กล่องเลือก Emoji */
     #emoji-picker {
-      position: fixed; bottom: 70px; left: 10px; right: 10px;
-      max-width: 350px;
-      background: white; border-radius: 10px; padding: 10px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none;
-      flex-wrap: wrap; gap: 5px; z-index: 200;
-      max-height: 250px; overflow-y: auto;
+      position: fixed; bottom: 80px; left: 10px; right: 10px;
+      max-width: 100%;
+      background: white; border-radius: 15px; padding: 15px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3); display: none;
+      flex-wrap: wrap; gap: 8px; z-index: 200;
+      justify-content: center;
+      max-height: 40vh; overflow-y: auto;
     }
-    .emoji-item { font-size: 1.6rem; padding: 5px; cursor: pointer; user-select: none; }
-    .emoji-item:hover { background-color: #f2f2f2; border-radius: 5px; }
+    
+    /* Emoji ในกล่องเลือก */
+    .emoji-item { font-size: 2.5rem; padding: 5px; cursor: pointer; user-select: none; }
+    .emoji-item:hover { background-color: #f2f2f2; border-radius: 10px; transform: scale(1.1); transition: 0.2s;}
 
   </style>
 </head>
@@ -121,7 +132,6 @@
       measurementId: "G-MVP0BBDFQV"
     };
 
-    // Initialize Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -132,22 +142,17 @@
     // ======================================================
     const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "ตุ่น", "ช้าง", "ลิง", "หมา", "แพนด้า"];
     const adjs = ["ซ่า", "ติดเทอร์โบ", "ภูเขา", "บินได้", "ง่วง", "หิว", "จอมซน", "อินดี้", "น่ารัก", "หัวร้อน"];
-    
-    // รายการคำหยาบ (เพิ่มได้)
     const badWords = [ "เหี้ย", "สัส", "ควย", "เย็ด", "หี", "แตด", "hee", "kuy"];
 
     // ======================================================
     // 3. ฟังก์ชัน Utility
     // ======================================================
-    
-    // สุ่มชื่อ
     function getRandomName() {
       const animal = animals[Math.floor(Math.random() * animals.length)];
       const adj = adjs[Math.floor(Math.random() * adjs.length)];
       return animal + adj;
     }
 
-    // กรองคำหยาบ
     function censorText(text) {
       let cleanText = text;
       badWords.forEach(word => {
@@ -157,11 +162,24 @@
       return cleanText;
     }
 
+    // ฟังก์ชันเช็คว่ามีแต่ Emoji หรือไม่ (ไม่มีตัวหนังสือ ก-ฮ, a-z, 0-9)
+    function isEmojiOnly(str) {
+       // ลบช่องว่างออก
+       const check = str.replace(/\s/g, '');
+       // ถ้าไม่มีข้อความเหลือเลย (ว่างเปล่า) หรือ มีตัวหนังสือผสม ให้ return false
+       if (check.length === 0) return false;
+       
+       // เช็คว่ามีตัวอักษรภาษาไทย อังกฤษ หรือตัวเลขหรือไม่
+       const hasText = /[a-zA-Z0-9ก-๙]/.test(check);
+       
+       // ถ้า "ไม่มีตัวหนังสือ" แสดงว่าเป็น Emoji หรือสัญลักษณ์ล้วนๆ -> return true
+       return !hasText;
+    }
+
     // ======================================================
     // 4. เริ่มการทำงาน (Main Logic)
     // ======================================================
     
-    // ตรวจสอบตัวตน (User Identity)
     let myId = localStorage.getItem('chat_id');
     let myName = localStorage.getItem('chat_name');
 
@@ -174,7 +192,6 @@
     
     document.getElementById('input').placeholder = `คุณคือ "${myName}" ...`;
 
-    // DOM Elements
     const form = document.getElementById('form-container');
     const inputField = document.getElementById('input');
     const messagesDiv = document.getElementById('messages');
@@ -194,7 +211,6 @@
       emojiPicker.appendChild(span);
     });
 
-    // ปุ่มเปิดปิด Emoji
     emojiBtn.onclick = (e) => {
       e.stopPropagation();
       emojiPicker.style.display = (emojiPicker.style.display === 'flex') ? 'none' : 'flex';
@@ -209,7 +225,6 @@
       var msg = inputField.value.trim();
 
       if (msg) {
-        // เช็คคำสั่งลับเพื่อลบด้วยมือ
         if (msg === '/ลบหมด') {
           if (confirm("⚠️ ลบประวัติแชททั้งหมด?")) {
              database.ref('chats').remove();
@@ -218,10 +233,8 @@
           return;
         }
 
-        // กรองคำหยาบ
         msg = censorText(msg);
 
-        // ส่งเข้า Firebase
         database.ref('chats').push({
           message: msg,
           senderName: myName,
@@ -234,12 +247,11 @@
       }
     });
 
-    // --- รับข้อความ (Realtime) ---
+    // --- รับข้อความ ---
     database.ref('chats').on('child_added', function(snapshot) {
       createMessageBubble(snapshot.val());
     });
 
-    // --- เมื่อข้อมูลถูกลบ (ล้างหน้าจอ) ---
     database.ref('chats').on('value', function(snapshot) {
       if (!snapshot.exists()) messagesDiv.innerHTML = '';
     });
@@ -257,7 +269,11 @@
       bubble.className = 'bubble';
       bubble.textContent = data.message;
 
-      // เช็คว่าเป็นข้อความประเภทไหน
+      // *** เช็คว่า Emoji ล้วนๆ หรือไม่ ***
+      if (isEmojiOnly(data.message)) {
+        bubble.classList.add('only-emoji'); // เพิ่ม Class เพื่อขยายใหญ่
+      }
+
       if (data.senderId === myId) {
         row.classList.add('message-right');
       } else {
@@ -268,7 +284,6 @@
       row.appendChild(bubble);
       messagesDiv.appendChild(row);
       
-      // Scroll ลงล่าง
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
