@@ -2,120 +2,179 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MaiRoo LiveChat</title>
   <style>
-    /* --- CSS ตกแต่ง --- */
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #ece5dd; }
+    /* --- CSS Reset & Base --- */
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      margin: 0; 
+      background-color: #ece5dd; /* ใช้สีเดียวกับแชทเลย */
+      height: 100dvh; /* ใช้ความสูงจริงของหน้าจอ */
+      overflow: hidden;
+      /* ลบการจัดกึ่งกลางออกเพื่อให้เต็มจอ */
+    }
 
-    /* พื้นที่แสดงข้อความ */
+    /* --- กรอบหลักของแอป --- */
+    #app-container {
+      width: 100%;
+      height: 100%;
+      /* ลบ max-width ออกเพื่อให้เต็มจอ PC */
+      background-color: #ece5dd; 
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- พื้นที่แสดงข้อความ --- */
     #messages { 
       list-style-type: none; 
       margin: 0; 
-      padding: 15px; 
+      padding: 20px; /* เพิ่ม Padding ให้ดูโปร่งขึ้นบนจอใหญ่ */
       padding-bottom: 80px; 
-      display: flex;
-      flex-direction: column;
+      flex: 1; 
       overflow-y: auto;
-      height: 100vh;
-      box-sizing: border-box;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch; 
     }
 
     .message-row {
       display: flex;
       flex-direction: column;
       margin-bottom: 8px;
-      max-width: 80%;
+      max-width: 70%; /* บนจอ PC ปรับให้ข้อความไม่ยาวเกินไปจนอ่านยาก (70%) */
       position: relative;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    /* ปรับสำหรับมือถือ: ให้ข้อความกว้างขึ้นหน่อย */
+    @media (max-width: 768px) {
+      .message-row { max-width: 85%; }
     }
 
-    .sender-name { font-size: 0.7rem; color: #777; margin-bottom: 2px; margin-left: 5px; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-    /* --- กล่องข้อความปกติ --- */
+    .sender-name { font-size: 0.75rem; color: #666; margin-bottom: 4px; margin-left: 5px; }
+
+    /* --- กล่องข้อความ --- */
     .bubble {
-      padding: 10px 14px; /* เพิ่มพื้นที่ */
-      border-radius: 16px;
-      font-size: 1 em; /* ขยายตัวหนังสือปกติให้ใหญ่นิดหน่อย */
+      padding: 10px 16px; 
+      border-radius: 18px;
+      font-size: 1rem;
       line-height: 1.5;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
       word-wrap: break-word;
+      word-break: break-word;
     }
 
-    /* --- สไตล์สำหรับ Emoji ล้วนๆ (ตัวใหญ่เหมือนสติ๊กเกอร์) --- */
+    /* --- Emoji ล้วน --- */
     .bubble.only-emoji {
-      background: none !important; /* เอาพื้นหลังออก */
-      box-shadow: none !important; /* เอาเงาออก */
-      font-size: 4em; /* ขยาย Emoji ให้ใหญ่มาก */
+      background: none !important;
+      box-shadow: none !important;
+      font-size: 4rem; 
       padding: 0;
-      line-height: 1.1;
+      line-height: 1.2;
     }
 
     /* ฝั่งคนอื่น (ซ้าย) */
     .message-left { align-self: flex-start; }
-    .message-left .bubble { background: #fff; color: #000; border-bottom-left-radius: 2px; }
+    .message-left .bubble { background: #fff; color: #000; border-bottom-left-radius: 4px; }
 
     /* ฝั่งเรา (ขวา) */
     .message-right { align-self: flex-end; align-items: flex-end; }
     .message-right .sender-name { display: none; } 
-    .message-right .bubble { background: #dcf8c6; color: #000; border-bottom-right-radius: 2px; }
+    .message-right .bubble { background: #dcf8c6; color: #000; border-bottom-right-radius: 4px; }
 
-    /* แถบพิมพ์ด้านล่าง */
+    /* --- แถบพิมพ์ด้านล่าง --- */
     #form-container { 
-      position: fixed; bottom: 0; left: 0; right: 0; 
-      background: #f0f0f0; padding: 8px; display: flex; align-items: center;
-      box-shadow: 0 -1px 3px rgba(0,0,0,0.1); z-index: 100;
+      position: absolute; 
+      bottom: 0; left: 0; right: 0; 
+      background: #f0f0f0; 
+      padding: 10px 15px; 
+      display: flex; 
+      align-items: center;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.05); 
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 10px); 
     }
 
     input { 
-      flex: 1; padding: 12px 15px; border: none; border-radius: 25px; 
-      outline: none; font-size: 1.1rem; background: #fff;
+      flex: 1; 
+      padding: 12px 20px; 
+      border: none; 
+      border-radius: 24px; 
+      outline: none; 
+      font-size: 16px; 
+      background: #fff;
     }
 
     button { border: none; background: none; cursor: pointer; }
     
-    #emoji-btn { font-size: 2rem; padding: 0 10px; transition: transform 0.1s; }
+    #emoji-btn { font-size: 1.8rem; padding: 0 10px; transition: transform 0.1s; display: flex; align-items: center;}
     #emoji-btn:active { transform: scale(0.9); }
 
     #send-btn { 
-      margin-left: 8px; background: #128C7E; color: white; 
-      border-radius: 50%; width: 48px; height: 48px; 
-      font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      margin-left: 10px; 
+      background: #128C7E; 
+      color: white; 
+      border-radius: 50%; 
+      width: 46px; height: 46px; 
+      display: flex; justify-content: center; align-items: center;
+      font-weight: bold; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       font-size: 1.2rem;
+      flex-shrink: 0;
     }
 
-    /* กล่องเลือก Emoji */
+    /* --- กล่องเลือก Emoji --- */
     #emoji-picker {
-      position: fixed; bottom: 80px; left: 10px; right: 10px;
-      max-width: 100%;
-      background: white; border-radius: 15px; padding: 15px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.3); display: none;
-      flex-wrap: wrap; gap: 8px; z-index: 200;
-      justify-content: center;
-      max-height: 40vh; overflow-y: auto;
+      position: absolute; 
+      bottom: 80px; 
+      left: 15px; 
+      /* แก้ไข: ไม่ให้ยืดเต็มจอ PC ให้กว้างแค่พอดี */
+      width: 100%;
+      max-width: 350px; 
+      background: white; 
+      border-radius: 12px; 
+      padding: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+      display: none;
+      flex-wrap: wrap; 
+      gap: 5px; 
+      z-index: 200;
+      justify-content: space-around;
+      max-height: 40vh; 
+      overflow-y: auto;
     }
     
-    /* Emoji ในกล่องเลือก */
-    .emoji-item { font-size: 2.5rem; padding: 5px; cursor: pointer; user-select: none; }
-    .emoji-item:hover { background-color: #f2f2f2; border-radius: 10px; transform: scale(1.1); transition: 0.2s;}
+    .emoji-item { 
+      font-size: 2rem; 
+      padding: 6px; 
+      cursor: pointer; 
+      user-select: none; 
+      border-radius: 8px;
+    }
+    .emoji-item:hover { background-color: #f2f2f2; }
 
   </style>
 </head>
 <body>
 
-  <!-- พื้นที่แชท -->
-  <div id="messages"></div>
+  <div id="app-container">
+    <div id="messages"></div>
+    <div id="emoji-picker"></div>
+    <form id="form-container">
+      <button type="button" id="emoji-btn">😊</button>
+      <input id="input" autocomplete="off" placeholder="พิมพ์ข้อความ..." enterkeyhint="send" />
+      <button type="submit" id="send-btn">➤</button>
+    </form>
+  </div>
 
-  <!-- Emoji Popup -->
-  <div id="emoji-picker"></div>
-
-  <!-- แถบพิมพ์ -->
-  <form id="form-container">
-    <button type="button" id="emoji-btn">😊</button>
-    <input id="input" autocomplete="off" placeholder="พิมพ์ข้อความ..." />
-    <button type="submit" id="send-btn">➤</button>
-  </form>
-
-  <!-- FIREBASE SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -137,20 +196,12 @@
     }
     var database = firebase.database();
 
-    // ======================================================
-    // 2. ตั้งค่าตัวแปรระบบ
-    // ======================================================
     const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "ตุ่น", "ช้าง", "ลิง", "หมา", "แพนด้า"];
     const adjs = ["ซ่า", "ติดเทอร์โบ", "ภูเขา", "บินได้", "ง่วง", "หิว", "จอมซน", "อินดี้", "น่ารัก", "หัวร้อน"];
     const badWords = [ "เหี้ย", "สัส", "ควย", "เย็ด", "หี", "แตด", "hee", "kuy"];
 
-    // ======================================================
-    // 3. ฟังก์ชัน Utility
-    // ======================================================
     function getRandomName() {
-      const animal = animals[Math.floor(Math.random() * animals.length)];
-      const adj = adjs[Math.floor(Math.random() * adjs.length)];
-      return animal + adj;
+      return animals[Math.floor(Math.random() * animals.length)] + adjs[Math.floor(Math.random() * adjs.length)];
     }
 
     function censorText(text) {
@@ -162,24 +213,13 @@
       return cleanText;
     }
 
-    // ฟังก์ชันเช็คว่ามีแต่ Emoji หรือไม่ (ไม่มีตัวหนังสือ ก-ฮ, a-z, 0-9)
     function isEmojiOnly(str) {
-       // ลบช่องว่างออก
        const check = str.replace(/\s/g, '');
-       // ถ้าไม่มีข้อความเหลือเลย (ว่างเปล่า) หรือ มีตัวหนังสือผสม ให้ return false
        if (check.length === 0) return false;
-       
-       // เช็คว่ามีตัวอักษรภาษาไทย อังกฤษ หรือตัวเลขหรือไม่
        const hasText = /[a-zA-Z0-9ก-๙]/.test(check);
-       
-       // ถ้า "ไม่มีตัวหนังสือ" แสดงว่าเป็น Emoji หรือสัญลักษณ์ล้วนๆ -> return true
        return !hasText;
     }
 
-    // ======================================================
-    // 4. เริ่มการทำงาน (Main Logic)
-    // ======================================================
-    
     let myId = localStorage.getItem('chat_id');
     let myName = localStorage.getItem('chat_name');
 
@@ -198,7 +238,6 @@
     const emojiPicker = document.getElementById('emoji-picker');
     const emojiBtn = document.getElementById('emoji-btn');
 
-    // สร้าง Emoji
     const emojis = ["😀","😂","😍","😎","😭","😡","👍","👎","🙏","❤️","💔","🎉","🔥","✨","👻","🐷","🐶","🐱","🐔","🌹","☀️","✅","❌","❓"];
     emojis.forEach(char => {
       let span = document.createElement('span');
@@ -206,7 +245,7 @@
       span.className = 'emoji-item';
       span.onclick = () => {
         inputField.value += char;
-        inputField.focus();
+        inputField.focus(); 
       };
       emojiPicker.appendChild(span);
     });
@@ -215,39 +254,31 @@
       e.stopPropagation();
       emojiPicker.style.display = (emojiPicker.style.display === 'flex') ? 'none' : 'flex';
     };
+
     document.body.onclick = (e) => {
       if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) emojiPicker.style.display = 'none';
     };
 
-    // --- ส่งข้อความ ---
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       var msg = inputField.value.trim();
 
       if (msg) {
         if (msg === '/ลบหมด') {
-          if (confirm("⚠️ ลบประวัติแชททั้งหมด?")) {
-             database.ref('chats').remove();
-          }
+          if (confirm("⚠️ ลบประวัติแชททั้งหมด?")) database.ref('chats').remove();
           inputField.value = '';
           return;
         }
-
         msg = censorText(msg);
-
         database.ref('chats').push({
-          message: msg,
-          senderName: myName,
-          senderId: myId,
-          time: Date.now()
+          message: msg, senderName: myName, senderId: myId, time: Date.now()
         });
-
         inputField.value = '';
         emojiPicker.style.display = 'none';
+        setTimeout(() => { messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 100);
       }
     });
 
-    // --- รับข้อความ ---
     database.ref('chats').on('child_added', function(snapshot) {
       createMessageBubble(snapshot.val());
     });
@@ -256,7 +287,6 @@
       if (!snapshot.exists()) messagesDiv.innerHTML = '';
     });
 
-    // ฟังก์ชันสร้าง Bubble
     function createMessageBubble(data) {
       var row = document.createElement('div');
       row.className = 'message-row';
@@ -269,24 +299,16 @@
       bubble.className = 'bubble';
       bubble.textContent = data.message;
 
-      // *** เช็คว่า Emoji ล้วนๆ หรือไม่ ***
-      if (isEmojiOnly(data.message)) {
-        bubble.classList.add('only-emoji'); // เพิ่ม Class เพื่อขยายใหญ่
-      }
+      if (isEmojiOnly(data.message)) bubble.classList.add('only-emoji');
 
-      if (data.senderId === myId) {
-        row.classList.add('message-right');
-      } else {
-        row.classList.add('message-left');
-      }
+      if (data.senderId === myId) row.classList.add('message-right');
+      else row.classList.add('message-left');
 
       row.appendChild(nameSpan);
       row.appendChild(bubble);
       messagesDiv.appendChild(row);
-      
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
-
   </script>
 </body>
 </html>
