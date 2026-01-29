@@ -5,66 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Full Page Gallery</title>
     <style>
-       
+        /* รีเซ็ตค่า */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-       
+        /* ซ่อน Scrollbar ของ Body หลัก แต่ให้ Scroll ใน Container แทน */
+        body {
             font-family: 'Poppins', sans-serif;
             background-color: #000;
             color: #fff;
-            height: 100vh; 
-            overflow: hidden;
+            height: 100vh; /* บังคับให้สูงเต็มจอ */
+            overflow: hidden; /* ห้ามเลื่อนที่ body */
         }
 
-        
+        /* --- Container หลักที่ควบคุมการเลื่อน --- */
+        .scroll-container {
             height: 100vh;
-            overflow-y: scroll; 
-            scroll-snap-type: y proximity;
+            overflow-y: scroll; /* ให้เลื่อนแนวตั้งได้ */
+            scroll-snap-type: y proximity; /* คำสั่งสำคัญ! บังคับให้ดูดติด (Snap) */
             scroll-behavior: smooth;
         }
 
-        
+        /* --- แต่ละ Section (หน้าจอของแต่ละรูป) --- */
         .gallery-section {
             position: relative;
-            height: 100vh; 
+            height: 100vh; /* สูงเต็มจอเสมอ */
             width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-            scroll-snap-align: start;
+            overflow: hidden; /* ซ่อนส่วนภาพที่ล้นตอนซูม */
+            scroll-snap-align: start; /* จุดที่จะให้หยุดเมื่อเลื่อนมาถึง */
         }
 
-       
+        /* --- ภาพพื้นหลัง --- */
         .bg-image {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; 
-            z-index: -1;
+            object-fit: cover; /* ให้ภาพเต็มจอโดยไม่เสียสัดส่วน */
+            z-index: -1; /* อยู่ด้านหลังสุด */
             
-           
+            /* Animation: ภาพซูมเข้าออกช้าๆ ตลอดเวลา */
             animation: kenBurns 20s infinite alternate;
         }
 
-       
+        /* --- Overlay (เงาดำๆ เพื่อให้อ่านตัวหนังสือออก) --- */
         .overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.3); 
+            background: rgba(0,0,0,0.3); /* สีดำโปร่งแสง 30% */
             z-index: 0;
         }
 
-        
+        /* --- ข้อความ --- */
         .content {
             position: relative;
             z-index: 1;
@@ -81,9 +83,9 @@
             margin-bottom: 20px;
             opacity: 0;
             transform: translateY(50px);
-            
+            /* ใส่ Animation ให้ตัวหนังสือเด้งขึ้น */
             animation: textSlideUp 1s ease-out forwards;
-            animation-delay: 0.5s; 
+            animation-delay: 0.5s; /* รอแป๊บนึงค่อยขึ้น */
         }
 
         .content p {
@@ -92,10 +94,10 @@
             opacity: 0;
             transform: translateY(30px);
             animation: textSlideUp 1s ease-out forwards;
-            animation-delay: 0.8s; 
+            animation-delay: 0.8s; /* ขึ้นมาช้ากว่าหัวข้อนิดหน่อย */
         }
 
-        
+        /* --- ปุ่ม Scroll Down (ลูกศรเด้งๆ) --- */
         .scroll-indicator {
             position: absolute;
             bottom: 30px;
@@ -114,13 +116,15 @@
             transform: rotate(45deg);
         }
 
-        
+        /* --- Keyframes Animations --- */
+
+        /* ซูมภาพช้าๆ (Ken Burns Effect) */
         @keyframes kenBurns {
             0% { transform: scale(1); }
-            100% { transform: scale(1.2); } 
+            100% { transform: scale(1.2); } /* ขยายไป 120% */
         }
 
-      
+        /* ดันตัวหนังสือขึ้น */
         @keyframes textSlideUp {
             to {
                 opacity: 1;
@@ -128,14 +132,14 @@
             }
         }
 
-       
+        /* ลูกศรเด้งดึ๋ง */
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
             40% { transform: translateX(-50%) translateY(-10px); }
             60% { transform: translateX(-50%) translateY(-5px); }
         }
 
-        
+        /* Responsive มือถือ */
         @media (max-width: 768px) {
             .content h1 { font-size: 2.5rem; }
             .content p { font-size: 1rem; }
@@ -147,21 +151,21 @@
 
     <div class="scroll-container">
 
-
+        <!-- หน้าที่ 1 -->
         <section class="gallery-section">
             <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop" class="bg-image" alt="Nature">
-            <div class="overlay"></div> 
+            <div class="overlay"></div> <!-- เงาดำ -->
             
             <div class="content">
                 <h1>Breath of Wild</h1>
                 <p>สัมผัสบรรยากาศธรรมชาติที่โอบล้อมคุณ ด้วยมุมมอง 360 องศา</p>
             </div>
 
-            
+            <!-- ลูกศรบอกให้เลื่อนลง -->
             <div class="scroll-indicator"><span></span></div>
         </section>
 
-
+        <!-- หน้าที่ 2 -->
         <section class="gallery-section">
             <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=2070&auto=format&fit=crop" class="bg-image" alt="Mountain" style="animation-delay: -5s;">
             <div class="overlay"></div>
@@ -174,7 +178,7 @@
             <div class="scroll-indicator"><span></span></div>
         </section>
 
-     
+        <!-- หน้าที่ 3 -->
         <section class="gallery-section">
             <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop" class="bg-image" alt="Sea" style="animation-delay: -10s;">
             <div class="overlay"></div>
@@ -187,7 +191,7 @@
             <div class="scroll-indicator"><span></span></div>
         </section>
 
-
+        <!-- หน้าที่ 4 -->
         <section class="gallery-section">
             <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop" class="bg-image" alt="Night" style="animation-delay: -15s;">
             <div class="overlay"></div>
