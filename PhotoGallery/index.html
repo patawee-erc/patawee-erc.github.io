@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Page Gallery</title>
+    <style>
+       
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+       
+            font-family: 'Poppins', sans-serif;
+            background-color: #000;
+            color: #fff;
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        
+            height: 100vh;
+            overflow-y: scroll; 
+            scroll-snap-type: y proximity;
+            scroll-behavior: smooth;
+        }
+
+        
+        .gallery-section {
+            position: relative;
+            height: 100vh; 
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            scroll-snap-align: start;
+        }
+
+       
+        .bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            z-index: -1;
+            
+           
+            animation: kenBurns 20s infinite alternate;
+        }
+
+       
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3); 
+            z-index: 0;
+        }
+
+        
+        .content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+        }
+
+        .content h1 {
+            font-size: 4rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(50px);
+            
+            animation: textSlideUp 1s ease-out forwards;
+            animation-delay: 0.5s; 
+        }
+
+        .content p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: textSlideUp 1s ease-out forwards;
+            animation-delay: 0.8s; 
+        }
+
+        
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator span {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-bottom: 3px solid white;
+            border-right: 3px solid white;
+            transform: rotate(45deg);
+        }
+
+        
+        @keyframes kenBurns {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); } 
+        }
+
+      
+        @keyframes textSlideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+       
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        
+        @media (max-width: 768px) {
+            .content h1 { font-size: 2.5rem; }
+            .content p { font-size: 1rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scroll-container">
+
+
+        <section class="gallery-section">
+            <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop" class="bg-image" alt="Nature">
+            <div class="overlay"></div> 
+            
+            <div class="content">
+                <h1>Breath of Wild</h1>
+                <p>สัมผัสบรรยากาศธรรมชาติที่โอบล้อมคุณ ด้วยมุมมอง 360 องศา</p>
+            </div>
+
+            
+            <div class="scroll-indicator"><span></span></div>
+        </section>
+
+
+        <section class="gallery-section">
+            <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=2070&auto=format&fit=crop" class="bg-image" alt="Mountain" style="animation-delay: -5s;">
+            <div class="overlay"></div>
+
+            <div class="content">
+                <h1>The Peaks</h1>
+                <p>ความสูงชันที่ท้าทาย และความเงียบสงบแห่งขุนเขา</p>
+            </div>
+            
+            <div class="scroll-indicator"><span></span></div>
+        </section>
+
+     
+        <section class="gallery-section">
+            <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop" class="bg-image" alt="Sea" style="animation-delay: -10s;">
+            <div class="overlay"></div>
+
+            <div class="content">
+                <h1>Deep Blue Sea</h1>
+                <p>เสียงคลื่นและลมทะเล ที่จะพาใจคุณล่องลอยไปไกล</p>
+            </div>
+
+            <div class="scroll-indicator"><span></span></div>
+        </section>
+
+
+        <section class="gallery-section">
+            <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop" class="bg-image" alt="Night" style="animation-delay: -15s;">
+            <div class="overlay"></div>
+
+            <div class="content">
+                <h1>Starry Night</h1>
+                <p>แสงดาวนับล้านดวง ในค่ำคืนที่มืดมิดที่สุด</p>
+            </div>
+        </section>
+
+    </div>
+
+</body>
+</html>
