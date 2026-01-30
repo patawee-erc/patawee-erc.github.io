@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML Tester - Save & Resize</title>
+    <title>HTML Editor - Ultimate</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
     <!-- โหลด Ace Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
@@ -31,27 +31,40 @@
             height: 50px;
             border-bottom: 1px solid #444;
         }
-        h1 { font-size: 1.1rem; margin: 0; }
+        h1 { font-size: 1.1rem; margin: 0; flex-shrink: 0; }
         
         .btn-group { display: flex; align-items: center; }
         
         .btn-group button {
             color: white;
             border: none;
-            padding: 6px 15px;
+            padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
-            margin-left: 8px;
-            font-size: 0.9rem;
+            margin-left: 6px;
+            font-size: 0.85rem;
             font-weight: 600;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-group button:hover { opacity: 0.9; }
+        .btn-group button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-group button:active { transform: translateY(0); }
 
         /* สีปุ่มต่างๆ */
-        button.run { background-color: #007acc; } /* สีฟ้า */
-        button.save { background-color: #8e44ad; } /* สีม่วง */
-        button.clear { background-color: #c0392b; } /* สีแดง */
+        button.run { background-color: #27ae60; } /* เขียว */
+        button.save { background-color: #8e44ad; } /* ม่วง */
+        button.clear { background-color: #c0392b; } /* แดง */
+        button.popup { background-color: #e67e22; } /* ส้ม */
+        
+        /* ปุ่ม Font Size */
+        button.font-btn { 
+            background-color: #555; 
+            border: 1px solid #666;
+            min-width: 35px;
+        }
+        button.font-btn:hover { background-color: #666; }
 
         /* Checkbox Label */
         .auto-run-label {
@@ -59,6 +72,7 @@
             margin-left: 15px; 
             cursor: pointer;
             user-select: none;
+            white-space: nowrap;
         }
 
         /* Container */
@@ -79,7 +93,6 @@
         #editor {
             position: absolute;
             top: 0; right: 0; bottom: 0; left: 0;
-            font-size: 16px;
             line-height: 1.5;
         }
 
@@ -112,7 +125,6 @@
             border: none;
         }
         
-        /* Overlay for dragging */
         .overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -126,10 +138,17 @@
     <header>
         <h1>HTML Editor Pro</h1>
         <div class="btn-group">
-            <!-- ปุ่มกดต่างๆ -->
+            <!-- ปุ่มปรับฟอนต์ -->
+            <button class="font-btn" onclick="changeFontSize(-2)" title="ลดขนาด">A-</button>
+            <button class="font-btn" onclick="changeFontSize(2)" title="เพิ่มขนาด">A+</button>
+            
+            <span style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></span>
+
+            <!-- ปุ่มหลัก -->
             <button class="clear" onclick="clearCode()">Clear</button>
             <button class="run" onclick="runCode()">Run ▶</button>
-            <button class="save" onclick="saveCode()">💾 Save .html</button>
+            <button class="popup" onclick="openPopup()">↗ Popup</button> <!-- ปุ่ม Popup ใหม่ -->
+            <button class="save" onclick="saveCode()">💾 Save</button>
             
             <label class="auto-run-label">
                 <input type="checkbox" id="autoRun" checked> Auto Run
@@ -145,31 +164,29 @@
 <meta charset="UTF-8">
 <style>
   body { 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     font-family: 'Segoe UI', sans-serif; 
+    background-color: #fce4ec;
     text-align: center; 
-    padding-top: 50px;
-    height: 100vh;
+    padding: 50px;
     margin: 0;
   }
   .box {
     background: white;
     padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     display: inline-block;
-    max-width: 400px;
   }
-  h1 { color: #8e44ad; }
-  p { color: #555; }
+  h1 { color: #d81b60; font-size: 3em; margin: 0; }
+  p { color: #880e4f; font-size: 1.2em; }
 </style>
 </head>
 <body>
 
   <div class="box">
-    <h1>Hello World!</h1>
-    <p>ทดสอบการ Save ไฟล์</p>
-    <p>กดปุ่ม <b>"Save .html"</b> ด้านบน<br>เพื่อโหลดหน้านี้ไปใช้งานจริง</p>
+    <h1>Popup Test</h1>
+    <p>กดปุ่ม <b>"↗ Popup"</b> สีส้มด้านบน</p>
+    <p>เพื่อดูผลลัพธ์นี้ในหน้าต่างใหม่แบบ Full Screen!</p>
   </div>
 
 </body>
@@ -189,58 +206,77 @@
         var editor = ace.edit("editor");
         editor.setTheme("ace/theme/monokai");
         editor.session.setMode("ace/mode/html");
+        
+        var currentFontSize = 16;
         editor.setOptions({
-            fontSize: "14pt",
+            fontSize: currentFontSize + "px",
             enableBasicAutocompletion: true,
             enableLiveAutocompletion: true
         });
 
-        // Run Code Function
+        // Change Font Size
+        function changeFontSize(amount) {
+            currentFontSize += amount;
+            if(currentFontSize < 10) currentFontSize = 10;
+            if(currentFontSize > 50) currentFontSize = 50;
+            editor.setFontSize(currentFontSize + "px");
+        }
+
+        // Run Code
         function runCode() {
             var code = editor.getValue();
             var frame = document.getElementById("previewFrame");
             frame.srcdoc = code;
         }
 
-        // Auto Run Listener
+        // Auto Run
         editor.session.on('change', function(delta) {
             if(document.getElementById('autoRun').checked){
                 runCode();
             }
         });
 
-        // Clear Function
+        // Clear Code
         function clearCode() {
             if(confirm("ต้องการล้างโค้ดทั้งหมด?")) {
                 editor.setValue("");
             }
         }
 
-        // ==========================================
-        //  ฟังก์ชัน Save Code เป็นไฟล์ .html (ใหม่)
-        // ==========================================
+        // Save Code
         function saveCode() {
-            // 1. ดึงโค้ดจาก Editor
             var codeContent = editor.getValue();
-
-            // 2. สร้าง Blob (ไฟล์จำลอง) ประเภท text/html
             var blob = new Blob([codeContent], { type: "text/html;charset=utf-8" });
-
-            // 3. สร้าง Link ชั่วคราวเพื่อกด Download
             var link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "index.html"; // ตั้งชื่อไฟล์เริ่มต้นตรงนี้
-
-            // 4. สั่งกด Link แล้วลบทิ้ง
+            link.download = "index.html"; 
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
+        // ==========================================
+        //  ฟังก์ชัน Popup (ใหม่)
+        // ==========================================
+        function openPopup() {
+            var code = editor.getValue();
+            // เปิดหน้าต่างใหม่
+            var win = window.open("", "_blank");
+            
+            if (win) {
+                // เขียนโค้ดลงไปในหน้าต่างใหม่
+                win.document.open();
+                win.document.write(code);
+                win.document.close();
+            } else {
+                alert("โปรดอนุญาตให้ Pop-up ทำงาน (Allow Pop-ups) สำหรับหน้านี้");
+            }
+        }
+
         // Load content on start
         window.onload = runCode;
 
-        // 2. Resizable Logic (เหมือนเดิม)
+        // 2. Resizable Logic
         const resizer = document.getElementById('dragMe');
         const leftSide = document.getElementById('editor-container');
         const container = document.getElementById('mainContainer');
