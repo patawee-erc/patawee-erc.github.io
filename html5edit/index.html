@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML Editor - Ultimate</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
-    <!-- โหลด Ace Editor -->
+     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -20,7 +20,7 @@
             background-color: #202020;
         }
 
-        /* Header */
+         
         header {
             background-color: #333;
             color: #fff;
@@ -52,13 +52,13 @@
         .btn-group button:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-group button:active { transform: translateY(0); }
 
-        /* สีปุ่มต่างๆ */
-        button.run { background-color: #27ae60; } /* เขียว */
-        button.save { background-color: #8e44ad; } /* ม่วง */
-        button.clear { background-color: #c0392b; } /* แดง */
-        button.popup { background-color: #e67e22; } /* ส้ม */
+         
+        button.run { background-color: #27ae60; }  
+        button.save { background-color: #8e44ad; }  
+        button.clear { background-color: #c0392b; }  
+        button.popup { background-color: #e67e22; }  
         
-        /* ปุ่ม Font Size */
+         
         button.font-btn { 
             background-color: #555; 
             border: 1px solid #666;
@@ -66,7 +66,7 @@
         }
         button.font-btn:hover { background-color: #666; }
 
-        /* Checkbox Label */
+         
         .auto-run-label {
             font-size: 0.8rem; 
             margin-left: 15px; 
@@ -75,7 +75,7 @@
             white-space: nowrap;
         }
 
-        /* Container */
+        
         .container {
             display: flex;
             flex: 1;
@@ -84,7 +84,7 @@
             position: relative;
         }
 
-        /* Editor (Left) */
+         
         #editor-container {
             width: 50%;
             height: 100%;
@@ -96,7 +96,7 @@
             line-height: 1.5;
         }
 
-        /* Resizer Bar */
+         
         .resizer {
             width: 10px;
             background-color: #444;
@@ -113,7 +113,7 @@
             font-weight: bold;
         }
 
-        /* Preview (Right) */
+        
         #preview-container {
             flex: 1;
             background-color: white;
@@ -138,16 +138,16 @@
     <header>
         <h1>HTML Editor Pro</h1>
         <div class="btn-group">
-            <!-- ปุ่มปรับฟอนต์ -->
+             
             <button class="font-btn" onclick="changeFontSize(-2)" title="ลดขนาด">A-</button>
             <button class="font-btn" onclick="changeFontSize(2)" title="เพิ่มขนาด">A+</button>
             
             <span style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></span>
 
-            <!-- ปุ่มหลัก -->
+             
             <button class="clear" onclick="clearCode()">Clear</button>
             <button class="run" onclick="runCode()">Run ▶</button>
-            <button class="popup" onclick="openPopup()">↗ Popup</button> <!-- ปุ่ม Popup ใหม่ -->
+            <button class="popup" onclick="openPopup()">↗ Popup</button>  
             <button class="save" onclick="saveCode()">💾 Save</button>
             
             <label class="auto-run-label">
@@ -159,38 +159,7 @@
     <div class="container" id="mainContainer">
         <div id="editor-container">
             <div id="editor"><!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-  body { 
-    font-family: 'Segoe UI', sans-serif; 
-    background-color: #fce4ec;
-    text-align: center; 
-    padding: 50px;
-    margin: 0;
-  }
-  .box {
-    background: white;
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    display: inline-block;
-  }
-  h1 { color: #d81b60; font-size: 3em; margin: 0; }
-  p { color: #880e4f; font-size: 1.2em; }
-</style>
-</head>
-<body>
-
-  <div class="box">
-    <h1>Popup Test</h1>
-    <p>กดปุ่ม <b>"↗ Popup"</b> สีส้มด้านบน</p>
-    <p>เพื่อดูผลลัพธ์นี้ในหน้าต่างใหม่แบบ Full Screen!</p>
-  </div>
-
-</body>
-</html></div>
+<html>Enjoy Your Code</html></div>
         </div>
 
         <div class="resizer" id="dragMe"></div>
@@ -202,7 +171,7 @@
     </div>
 
     <script>
-        // 1. Setup Ace Editor
+         
         var editor = ace.edit("editor");
         editor.setTheme("ace/theme/monokai");
         editor.session.setMode("ace/mode/html");
@@ -214,7 +183,7 @@
             enableLiveAutocompletion: true
         });
 
-        // Change Font Size
+         
         function changeFontSize(amount) {
             currentFontSize += amount;
             if(currentFontSize < 10) currentFontSize = 10;
@@ -222,28 +191,27 @@
             editor.setFontSize(currentFontSize + "px");
         }
 
-        // Run Code
+        
         function runCode() {
             var code = editor.getValue();
             var frame = document.getElementById("previewFrame");
             frame.srcdoc = code;
         }
 
-        // Auto Run
+         
         editor.session.on('change', function(delta) {
             if(document.getElementById('autoRun').checked){
                 runCode();
             }
         });
-
-        // Clear Code
+ 
         function clearCode() {
             if(confirm("ต้องการล้างโค้ดทั้งหมด?")) {
                 editor.setValue("");
             }
         }
 
-        // Save Code
+         
         function saveCode() {
             var codeContent = editor.getValue();
             var blob = new Blob([codeContent], { type: "text/html;charset=utf-8" });
@@ -255,16 +223,14 @@
             document.body.removeChild(link);
         }
 
-        // ==========================================
-        //  ฟังก์ชัน Popup (ใหม่)
-        // ==========================================
+         
         function openPopup() {
             var code = editor.getValue();
-            // เปิดหน้าต่างใหม่
+             
             var win = window.open("", "_blank");
             
             if (win) {
-                // เขียนโค้ดลงไปในหน้าต่างใหม่
+                
                 win.document.open();
                 win.document.write(code);
                 win.document.close();
@@ -273,10 +239,10 @@
             }
         }
 
-        // Load content on start
+        
         window.onload = runCode;
 
-        // 2. Resizable Logic
+         
         const resizer = document.getElementById('dragMe');
         const leftSide = document.getElementById('editor-container');
         const container = document.getElementById('mainContainer');
