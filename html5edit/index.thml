@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Tester - Save & Resize</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
+    <!-- โหลด Ace Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background-color: #202020;
+        }
+
+        /* Header */
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 0 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+            border-bottom: 1px solid #444;
+        }
+        h1 { font-size: 1.1rem; margin: 0; }
+        
+        .btn-group { display: flex; align-items: center; }
+        
+        .btn-group button {
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .btn-group button:hover { opacity: 0.9; }
+
+        /* สีปุ่มต่างๆ */
+        button.run { background-color: #007acc; } /* สีฟ้า */
+        button.save { background-color: #8e44ad; } /* สีม่วง */
+        button.clear { background-color: #c0392b; } /* สีแดง */
+
+        /* Checkbox Label */
+        .auto-run-label {
+            font-size: 0.8rem; 
+            margin-left: 15px; 
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Container */
+        .container {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 50px);
+            position: relative;
+        }
+
+        /* Editor (Left) */
+        #editor-container {
+            width: 50%;
+            height: 100%;
+            position: relative;
+        }
+        #editor {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* Resizer Bar */
+        .resizer {
+            width: 10px;
+            background-color: #444;
+            cursor: col-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .resizer:hover { background-color: #007acc; }
+        .resizer::after {
+            content: "⋮";
+            color: #888;
+            font-weight: bold;
+        }
+
+        /* Preview (Right) */
+        #preview-container {
+            flex: 1;
+            background-color: white;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* Overlay for dragging */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>HTML Editor Pro</h1>
+        <div class="btn-group">
+            <!-- ปุ่มกดต่างๆ -->
+            <button class="clear" onclick="clearCode()">Clear</button>
+            <button class="run" onclick="runCode()">Run ▶</button>
+            <button class="save" onclick="saveCode()">💾 Save .html</button>
+            
+            <label class="auto-run-label">
+                <input type="checkbox" id="autoRun" checked> Auto Run
+            </label>
+        </div>
+    </header>
+
+    <div class="container" id="mainContainer">
+        <div id="editor-container">
+            <div id="editor"><!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { 
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    font-family: 'Segoe UI', sans-serif; 
+    text-align: center; 
+    padding-top: 50px;
+    height: 100vh;
+    margin: 0;
+  }
+  .box {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    display: inline-block;
+    max-width: 400px;
+  }
+  h1 { color: #8e44ad; }
+  p { color: #555; }
+</style>
+</head>
+<body>
+
+  <div class="box">
+    <h1>Hello World!</h1>
+    <p>ทดสอบการ Save ไฟล์</p>
+    <p>กดปุ่ม <b>"Save .html"</b> ด้านบน<br>เพื่อโหลดหน้านี้ไปใช้งานจริง</p>
+  </div>
+
+</body>
+</html></div>
+        </div>
+
+        <div class="resizer" id="dragMe"></div>
+
+        <div id="preview-container">
+            <div class="overlay" id="iframeOverlay"></div>
+            <iframe id="previewFrame"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // 1. Setup Ace Editor
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/html");
+        editor.setOptions({
+            fontSize: "14pt",
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true
+        });
+
+        // Run Code Function
+        function runCode() {
+            var code = editor.getValue();
+            var frame = document.getElementById("previewFrame");
+            frame.srcdoc = code;
+        }
+
+        // Auto Run Listener
+        editor.session.on('change', function(delta) {
+            if(document.getElementById('autoRun').checked){
+                runCode();
+            }
+        });
+
+        // Clear Function
+        function clearCode() {
+            if(confirm("ต้องการล้างโค้ดทั้งหมด?")) {
+                editor.setValue("");
+            }
+        }
+
+        // ==========================================
+        //  ฟังก์ชัน Save Code เป็นไฟล์ .html (ใหม่)
+        // ==========================================
+        function saveCode() {
+            // 1. ดึงโค้ดจาก Editor
+            var codeContent = editor.getValue();
+
+            // 2. สร้าง Blob (ไฟล์จำลอง) ประเภท text/html
+            var blob = new Blob([codeContent], { type: "text/html;charset=utf-8" });
+
+            // 3. สร้าง Link ชั่วคราวเพื่อกด Download
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "index.html"; // ตั้งชื่อไฟล์เริ่มต้นตรงนี้
+
+            // 4. สั่งกด Link แล้วลบทิ้ง
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Load content on start
+        window.onload = runCode;
+
+        // 2. Resizable Logic (เหมือนเดิม)
+        const resizer = document.getElementById('dragMe');
+        const leftSide = document.getElementById('editor-container');
+        const container = document.getElementById('mainContainer');
+        const iframeOverlay = document.getElementById('iframeOverlay');
+        let x = 0;
+        let leftWidth = 0;
+
+        const mouseDownHandler = function(e) {
+            x = e.clientX;
+            leftWidth = leftSide.getBoundingClientRect().width;
+            iframeOverlay.style.display = 'block';
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+            document.body.style.cursor = 'col-resize';
+            leftSide.style.userSelect = 'none';
+        };
+
+        const mouseMoveHandler = function(e) {
+            const dx = e.clientX - x;
+            const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+            if(newLeftWidth > 10 && newLeftWidth < 90) {
+                leftSide.style.width = `${newLeftWidth}%`;
+            }
+        };
+
+        const mouseUpHandler = function() {
+            iframeOverlay.style.display = 'none';
+            document.body.style.cursor = 'default';
+            leftSide.style.removeProperty('user-select');
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+        };
+
+        resizer.addEventListener('mousedown', mouseDownHandler);
+    </script>
+</body>
+</html>
