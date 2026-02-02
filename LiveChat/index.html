@@ -3,185 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tee Rabai LiveChat</title>
+  <title>Tee Rabai LiveChat (Secure)</title>
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4096/4096358.png">
   <style>
-    
+    /* ... (CSS ส่วนเดิมทั้งหมด ไม่ต้องแก้ครับ ใช้ของเดิมได้เลย) ... */
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #ece5dd; }
-
-    
-    #messages { 
-      list-style-type: none; 
-      margin: 0; 
-      padding: 15px; 
-      padding-bottom: 90px; 
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      height: 100vh;
-      box-sizing: border-box;
-    }
-
-    .message-row {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 8px;
-      max-width: 80%;
-      position: relative;
-      animation: fadeIn 0.3s ease;
-    }
-    
+    #messages { list-style-type: none; margin: 0; padding: 15px; padding-bottom: 90px; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+    .message-row { display: flex; flex-direction: column; margin-bottom: 8px; max-width: 80%; position: relative; animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
     .sender-name { font-size: 0.7rem; color: #777; margin-bottom: 2px; margin-left: 5px; }
-
-    
-    .bubble {
-      padding: 8px 12px;
-      border-radius: 16px;
-      font-size: 0.95rem;
-      line-height: 1.5;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-      word-wrap: break-word;
-      position: relative;
-    }
-
-    .msg-time {
-      font-size: 0.6rem;
-      text-align: right;
-      opacity: 0.6;
-      margin-top: 4px;
-      line-height: 1;
-    }
-
-    .chat-image {
-      max-width: 100%;
-      border-radius: 8px;
-      display: block;
-      margin-bottom: 4px;
-      cursor: pointer;
-    }
-
-    
-    .bubble.only-emoji {
-      background: none !important;
-      box-shadow: none !important;
-      font-size: 4em;
-      padding: 0;
-      line-height: 1.1;
-    }
+    .bubble { padding: 8px 12px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; position: relative; }
+    .msg-time { font-size: 0.6rem; text-align: right; opacity: 0.6; margin-top: 4px; line-height: 1; }
+    .chat-image { max-width: 100%; border-radius: 8px; display: block; margin-bottom: 4px; cursor: pointer; }
+    .bubble.only-emoji { background: none !important; box-shadow: none !important; font-size: 4em; padding: 0; line-height: 1.1; }
     .bubble.only-emoji .msg-time { text-shadow: 0 0 2px #fff; font-size: 0.2em; color: #555; }
-
-    
     .message-left { align-self: flex-start; }
     .message-left .bubble { background: #fff; color: #000; border-bottom-left-radius: 2px; }
-
-    
     .message-right { align-self: flex-end; align-items: flex-end; }
     .message-right .sender-name { display: none; } 
     .message-right .bubble { background: #dcf8c6; color: #000; border-bottom-right-radius: 2px; }
-
-    
-    .date-divider {
-      display: flex;
-      justify-content: center;
-      margin: 20px 0 10px 0;
-      width: 100%;
-    }
-    .date-badge {
-      background-color: rgba(0, 0, 0, 0.15);
-      color: #fff;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    
-    .system-message-row {
-      display: flex;
-      justify-content: center;
-      margin: 10px 0;
-      width: 100%;
-    }
-    .system-bubble {
-      background-color: #fff3cd;
-      color: #856404;
-      padding: 10px 15px;
-      border-radius: 10px;
-      border: 1px solid #ffeeba;
-      font-size: 0.85rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      text-align: left;
-    }
+    .date-divider { display: flex; justify-content: center; margin: 20px 0 10px 0; width: 100%; }
+    .date-badge { background-color: rgba(0, 0, 0, 0.15); color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .system-message-row { display: flex; justify-content: center; margin: 10px 0; width: 100%; }
+    .system-bubble { background-color: #fff3cd; color: #856404; padding: 10px 15px; border-radius: 10px; border: 1px solid #ffeeba; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: left; }
     .system-bubble b { color: #533f03; }
-
-    
     #footer-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
-
-    #typing-indicator {
-      background: rgba(255, 255, 255, 0.95);
-      color: #128C7E; font-size: 0.75rem; padding: 4px 15px;
-      font-style: italic; display: none; border-top: 1px solid #eee;
-    }
-
-    #form-container { 
-      background: #f0f0f0; padding: 8px; display: flex; align-items: center;
-      box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
-    }
-
+    #typing-indicator { background: rgba(255, 255, 255, 0.95); color: #128C7E; font-size: 0.75rem; padding: 4px 15px; font-style: italic; display: none; border-top: 1px solid #eee; }
+    #form-container { background: #f0f0f0; padding: 8px; display: flex; align-items: center; box-shadow: 0 -1px 3px rgba(0,0,0,0.1); }
     input { flex: 1; padding: 12px 10px; border: none; border-radius: 25px; outline: none; font-size: 1.1rem; background: #fff; }
     button { border: none; background: none; cursor: pointer; }
     #emoji-btn { font-size: 1.8rem; padding: 0 10px; transition: transform 0.1s; }
     #emoji-btn:active { transform: scale(0.9); }
-    #send-btn { 
-      margin-left: 12px; background: #128C7E; color: white; 
-      border-radius: 50%; width: 48px; height: 48px; 
-      font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
-    }
-
-    
-    #emoji-picker {
-      position: fixed; bottom: 80px; left: 10px; right: 10px;
-      max-width: 100%; background: white; border-radius: 15px; padding: 15px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.3); display: none;
-      flex-wrap: wrap; gap: 8px; z-index: 200; justify-content: center;
-      max-height: 40vh; overflow-y: auto;
-    }
+    #send-btn { margin-left: 12px; background: #128C7E; color: white; border-radius: 50%; width: 48px; height: 48px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+    #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; max-width: 100%; background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); display: none; flex-wrap: wrap; gap: 8px; z-index: 200; justify-content: center; max-height: 40vh; overflow-y: auto; }
     .emoji-item { font-size: 2.5rem; padding: 5px; cursor: pointer; user-select: none; }
     .emoji-item:hover { background-color: #f2f2f2; border-radius: 10px; transform: scale(1.1); transition: 0.2s;}
-
   </style>
 </head>
 <body>
 
-  
   <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.m4a" preload="auto"></audio>
-
-  
   <div id="messages"></div>
-
-  
   <div id="emoji-picker"></div>
 
-  
   <div id="footer-area">
     <div id="typing-indicator"></div>
     <form id="form-container">
       <button type="button" id="emoji-btn">😊</button>
-      <input id="input" autocomplete="off" placeholder="พิมพ์ข้อความ... (/help เพื่อดูเมนู)" />
+      <input id="input" autocomplete="off" placeholder="กำลังเชื่อมต่อ..." disabled />
       <button type="submit" id="send-btn">➤</button>
     </form>
   </div>
 
-  
+  <!-- เพิ่ม firebase-auth.js -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    
     var firebaseConfig = {
       apiKey: "AIzaSyCnX049F08ewwCLXOCa3NrKsG499Qce6bI",
       authDomain: "livechat-75751.firebaseapp.com",
@@ -195,26 +74,42 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
+    var auth = firebase.auth(); // ประกาศตัวแปร Auth
 
-    
     const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "ตุ่น", "ช้าง", "ลิง", "หมา", "แพนด้า"];
     const adjs = ["ซ่า", "ติดเทอร์โบ", "ภูเขา", "บินได้", "ง่วง", "หิว", "จอมซน", "อินดี้", "น่ารัก", "หัวร้อน"];
     const badWords = [ "เหี้ย", "สัส", "ควย", "เย็ด", "หี", "แตด", "hee", "kuy"];
     
-    
     let lastDateDisplayed = null;
-
-    let myId = localStorage.getItem('chat_id');
+    let myId = null; // รอรับจาก Firebase Auth
     let myName = localStorage.getItem('chat_name');
 
-    if (!myId) {
-      myId = 'user_' + Date.now() + Math.random().toString(36).substr(2, 9);
-      myName = animals[Math.floor(Math.random() * animals.length)] + adjs[Math.floor(Math.random() * adjs.length)];
-      localStorage.setItem('chat_id', myId);
-      localStorage.setItem('chat_name', myName);
-    }
+    // === ส่วน Login Anonymous ===
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // ล็อกอินสำเร็จ
+        myId = user.uid;
+        console.log("Logged in as: " + myId);
+        
+        // ถ้ายังไม่มีชื่อ ให้สุ่มชื่อ
+        if (!myName) {
+            myName = animals[Math.floor(Math.random() * animals.length)] + adjs[Math.floor(Math.random() * adjs.length)];
+            localStorage.setItem('chat_name', myName);
+        }
+        
+        // ปลดล็อคช่องพิมพ์
+        inputField.disabled = false;
+        inputField.placeholder = `คุณคือ "${myName}" ...`;
+      } else {
+        // ถ้ายังไม่ล็อกอิน ให้สั่งล็อกอินแบบ Anonymous
+        auth.signInAnonymously().catch((error) => {
+          console.error("Login failed", error);
+          inputField.placeholder = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+        });
+      }
+    });
+    // ==========================
 
-   
     function censorText(text) {
       let cleanText = text;
       badWords.forEach(word => {
@@ -234,23 +129,19 @@
       return (url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) != null);
     }
 
-    
     function getNiceDate(timestamp) {
       const date = new Date(timestamp);
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-
       const dStr = date.toDateString();
       const tStr = today.toDateString();
       const yStr = yesterday.toDateString();
-
       if (dStr === tStr) return "วันนี้";
       if (dStr === yStr) return "เมื่อวาน";
       return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
     }
 
-    
     function createDateDivider(timestamp) {
       const div = document.createElement('div');
       div.className = 'date-divider';
@@ -258,7 +149,6 @@
       document.getElementById('messages').appendChild(div);
     }
 
-    
     function createSystemMessage(htmlContent, bgColor = '#fff3cd', color='#856404') {
         var sysRow = document.createElement('div');
         sysRow.className = 'system-message-row';
@@ -267,15 +157,11 @@
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    
     const inputField = document.getElementById('input');
     const messagesDiv = document.getElementById('messages');
     const emojiPicker = document.getElementById('emoji-picker');
     const typingDiv = document.getElementById('typing-indicator');
 
-    inputField.placeholder = `คุณคือ "${myName}" ...`;
-
-    
     const emojis = ["😀","😂","😍","😎","😭","😡","👍","👎","🙏","❤️","💔","🎉","🔥","✨","👻","🐷","🐶","🐱","🐔","🌹","☀️","✅","❌","❓"];
     const emojiBtn = document.getElementById('emoji-btn');
     emojis.forEach(char => {
@@ -289,27 +175,25 @@
     emojiBtn.onclick = (e) => { e.stopPropagation(); emojiPicker.style.display = (emojiPicker.style.display === 'flex') ? 'none' : 'flex'; };
     document.body.onclick = (e) => { if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) emojiPicker.style.display = 'none'; };
 
-    
     document.getElementById('form-container').addEventListener('submit', function(e) {
       e.preventDefault();
       var msg = inputField.value.trim();
 
-      if (msg) {
+      if (msg && myId) { // เช็คว่ามี myId แล้วหรือยัง
        
         if (msg === '/help' || msg === '/เมนู') {
             const helpHtml = `
               <div style="text-align:center; font-weight:bold; margin-bottom:5px;">🤖 รายการคำสั่ง</div>
               • <b>/ชื่อ</b> [ชื่อใหม่] -> เพื่อเปลี่ยนชื่อ<br>
-              • <b>/ลบหมด</b> -> ลบแชททั้งหมด<br>
               • <b>วางลิงก์รูปภาพ</b> -> แปลงเป็นรูปอัตโนมัติ<br>
               • <b>/help</b> -> ดูหน้านี้อีกครั้ง
             `;
+            // เอา /ลบหมด ออก เพราะ Rules ความปลอดภัยจะป้องกันไม่ให้ User ลบ DB ทั้งก้อนได้ครับ
             createSystemMessage(helpHtml);
             inputField.value = '';
             return;
         }
 
-        
         if (msg.startsWith('/ชื่อ ')) {
           var newName = msg.replace('/ชื่อ ', '').trim().substring(0, 20);
           if (newName) {
@@ -323,17 +207,14 @@
           return; 
         }
 
-        
-        if (msg === '/ลบหมด') {
-          if (confirm("⚠️ ลบประวัติแชททั้งหมด?")) database.ref('chats').remove();
-          inputField.value = '';
-          return;
-        }
-
+        // ลบฟังก์ชัน /ลบหมด ออก เพราะไม่ปลอดภัยสำหรับ Public Chat
         
         msg = censorText(msg);
         database.ref('chats').push({
-          message: msg, senderName: myName, senderId: myId, time: Date.now()
+          message: msg, 
+          senderName: myName, 
+          senderId: myId, // ตรงนี้สำคัญมาก จะส่ง UID จริงๆ ไปให้ Server ตรวจ
+          time: firebase.database.ServerValue.TIMESTAMP // ใช้เวลาจาก Server เพื่อความแม่นยำ
         });
 
         database.ref('typing/' + myId).remove();
@@ -342,20 +223,14 @@
       }
     });
 
-    
     database.ref('chats').on('child_added', function(snapshot) {
       var data = snapshot.val();
-      
-     
       const msgDate = new Date(data.time).toDateString();
       if (lastDateDisplayed !== msgDate) {
         createDateDivider(data.time);
         lastDateDisplayed = msgDate;
       }
-
       createMessageBubble(data);
-      
-      
       if (data.senderId !== myId) {
         var audio = document.getElementById('notif-sound');
         audio.volume = 0.5;
@@ -363,7 +238,6 @@
       }
     });
 
-   
     database.ref('chats').on('value', function(snapshot) {
       if (!snapshot.exists()) {
         messagesDiv.innerHTML = '';
@@ -374,14 +248,11 @@
     function createMessageBubble(data) {
       var row = document.createElement('div');
       row.className = 'message-row';
-
       var nameSpan = document.createElement('div');
       nameSpan.className = 'sender-name';
       nameSpan.textContent = data.senderName;
-
       var bubble = document.createElement('div');
       bubble.className = 'bubble';
-
       var timeStr = new Date(data.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
       let contentHtml = '';
@@ -393,7 +264,6 @@
       }
 
       bubble.innerHTML = `${contentHtml}<div class="msg-time">${timeStr}</div>`;
-
       if (data.senderId === myId) row.classList.add('message-right');
       else row.classList.add('message-left');
 
@@ -403,20 +273,20 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    
     let typingTimer;
     function triggerTyping() {
+      if(!myId) return;
       database.ref('typing/' + myId).set({ name: myName, timestamp: firebase.database.ServerValue.TIMESTAMP });
       clearTimeout(typingTimer);
       typingTimer = setTimeout(() => { database.ref('typing/' + myId).remove(); }, 2000);
     }
     inputField.addEventListener('input', () => { triggerTyping(); });
-    database.ref('typing/' + myId).onDisconnect().remove();
+    // ใช้ onDisconnect เพื่อลบสถานะ typing เมื่อเน็ตหลุด
+    if(myId) database.ref('typing/' + myId).onDisconnect().remove();
 
     database.ref('typing').on('value', function(snapshot) {
       const typers = [];
       snapshot.forEach(child => { if (child.key !== myId) typers.push(child.val().name); });
-
       if (typers.length > 0) {
         let text = typers.length > 2 ? "หลายคน กำลังพิมพ์..." : typers.join(", ") + " กำลังพิมพ์...";
         typingDiv.textContent = text;
@@ -425,7 +295,6 @@
         typingDiv.style.display = 'none';
       }
     });
-
   </script>
 </body>
 </html>
