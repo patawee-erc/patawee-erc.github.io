@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tee Rabai LiveChat (Secure)</title>
+  <title>Tee Rabai LiveChat</title>
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4096/4096358.png">
   <style>
-    /* ... (CSS ส่วนเดิมทั้งหมด ไม่ต้องแก้ครับ ใช้ของเดิมได้เลย) ... */
+    /* CSS เดิมทั้งหมด */
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #ece5dd; }
     #messages { list-style-type: none; margin: 0; padding: 15px; padding-bottom: 90px; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; box-sizing: border-box; }
     .message-row { display: flex; flex-direction: column; margin-bottom: 8px; max-width: 80%; position: relative; animation: fadeIn 0.3s ease; }
@@ -55,7 +55,6 @@
     </form>
   </div>
 
-  <!-- เพิ่ม firebase-auth.js -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -74,41 +73,29 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
-    var auth = firebase.auth(); // ประกาศตัวแปร Auth
+    var auth = firebase.auth(); 
 
     const animals = ["หมู", "แมว", "เสือ", "ไก่", "เป็ด", "หมี", "ตุ่น", "ช้าง", "ลิง", "หมา", "แพนด้า"];
     const adjs = ["ซ่า", "ติดเทอร์โบ", "ภูเขา", "บินได้", "ง่วง", "หิว", "จอมซน", "อินดี้", "น่ารัก", "หัวร้อน"];
     const badWords = [ "เหี้ย", "สัส", "ควย", "เย็ด", "หี", "แตด", "hee", "kuy"];
-    
+
     let lastDateDisplayed = null;
-    let myId = null; // รอรับจาก Firebase Auth
+    let myId = null; 
     let myName = localStorage.getItem('chat_name');
 
-    // === ส่วน Login Anonymous ===
     auth.onAuthStateChanged((user) => {
       if (user) {
-        // ล็อกอินสำเร็จ
         myId = user.uid;
-        console.log("Logged in as: " + myId);
-        
-        // ถ้ายังไม่มีชื่อ ให้สุ่มชื่อ
         if (!myName) {
             myName = animals[Math.floor(Math.random() * animals.length)] + adjs[Math.floor(Math.random() * adjs.length)];
             localStorage.setItem('chat_name', myName);
         }
-        
-        // ปลดล็อคช่องพิมพ์
         inputField.disabled = false;
         inputField.placeholder = `คุณคือ "${myName}" ...`;
       } else {
-        // ถ้ายังไม่ล็อกอิน ให้สั่งล็อกอินแบบ Anonymous
-        auth.signInAnonymously().catch((error) => {
-          console.error("Login failed", error);
-          inputField.placeholder = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
-        });
+        auth.signInAnonymously().catch((error) => console.error(error));
       }
     });
-    // ==========================
 
     function censorText(text) {
       let cleanText = text;
@@ -118,17 +105,14 @@
       });
       return cleanText;
     }
-
     function isEmojiOnly(str) {
        const check = str.replace(/\s/g, '');
        if (check.length === 0) return false;
        return !/[a-zA-Z0-9ก-๙]/.test(check);
     }
-
     function isImageUrl(url) {
       return (url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) != null);
     }
-
     function getNiceDate(timestamp) {
       const date = new Date(timestamp);
       const today = new Date();
@@ -141,14 +125,12 @@
       if (dStr === yStr) return "เมื่อวาน";
       return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
     }
-
     function createDateDivider(timestamp) {
       const div = document.createElement('div');
       div.className = 'date-divider';
       div.innerHTML = `<span class="date-badge">${getNiceDate(timestamp)}</span>`;
       document.getElementById('messages').appendChild(div);
     }
-
     function createSystemMessage(htmlContent, bgColor = '#fff3cd', color='#856404') {
         var sysRow = document.createElement('div');
         sysRow.className = 'system-message-row';
@@ -179,20 +161,47 @@
       e.preventDefault();
       var msg = inputField.value.trim();
 
-      if (msg && myId) { // เช็คว่ามี myId แล้วหรือยัง
-       
+      if (msg && myId) {
         if (msg === '/help' || msg === '/เมนู') {
             const helpHtml = `
               <div style="text-align:center; font-weight:bold; margin-bottom:5px;">🤖 รายการคำสั่ง</div>
-              • <b>/ชื่อ</b> [ชื่อใหม่] -> เพื่อเปลี่ยนชื่อ<br>
-              • <b>วางลิงก์รูปภาพ</b> -> แปลงเป็นรูปอัตโนมัติ<br>
-              • <b>/help</b> -> ดูหน้านี้อีกครั้ง
+              • <b>/ชื่อ</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
+              • <b>/ลบหมด</b> -> ล้างแชท (ใส่รหัส)<br>
             `;
-            // เอา /ลบหมด ออก เพราะ Rules ความปลอดภัยจะป้องกันไม่ให้ User ลบ DB ทั้งก้อนได้ครับ
             createSystemMessage(helpHtml);
             inputField.value = '';
             return;
         }
+
+        // === LOGIC ใหม่สำหรับ /ลบหมด ===
+        if (msg === '/ลบหมด') {
+            let password = prompt("🔐 ใส่รหัสลับเพื่อยืนยันการลบ (Admin):");
+            if (!password) { inputField.value = ''; return; }
+
+            // ขั้นตอนที่ 1: พยายามเขียนชื่อตัวเองลงใน admins ด้วยรหัสที่กรอก
+            createSystemMessage("🔄 กำลังตรวจสอบสิทธิ์...", '#e2e3e5', '#383d41');
+            
+            database.ref('admins/' + myId).set(password)
+            .then(() => {
+                // ถ้าเขียนสำเร็จ แปลว่ารหัสถูกต้อง (Rules ยอมให้ผ่าน)
+                // ขั้นตอนที่ 2: สั่งลบ Chats ได้เลย
+                return database.ref('chats').remove();
+            })
+            .then(() => {
+                createSystemMessage("✅ รหัสถูกต้อง! ลบข้อมูลแชทเรียบร้อยแล้ว", '#d4edda', '#155724');
+                // ขั้นตอนที่ 3: ลบชื่อตัวเองออกจาก admins (Cleanup)
+                database.ref('admins/' + myId).remove();
+            })
+            .catch((error) => {
+                // ถ้าเขียนไม่สำเร็จ แปลว่า Rules ตีกลับ (รหัสผิด)
+                console.error(error);
+                createSystemMessage("❌ รหัสผิด! หรือคุณไม่มีสิทธิ์ลบ", '#f8d7da', '#721c24');
+            });
+
+            inputField.value = '';
+            return;
+        }
+        // ==================================
 
         if (msg.startsWith('/ชื่อ ')) {
           var newName = msg.replace('/ชื่อ ', '').trim().substring(0, 20);
@@ -207,14 +216,12 @@
           return; 
         }
 
-        // ลบฟังก์ชัน /ลบหมด ออก เพราะไม่ปลอดภัยสำหรับ Public Chat
-        
         msg = censorText(msg);
         database.ref('chats').push({
           message: msg, 
           senderName: myName, 
-          senderId: myId, // ตรงนี้สำคัญมาก จะส่ง UID จริงๆ ไปให้ Server ตรวจ
-          time: firebase.database.ServerValue.TIMESTAMP // ใช้เวลาจาก Server เพื่อความแม่นยำ
+          senderId: myId, 
+          time: firebase.database.ServerValue.TIMESTAMP 
         });
 
         database.ref('typing/' + myId).remove();
@@ -281,7 +288,6 @@
       typingTimer = setTimeout(() => { database.ref('typing/' + myId).remove(); }, 2000);
     }
     inputField.addEventListener('input', () => { triggerTyping(); });
-    // ใช้ onDisconnect เพื่อลบสถานะ typing เมื่อเน็ตหลุด
     if(myId) database.ref('typing/' + myId).onDisconnect().remove();
 
     database.ref('typing').on('value', function(snapshot) {
