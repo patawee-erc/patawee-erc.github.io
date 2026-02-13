@@ -5,75 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สถานะคิวประชุม</title>
     <style>
-        /* เว้นพื้นที่ด้านล่างให้แถบสถานะ */
-        body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; padding-bottom: 120px; }
+        body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; padding-bottom: 130px; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
         h1 { text-align: center; color: #333; font-size: 1.5rem; margin-bottom: 5px; }
         .date-header { text-align: center; color: #007bff; font-size: 1rem; font-weight: bold; margin-bottom: 20px; }
 
-        .agenda-item { border-bottom: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 8px; transition: 0.3s; position: relative; overflow: hidden; }
+        .agenda-item { border-bottom: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 8px; transition: 0.3s; position: relative; }
         .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; color: #333; }
         .speaker { font-size: 0.9rem; display: flex; align-items: center; gap: 5px; color: #555; }
         .status-label { position: absolute; top: 15px; right: 15px; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; color: white; font-weight: bold; }
 
-        /* Colors */
+        /* Status Colors */
         .st-waiting { background: #f9f9f9; border-left: 5px solid #bdc3c7; color: #888; }
-        .st-waiting .status-label { background: #bdc3c7; color: #fff; }
+        .st-waiting .status-label { background: #bdc3c7; }
         .st-prepare { background: #ffebee; border-left: 5px solid #ef5350; }
         .st-prepare .status-label { background: #ef5350; }
-        .st-prepare .title { color: #c62828; }
         .st-current { background: #e3f2fd; border-left: 5px solid #2196f3; }
         .st-current .status-label { background: #2196f3; }
-        .st-current .title { color: #1565c0; }
+        .st-break { background: #e0f2f1; border-left: 5px solid #009688; }
+        .st-break .status-label { background: #009688; }
         .st-wrapping_up { background: #fffde7; border-left: 5px solid #ffca28; }
         .st-wrapping_up .status-label { background: #ffca28; color: #333; }
-        .st-wrapping_up .title { color: #f57f17; }
-        .st-finished { background: #e8f5e9; border-left: 5px solid #4caf50; opacity: 0.9; }
+        .st-finished { background: #e8f5e9; border-left: 5px solid #4caf50; opacity: 0.7; }
         .st-finished .status-label { background: #4caf50; }
-        .st-finished .title { color: #2e7d32; }
 
-        /* --- STYLES สำหรับ STATUS BAR แบบอัตโนมัติ --- */
+        /* --- FIXED BOTTOM STATUS BAR --- */
         #status-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 15px 20px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-            z-index: 1000;
+            padding: 20px;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.25);
+            z-index: 2000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            transition: all 0.5s ease; /* Animation เปลี่ยนสีนุ่มๆ */
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
-            min-height: 90px;
+            min-height: 100px;
         }
 
-        #status-bar-title { font-size: 0.9rem; font-weight: normal; margin-bottom: 5px; opacity: 0.9; letter-spacing: 0.5px; }
-        #status-bar-msg { font-size: 1.3rem; font-weight: bold; line-height: 1.4; white-space: pre-line; }
+        #status-bar-title { font-size: 1rem; margin-bottom: 6px; opacity: 0.9; font-weight: normal; }
+        #status-bar-msg { font-size: 1.4rem; font-weight: bold; line-height: 1.3; white-space: pre-line; }
 
-        /* โหมดปกติ (สีฟ้า) */
-        .bar-normal { background-color: #2c3e50; color: white; border-top: 5px solid #3498db; }
-        
-        /* โหมดแจ้งเตือน (สีแดง + กระพริบ) */
-        .bar-alert { background-color: #c0392b; color: white; border-top: 5px solid #e74c3c; animation: urgentPulse 2s infinite; }
+        .bar-normal { background-color: #2c3e50; color: white; border-top: 6px solid #3498db; }
+        .bar-break { background-color: #00695c; color: white; border-top: 6px solid #4db6ac; }
+        /* แจ้งเตือนสีแดง กระพริบและค้างไว้ */
+        .bar-alert { background-color: #c0392b; color: white; border-top: 6px solid #f1f1f1; animation: urgentPulse 1.5s infinite; }
 
         @keyframes urgentPulse {
-            0% { transform: scale(1); box-shadow: 0 -4px 20px rgba(192, 57, 43, 0.5); }
-            50% { transform: scale(1.02); box-shadow: 0 -4px 30px rgba(192, 57, 43, 0.8); }
-            100% { transform: scale(1); box-shadow: 0 -4px 20px rgba(192, 57, 43, 0.5); }
+            0% { background-color: #c0392b; }
+            50% { background-color: #e74c3c; }
+            100% { background-color: #c0392b; }
         }
     </style>
 </head>
 <body>
 
-    <!-- แถบสถานะรวมจุดเดียว (Auto Switching) -->
     <div id="status-bar" class="bar-normal">
         <div id="status-bar-title">สถานะปัจจุบัน</div>
-        <div id="status-bar-msg">กำลังโหลดข้อมูล...</div>
+        <div id="status-bar-msg">กำลังเชื่อมต่อข้อมูล...</div>
     </div>
 
     <div class="container">
@@ -85,25 +80,21 @@
     <audio id="sound-alert" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3"></audio>
 
     <script>
-        // ⚠️ ใส่ URL Google Apps Script เดิม
         const API_URL = "https://script.google.com/macros/s/AKfycbwxEfmj93cut4GJCIXNehjcJaO5XA9zRvpmpmzPH9977ZH6L0Qux1tgcDkU4OgaX9PZJQ/exec"; 
 
         function showThaiDate() {
             const date = new Date();
             const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
             const months = [ 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม' ];
-            const dayName = days[date.getDay()];
-            const dayNum = date.getDate();
-            const monthName = months[date.getMonth()];
-            const year = date.getFullYear() + 543;
-            document.getElementById('date-display').innerText = `วัน ${dayName}ที่ ${dayNum} ${monthName} ${year}`;
+            document.getElementById('date-display').innerText = `วัน ${days[date.getDay()]}ที่ ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear() + 543}`;
         }
         showThaiDate(); 
 
         let previousStatusMap = {}; 
         let currentMeetingTitle = "ยังไม่มีวาระที่ดำเนินการ"; 
-        let alertTimeout = null; // ตัวจับเวลาสำหรับคืนค่ากลับ
-        let isAlertShowing = false; // เช็คสถานะว่ากำลังโชว์ alert อยู่ไหม
+        let isBreakMode = false;
+        let isAlertShowing = false; 
+        let activeAlertItemId = null; // เก็บ ID ของวาระที่กำลังสั่ง Alert
 
         function fetchData() {
             fetch(API_URL)
@@ -118,16 +109,22 @@
         function renderList(data) {
             const list = document.getElementById('agenda-list');
             list.innerHTML = '';
-            
             let foundCurrent = false;
+            isBreakMode = false;
 
             data.forEach((item, index) => {
                 let prevItem = data[index - 1];
                 let displayStatus = item.status;
                 
-                // Logic ปรับสถานะ Auto
+                // Logic ปรับสถานะอัตโนมัติ (วาระถัดไปเตรียมตัว)
                 if (prevItem && prevItem.status === 'wrapping_up' && item.status === 'waiting') {
                     displayStatus = 'prepare';
+                }
+
+                // ตรวจสอบว่าวาระที่เคย Alert ไว้ ได้เข้าห้องประชุม (Current) หรือยัง
+                if (activeAlertItemId === item.id && (displayStatus === 'current' || displayStatus === 'finished' || displayStatus === 'break')) {
+                    isAlertShowing = false; // ปิดโหมดสีแดงอัตโนมัติ
+                    activeAlertItemId = null;
                 }
 
                 let statusText = '';
@@ -136,8 +133,14 @@
                     case 'prepare': statusText = '🔔 เตรียมตัวหน้าห้อง'; break;
                     case 'current': 
                         statusText = 'กำลังดำเนินการ'; 
-                        currentMeetingTitle = item.title; // อัปเดตตัวแปรวาระปัจจุบัน
+                        currentMeetingTitle = item.title; 
                         foundCurrent = true;
+                        break;
+                    case 'break':
+                        statusText = '☕ พักการประชุม';
+                        currentMeetingTitle = "☕ พักการประชุม\n" + item.title;
+                        foundCurrent = true;
+                        isBreakMode = true;
                         break;
                     case 'wrapping_up': statusText = '⏳ ใกล้จบวาระ'; break;
                     case 'finished': statusText = 'จบวาระแล้ว'; break;
@@ -156,9 +159,9 @@
 
             if(!foundCurrent) currentMeetingTitle = "พักการประชุม / ยังไม่มีวาระ";
 
-            // ถ้าไม่มี Alert แสดงอยู่ ให้update แถบด้านล่างเป็นวาระปัจจุบันทันที
+            // อัปเดตแถบสถานะ (ถ้าไม่มี Alert ค้างอยู่)
             if (!isAlertShowing) {
-                showCurrentMode();
+                updateStatusBarNormal();
             }
         }
 
@@ -166,59 +169,49 @@
             data.forEach((item, index) => {
                 let currentStatus = item.status;
                 let prevStatus = previousStatusMap[item.id];
+                
+                // ตรวจพบการเปลี่ยนแปลงสถานะ
                 if (currentStatus !== prevStatus) {
-                    // Logic แจ้งเตือน
                     if (currentStatus === 'wrapping_up') {
                         if (index + 1 < data.length) {
                             let nextItem = data[index + 1];
-                            triggerAutoAlert(`🔔 เตรียมตัวลำดับถัดไป:\nฝ่าย ${nextItem.speaker}`);
+                            triggerAlert(`🔔 เตรียมตัวลำดับถัดไป:\nฝ่าย ${nextItem.speaker}`, nextItem.id);
                         }
                     }
                     if (currentStatus === 'prepare') {
-                        triggerAutoAlert(`🔔 ขอเชิญฝ่าย ${item.speaker}\nเตรียมตัวที่หน้าห้องประชุม`);
+                        triggerAlert(`🔔 ขอเชิญฝ่าย ${item.speaker}\nเตรียมตัวที่หน้าห้องประชุม`, item.id);
                     }
                     previousStatusMap[item.id] = currentStatus;
                 }
             });
         }
 
-        // --- ฟังก์ชันจัดการ Status Bar อัตโนมัติ ---
-
-        // 1. โหมดแจ้งเตือน (แสดง 10 วินาที แล้วหายเอง)
-        function triggerAutoAlert(msg) {
-            // หยุด Timer เก่าถ้ามี (กรณี Alert ซ้อนกัน)
-            if (alertTimeout) clearTimeout(alertTimeout);
-            
+        // ฟังก์ชันสั่ง Alert สีแดง (ค้างไว้)
+        function triggerAlert(msg, itemId) {
             isAlertShowing = true;
+            activeAlertItemId = itemId; // จำไว้ว่า Alert วาระไหนอยู่
             
-            // แจ้งเตือนเสียง/สั่น
             document.getElementById('sound-alert').play().catch(() => {});
             if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-            // เปลี่ยน UI เป็นสีแดง
             const bar = document.getElementById('status-bar');
             bar.className = 'bar-alert'; 
             document.getElementById('status-bar-title').innerText = "⚠️ แจ้งเตือน";
             document.getElementById('status-bar-msg').innerText = msg;
-
-            // ตั้งเวลา 10 วินาที ให้กลับไปเป็นโหมดปกติเอง
-            alertTimeout = setTimeout(() => {
-                isAlertShowing = false;
-                showCurrentMode();
-            }, 10000); // 10000 ms = 10 วินาที
         }
 
-        // 2. โหมดปกติ (แสดงวาระปัจจุบัน)
-        function showCurrentMode() {
-            // ถ้า Alert ยังทำงานอยู่ ห้ามแทรก
-            if (isAlertShowing) return;
-
+        // ฟังก์ชันแสดงแถบสถานะปกติ (สีน้ำเงิน/เขียว)
+        function updateStatusBarNormal() {
             const bar = document.getElementById('status-bar');
-            bar.className = 'bar-normal'; // เปลี่ยนกลับเป็นสีฟ้า/เทา
-            document.getElementById('status-bar-title').innerText = "กำลังดำเนินการ:";
+            if (isBreakMode) {
+                bar.className = 'bar-break';
+                document.getElementById('status-bar-title').innerText = "สถานะ:";
+            } else {
+                bar.className = 'bar-normal';
+                document.getElementById('status-bar-title').innerText = "กำลังดำเนินการ:";
+            }
             document.getElementById('status-bar-msg').innerText = currentMeetingTitle;
         }
-
     </script>
 </body>
 </html>
