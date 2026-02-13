@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สถานะคิวประชุม</title>
     <style>
-        body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
+        body { font-family: 'Sarabun', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; padding-bottom: 100px; /* เพิ่ม padding ล่างกันตกขอบ */ }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
         h1 { text-align: center; color: #333; font-size: 1.5rem; margin-bottom: 5px; }
         
-        /* Date Header Style */
         .date-header { text-align: center; color: #007bff; font-size: 1rem; font-weight: bold; margin-bottom: 20px; }
 
         .agenda-item { border-bottom: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 8px; transition: 0.3s; position: relative; overflow: hidden; }
@@ -38,8 +37,36 @@
         .st-finished .status-label { background: #4caf50; }
         .st-finished .title { color: #2e7d32; }
 
-        #alert-popup { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 85%; padding: 15px; border-radius: 10px; text-align: center; color: white; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.3); display: none; z-index: 1000; font-size: 1.1rem; }
-        .alert-prepare { background: #ef5350; }
+        /* --- ปรับปรุง CSS Alert --- */
+        #alert-popup { 
+            position: fixed; 
+            top: auto;           /* ยกเลิกการยึดด้านบน */
+            bottom: 30px;        /* ย้ายมาแสดงด้านล่างแทน */
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 85%; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            color: white; 
+            font-weight: bold; 
+            box-shadow: 0 5px 25px rgba(0,0,0,0.4); 
+            display: none; 
+            z-index: 1000; 
+            font-size: 1.15rem;
+            white-space: pre-line; /* ให้แสดงการเว้นบรรทัดได้ */
+            cursor: pointer;       /* เปลี่ยนเมาส์เป็นรูปมือ ให้รู้ว่ากดปิดได้ */
+        }
+        #alert-popup::after {
+            content: "(แตะเพื่อปิด)";
+            display: block;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 10px;
+            font-weight: normal;
+        }
+        
+        .alert-prepare { background: #d32f2f; /* แดงเข้มขึ้นเล็กน้อยให้อ่านง่าย */ }
         .alert-wrap { background: #ffca28; color: #333 !important; }
 
         @keyframes softPulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
@@ -47,13 +74,12 @@
 </head>
 <body>
 
-    <div id="alert-popup"></div>
+    <!-- Alert จะแสดงด้านล่างแทน -->
+    <div id="alert-popup" onclick="this.style.display='none'"></div>
 
     <div class="container">
         <h1>📅 รายการวาระประชุม กกพ.</h1>
-        <!-- ส่วนแสดงวันที่ -->
         <div id="date-display" class="date-header"></div>
-        
         <div id="agenda-list" style="text-align: center; color: #999;">🔄 กำลังโหลด...</div>
     </div>
 
@@ -63,7 +89,6 @@
         // ⚠️ ใส่ URL Google Apps Script เดิม
         const API_URL = "https://script.google.com/macros/s/AKfycbwxEfmj93cut4GJCIXNehjcJaO5XA9zRvpmpmzPH9977ZH6L0Qux1tgcDkU4OgaX9PZJQ/exec"; 
 
-        // --- ฟังก์ชันแสดงวันที่แบบไทย ---
         function showThaiDate() {
             const date = new Date();
             const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
@@ -71,15 +96,13 @@
                 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
                 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
             ];
-            
             const dayName = days[date.getDay()];
             const dayNum = date.getDate();
             const monthName = months[date.getMonth()];
             const year = date.getFullYear() + 543;
-
             document.getElementById('date-display').innerText = `วัน ${dayName}ที่ ${dayNum} ${monthName} ${year}`;
         }
-        showThaiDate(); // เรียกใช้งาน
+        showThaiDate(); 
 
         let previousStatusMap = {}; 
 
@@ -97,7 +120,6 @@
             const list = document.getElementById('agenda-list');
             list.innerHTML = '';
             data.forEach((item, index) => {
-                // Auto Logic: ถ้าก่อนหน้า = wrapping_up -> ตัวนี้เป็น prepare
                 let prevItem = data[index - 1];
                 let displayStatus = item.status;
                 if (prevItem && prevItem.status === 'wrapping_up' && item.status === 'waiting') {
@@ -145,14 +167,22 @@
         }
 
         function showAlert(msg, colorClass) {
+            // เล่นเสียง
             document.getElementById('sound-alert').play().catch(() => {});
+            
+            // สั่น (เฉพาะมือถือ)
             if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            
             const popup = document.getElementById('alert-popup');
-            popup.innerText = msg;
+            popup.innerText = msg; // ข้อความ
             popup.className = ''; 
             popup.classList.add(colorClass);
+            
+            // โชว์ popup
             popup.style.display = 'block';
-            setTimeout(() => { popup.style.display = 'none'; }, 8000);
+
+            // ⚠️ นำ setTimeout ออก เพื่อให้ popup โชว์ค้างไว้ จนกว่าจะคลิกปิดเอง หรือมีสถานะใหม่มาทับ
+            // setTimeout(() => { popup.style.display = 'none'; }, 8000); 
         }
     </script>
 </body>
