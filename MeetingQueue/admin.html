@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         body { font-family: 'Sarabun', sans-serif; background: #eaeff2; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .container { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         
         h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
         .date-header { text-align: center; color: #007bff; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; }
@@ -25,36 +25,49 @@
 
         .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; color: white; margin-bottom: 5px; font-weight: bold; }
 
-        .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; min-width: 280px; }
+        .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; min-width: 320px; }
         .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: 600; font-size: 0.85rem; transition: 0.2s; }
         .btn:hover { transform: translateY(-2px); filter: brightness(110%); }
 
         .btn-tool { background: #e0e0e0; color: #555; padding: 8px; }
         .btn-tool:hover { background: #d6d6d6; }
-        
-        /* ✨ NEW: Style for Delete Button */
         .btn-delete:hover { background: #ffcdd2; color: #d32f2f; }
 
-        /* Status Colors */
+        /* --- Status Colors --- */
         .row-waiting { border-left: 6px solid #bdc3c7; background: #f9f9f9; }
         .badge-waiting { background: #bdc3c7; }
+        
         .row-prepare { border-left: 6px solid #ef5350; background: #ffebee; }
         .badge-prepare { background: #ef5350; }
+        
         .row-current { border-left: 6px solid #29b6f6; background: #e1f5fe; box-shadow: 0 4px 10px rgba(41, 182, 246, 0.2); }
         .badge-current { background: #29b6f6; }
         .btn-current { background: #29b6f6; }
+        
         .row-wrapping_up { border-left: 6px solid #fdd835; background: #fffde7; }
         .badge-wrapping_up { background: #fdd835; color: #333; }
         .btn-wrap { background: #fdd835; color: #333; }
+        
+        /* ✨ New Break Style */
+        .row-break { border-left: 6px solid #ff9800; background: #fff3e0; }
+        .badge-break { background: #ff9800; }
+        .btn-break { background: #ff9800; }
+
         .row-finished { border-left: 6px solid #66bb6a; background: #e8f5e9; opacity: 0.7; }
         .badge-finished { background: #66bb6a; }
         .btn-finish { background: #66bb6a; }
         
         #loading { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; display: none; z-index: 999; }
 
-        .top-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .top-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .left-group { display: flex; gap: 10px; }
+        
         .btn-add { background: #2ecc71; color: white; padding: 10px 20px; font-size: 1rem; }
         .btn-add:hover { background: #27ae60; }
+
+        /* ✨ New Reset All Button Style */
+        .btn-reset-all { background: #607d8b; color: white; padding: 10px 15px; font-size: 0.9rem; }
+        .btn-reset-all:hover { background: #455a64; }
 
         /* Modal CSS */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
@@ -82,7 +95,11 @@
         <div class="sub-header">ลาก ☰ เพื่อจัดลำดับ | ระบบรันคิวอัตโนมัติ</div>
         
         <div class="top-controls">
-            <button class="btn btn-add" onclick="openAddModal()">➕ เพิ่มวาระใหม่</button>
+            <div class="left-group">
+                <button class="btn btn-add" onclick="openAddModal()">➕ เพิ่มวาระใหม่</button>
+                <!-- ✨ ปุ่ม Reset All ใหม่ -->
+                <button class="btn btn-reset-all" onclick="resetAllStatus()">↺ รีเซ็ตสถานะทั้งหมด</button>
+            </div>
             <button onclick="fetchData()" style="background:none; border:none; color:#29b6f6; cursor:pointer; font-size:0.9rem;">🔄 รีเฟรชข้อมูล</button>
         </div>
 
@@ -144,11 +161,19 @@
             const list = document.getElementById('agenda-list');
             list.innerHTML = '';
             localData.forEach((item, index) => {
-                const statusMap = { 'waiting': 'รอ', 'prepare': 'เตรียมตัว', 'current': 'กำลังพูด', 'wrapping_up': 'ใกล้จบ', 'finished': 'จบแล้ว' };
+                // ✨ เพิ่ม 'break' ใน map
+                const statusMap = { 
+                    'waiting': 'รอ', 
+                    'prepare': 'เตรียมตัว', 
+                    'current': 'กำลังพูด', 
+                    'wrapping_up': 'ใกล้จบ', 
+                    'finished': 'จบแล้ว',
+                    'break': 'พักการประชุม' 
+                };
+
                 const div = document.createElement('div');
                 div.className = `agenda-item row-${item.status}`;
                 
-                // ✨ ADDED: Delete button (🗑️) added to controls
                 div.innerHTML = `
                     <div class="drag-handle">☰</div>
                     <div class="info">
@@ -170,9 +195,11 @@
 
         function renderButtons(index, status) {
             if (status === 'finished') return '';
+            // ✨ เพิ่มปุ่ม "พัก" (Break) ตรงกลาง
             return `
                 <button class="btn btn-current" onclick="changeStatus(${index}, 'current')">เริ่ม</button>
                 <button class="btn btn-wrap" onclick="changeStatus(${index}, 'wrapping_up')">ใกล้จบ</button>
+                <button class="btn btn-break" onclick="changeStatus(${index}, 'break')">พัก</button>
                 <button class="btn btn-finish" onclick="changeStatus(${index}, 'finished')">จบ</button>
             `;
         }
@@ -204,19 +231,25 @@
             if (event.target == modal) closeAddModal();
         }
 
-        // --- ✨ NEW: Delete Function ---
         function deleteAgenda(index) {
             const item = localData[index];
             if(confirm(`⚠️ คุณต้องการลบวาระนี้ใช่หรือไม่?\n\n"${item.title}"`)) {
-                // ลบออกจาก Array
                 localData.splice(index, 1);
-                // อัปเดตหน้าจอทันที
                 renderList();
-                // บันทึกลง Server
                 saveAllData();
             }
         }
-        // ------------------------------
+
+        // ✨ ฟังก์ชันใหม่: รีเซ็ตทุกสถานะเป็น waiting
+        function resetAllStatus() {
+            if(confirm("⚠️ คำเตือน: คุณต้องการรีเซ็ตสถานะของทุกวาระให้เป็น 'รอ' ใช่หรือไม่?\nการดำเนินการนี้จะล้างสถานะปัจจุบันทั้งหมด")) {
+                localData.forEach(item => {
+                    item.status = 'waiting';
+                });
+                renderList();
+                saveAllData();
+            }
+        }
 
         function editInfo(index) {
             let item = localData[index];
@@ -234,17 +267,24 @@
 
         function changeStatus(index, newStatus) {
             localData[index].status = newStatus;
+            
+            // Logic Auto Queue
             if (index + 1 < localData.length) {
                 let nextItem = localData[index + 1];
+                
+                // ถ้าสถานะใหม่ไม่ใช่ break และไม่ใช่ finished ให้เช็คการรันคิวปกติ
                 if (newStatus === 'wrapping_up' && nextItem.status === 'waiting') {
                     nextItem.status = 'prepare';
                 }
+                
+                // ถ้าจบแล้ว รันคนต่อไป
                 if (newStatus === 'finished') {
                     if (nextItem.status === 'waiting' || nextItem.status === 'prepare') {
                         nextItem.status = 'current';
                     }
                 }
             }
+            
             renderList();
             saveAllData();
         }
