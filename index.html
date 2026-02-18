@@ -3,214 +3,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My App Portal</title>
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/372/372973.png">
-    <!-- เรียกใช้ Font และ Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>ERC App Portal | Digital Ecosystem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/372/372973.png">
     <style>
         :root {
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --text-color: #333;
-            --accent-color: #007bff;
-            --hover-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --bg: #f8faff;
+            --text-main: #2b2d42;
+            --text-sub: #8d99ae;
+            --white: #ffffff;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         body {
             font-family: 'Kanit', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg);
+            color: var(--text-main);
             margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
+        /* ตกแต่งพื้นหลังแบบฟุ้งๆ (Soft Shapes) */
+        .bg-shape {
+            position: fixed;
+            z-index: -1;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+        }
+        .shadow-1 { width: 400px; height: 400px; background: #4cc9f0; top: -100px; right: -100px; }
+        .shadow-2 { width: 300px; height: 300px; background: #f72585; bottom: -50px; left: -50px; }
+
         header {
             text-align: center;
-            padding: 40px 20px;
+            padding: 60px 20px 40px;
         }
 
-        h1 {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #2c3e50;
+        .main-icon {
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
         }
 
-        p.subtitle {
-            color: #666;
-            font-weight: 300;
+        h1 { font-size: 2.2rem; margin: 10px 0; font-weight: 600; }
+        .subtitle { color: var(--text-sub); font-size: 1.1rem; margin-bottom: 30px; }
+
+        /* แถบค้นหา */
+        .search-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .search-container i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-sub);
+        }
+        .search-container input {
+            width: 100%;
+            padding: 15px 15px 15px 50px;
+            border-radius: 30px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: var(--card-shadow);
+            outline: none;
+            font-family: 'Kanit';
+            transition: var(--transition);
+            box-sizing: border-box;
+        }
+        .search-container input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.1);
         }
 
-        /* Grid Layout */
+        /* Layout */
         .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            width: 90%;
             max-width: 1200px;
-            padding-bottom: 50px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
-        /* Card Design */
+        /* Card Style แบบใหม่ */
         .card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 25px;
+            background: var(--white);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
             text-decoration: none;
             color: inherit;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.8);
+            position: relative;
+            opacity: 0; /* สำหรับ Animation */
+            transform: translateY(20px);
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
-            border-color: var(--accent-color);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            border-color: var(--primary);
         }
 
-        .icon-box {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--accent-color);
+        .card-icon {
+            width: 65px;
+            height: 65px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-right: 20px;
+            flex-shrink: 0;
         }
 
-        .card h3 {
-            margin: 10px 0;
-            font-size: 1.2rem;
+        /* คลาสสีไอคอน */
+        .blue { background: #e7f0ff; color: #4361ee; }
+        .green { background: #e8f7f0; color: #2ecc71; }
+        .purple { background: #f3efff; color: #7209b7; }
+        .orange { background: #fff5eb; color: #f39c12; }
+        .pink { background: #ffeef8; color: #f72585; }
+        .teal { background: #e6fffa; color: #1abc9c; }
+        .red { background: #fff0f0; color: #e74c3c; }
+        .dark { background: #f1f1f1; color: #333; }
+
+        .card-content { flex-grow: 1; }
+        .card-content h3 { margin: 0; font-size: 1.2rem; color: var(--text-main); font-weight: 500; }
+        .card-content p { margin: 5px 0 0; font-size: 0.9rem; color: var(--text-sub); line-height: 1.4; }
+
+        .card-arrow {
+            color: #f0f0f0;
+            transition: var(--transition);
+            margin-left: 10px;
+        }
+        .card:hover .card-arrow {
+            color: var(--primary);
+            transform: translateX(5px);
         }
 
-        .card span {
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-sub);
             font-size: 0.9rem;
-            color: #777;
         }
 
-        /* Custom Colors for Specific Apps (Optional) */
-        .app-github .icon-box { color: #333; }
-        .app-youtube .icon-box { color: #ff0000; }
-        .app-dashboard .icon-box { color: #2ecc71; }
-
+        /* Responsive */
+        @media (max-width: 600px) {
+            .app-grid { grid-template-columns: 1fr; }
+            header h1 { font-size: 1.8rem; }
+            .card { padding: 18px; }
+        }
     </style>
 </head>
 <body>
 
+    <div class="bg-shape shadow-1"></div>
+    <div class="bg-shape shadow-2"></div>
+
     <header>
-        <h1><i class="fa-solid fa-cubes"></i> My App Portal</h1>
-        <p class="subtitle">ศูนย์รวมลิงก์แอปพลิเคชันและเครื่องมือต่างๆ</p>
+        <div class="logo-area">
+            <i class="fa-solid fa-cubes-stacked main-icon"></i>
+        </div>
+        <h1>ERC App Portal</h1>
+        <p class="subtitle">ศูนย์รวมลิงก์แอปพลิเคชันและเครื่องมือดิจิทัล</p>
+        
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="appSearch" placeholder="ค้นหาชื่อระบบ..." onkeyup="filterApps()">
+        </div>
     </header>
 
-    <div class="container">
-        
-        
+    <main class="container">
+        <div class="app-grid" id="appGrid">
+            
+            <a href="https://patawee-erc.github.io/shoturl" class="card" target="_blank">
+                <div class="card-icon blue"><i class="fa-solid fa-share-nodes"></i></div>
+                <div class="card-content">
+                    <h3>Short URL</h3>
+                    <p>ระบบย่อลิงก์เพื่อการแชร์ที่ง่ายขึ้น</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 1: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/shoturl" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-share-nodes"></i></div>
-            <h3>shoturl</h3>
-            <span>ระบบย่อ url</span>
-        </a>
+            <a href="https://patawee-erc.github.io/qr" class="card" target="_blank">
+                <div class="card-icon teal"><i class="fa-solid fa-qrcode"></i></div>
+                <div class="card-content">
+                    <h3>QR Code Generator</h3>
+                    <p>สร้าง QR Code สำหรับข้อมูลทุกประเภท</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 2: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/qr" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-qrcode"></i></div>
-            <h3>QR Code Generator</h3>
-            <span>ระบบสร้าง Qr</span>
-        </a>
+            <a href="https://patawee-erc.github.io/MeetingQueue/admin" class="card" target="_blank">
+                <div class="card-icon purple"><i class="fa-solid fa-clipboard-user"></i></div>
+                <div class="card-content">
+                    <h3>Meeting Queue (Admin)</h3>
+                    <p>จัดการคิวการประชุมแบบเรียลไทม์</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 3 -->
-        <a href="https://patawee-erc.github.io/MeetingQueue/admin" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-clipboard-user"></i></div>
-            <h3>MeetingQueue(admin)</h3>
-            <span>ระบบจัดการคิวการประชุม แบบเรียลไทม์ (หน้าสำหรับผู้ดูแล)</span>
-        </a>
-        
-        <!-- App 4 -->
-        <a href="https://patawee-erc.github.io/MeetingQueue/user" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-clipboard-list"></i></div>
-            <h3>MeetingQueue(user)</h3>
-            <span>ระบบจัดการคิวการประชุม แบบเรียลไทม์ (หน้าสำหรับผู้ใช้งาน)</span>
-        </a>
+            <a href="https://patawee-erc.github.io/MeetingQueue/user" class="card" target="_blank">
+                <div class="card-icon purple"><i class="fa-solid fa-clipboard-list"></i></div>
+                <div class="card-content">
+                    <h3>Meeting Queue (User)</h3>
+                    <p>หน้าแสดงสถานะคิวสำหรับผู้ใช้งาน</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-       <!-- App 5: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/PTT/login" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-chart-column"></i></div>
-            <h3>ERC Project Planning</h3>
-            <span>ระบบจัดการงานและการติดตามงานในรูปแบบ Project Management Tools</span>
-        </a>
+            <a href="https://patawee-erc.github.io/PTT/login" class="card" target="_blank">
+                <div class="card-icon orange"><i class="fa-solid fa-chart-column"></i></div>
+                <div class="card-content">
+                    <h3>Project Planning</h3>
+                    <p>ระบบจัดการและติดตามงาน (Project Management)</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 6: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/LuckyDraw" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-trophy"></i></div>
-            <h3>Lucky Draw</h3>
-            <span>ระบบสุ่มรายชื่อ-รางวัล</span>
-        </a>
+            <a href="https://patawee-erc.github.io/LuckyDraw" class="card" target="_blank">
+                <div class="card-icon pink"><i class="fa-solid fa-trophy"></i></div>
+                <div class="card-content">
+                    <h3>Lucky Draw</h3>
+                    <p>ระบบสุ่มรายชื่อผู้โชคดีและรางวัล</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-         <!-- App 7: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/Gachapon" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-circle-half-stroke"></i></div>
-            <h3>Gachapon</h3>
-            <span>ระบบตู้ Gachapon</span>
-        </a>
-        
-        <!-- App 8: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/LiveChat/index" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-comments"></i></div>
-            <h3>Tee Rabai LiveChat</h3>
-            <span>ระบบ Live Chat แบบไม่ระบุตัวตน</span>
-        </a>
+            <a href="https://patawee-erc.github.io/Gachapon" class="card" target="_blank">
+                <div class="card-icon red"><i class="fa-solid fa-circle-half-stroke"></i></div>
+                <div class="card-content">
+                    <h3>Gachapon</h3>
+                    <p>ระบบจำลองตู้หมุนรางวัล Gachapon</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 9: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/PhotoGallery/" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-photo-film"></i></div>
-            <h3>Photo Gallery</h3>
-            <span>หน้าเว็บสำหรับทำ Photo Gallery</span>
-        </a>
+            <a href="https://patawee-erc.github.io/LiveChat/index" class="card" target="_blank">
+                <div class="card-icon blue"><i class="fa-solid fa-comments"></i></div>
+                <div class="card-content">
+                    <h3>Tee Rabai LiveChat</h3>
+                    <p>ระบบแชทสดแบบไม่ระบุตัวตน (Anonymous)</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 10: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/html5edit/" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-code"></i></div>
-            <h3>Html Tester</h3>
-            <span>เว็บสำหรับเขียน-ทดสอบ-สร้าง .Html</span>
-        </a>
+            <a href="https://patawee-erc.github.io/PhotoGallery/" class="card" target="_blank">
+                <div class="card-icon green"><i class="fa-solid fa-photo-film"></i></div>
+                <div class="card-content">
+                    <h3>Photo Gallery</h3>
+                    <p>ศูนย์รวมอัลบั้มภาพกิจกรรมต่างๆ</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 11: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/ocr/" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-text-slash"></i></div>
-            <h3>ORC Text </h3>
-            <span>ระบบ สแกนคำจากไฟล์ pdf png jpg</span>
-        </a>
+            <a href="https://patawee-erc.github.io/html5edit/" class="card" target="_blank">
+                <div class="card-icon dark"><i class="fa-solid fa-code"></i></div>
+                <div class="card-content">
+                    <h3>HTML Tester</h3>
+                    <p>เครื่องมือเขียนและทดสอบ Code แบบ Real-time</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 12: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/GeminiExportHtml/" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-file-powerpoint"></i></div>
-            <h3>Gemini Export Html to Powerpoint</h3>
-            <span>ระบบสำหรับ export code html 1 หน้าเป็นไฟล์ pptx</span>
-        </a>
+            <a href="https://patawee-erc.github.io/ocr/" class="card" target="_blank">
+                <div class="card-icon teal"><i class="fa-solid fa-text-slash"></i></div>
+                <div class="card-content">
+                    <h3>OCR Text Scanner</h3>
+                    <p>สแกนข้อความจาก PDF และรูปภาพ</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <!-- App 13: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/resize/" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-image"></i></div>
-            <h3>Resize Image Converter</h3>
-            <span>ระบบสำหรับ คำนวนขนาดของรูปภาพ</span>
-        </a>
+            <a href="https://patawee-erc.github.io/GeminiExportHtml/" class="card" target="_blank">
+                <div class="card-icon orange"><i class="fa-solid fa-file-powerpoint"></i></div>
+                <div class="card-content">
+                    <h3>HTML to PPTX</h3>
+                    <p>เครื่องมือแปลง HTML เป็นไฟล์นำเสนอ Powerpoint</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-         <!-- App 14: ลิงก์ไปยัง Github Project อื่น -->
-        <a href="https://patawee-erc.github.io/dice/" class="card app-dashboard" target="_blank">
-            <div class="icon-box"><i class="fa-solid fa-dice"></i></div>
-            <h3>Dices</h3>
-            <span>ระบบสำหรับ จำลองการทอยลูกเต๋า</span>
-        </a>
+            <a href="https://patawee-erc.github.io/resize/" class="card" target="_blank">
+                <div class="card-icon blue"><i class="fa-solid fa-image"></i></div>
+                <div class="card-content">
+                    <h3>Image Resizer</h3>
+                    <p>คำนวณและปรับขนาดรูปภาพตามต้องการ</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-    </div>
+            <a href="https://patawee-erc.github.io/dice/" class="card" target="_blank">
+                <div class="card-icon pink"><i class="fa-solid fa-dice"></i></div>
+                <div class="card-content">
+                    <h3>Dices Sim</h3>
+                    <p>ระบบจำลองการทอยลูกเต๋าแบบ 3D</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 milkomilk </p>
+    </footer>
+
+    <script> 
+       
+        function filterApps() {
+            const input = document.getElementById('appSearch');
+            const filter = input.value.toLowerCase();
+            const grid = document.getElementById('appGrid');
+            const cards = grid.getElementsByClassName('card');
+
+            for (let i = 0; i < cards.length; i++) {
+                const title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
+                const desc = cards[i].getElementsByTagName('p')[0].innerText.toLowerCase();
+                
+                if (title.includes(filter) || desc.includes(filter)) {
+                    cards[i].style.display = "flex";
+                } else {
+                    cards[i].style.display = "none";
+                }
+            }
+        }
+
+        // Animation ตอนโหลดหน้าเว็บ (Staggered Fade-in)
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 80); // ดีเลย์แต่ละการ์ด 80ms
+            });
+        });
+    </script>
 </body>
 </html>
