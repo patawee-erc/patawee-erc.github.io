@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Builder (Instant Edit)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* CSS เดิมทั้งหมด */
+        body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: 260px; background-color: #ffffff; border-right: 1px solid #ddd; display: flex; flex-direction: column; padding: 20px; box-shadow: 2px 0 5px rgba(0,0,0,0.05); z-index: 10; overflow-y: auto; }
+        .tool-btn { background-color: #6c5ce7; color: white; border: none; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-size: 14px; transition: background 0.2s; text-align: left; display: flex; align-items: center; gap: 10px; width: 90%; }
+        .tool-btn:hover { background-color: #5b4bc4; filter: brightness(1.1); }
+        .tool-group { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .tool-group h4 { margin-top: 0; margin-bottom: 10px; color: #555; font-size: 12px; text-transform: uppercase; font-weight: 700; }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .sm-btn { justify-content: center; font-size: 12px; padding: 8px; }
+        .color-wrapper { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 5px; border-radius: 6px; border: 1px solid #ddd; }
+        input[type="color"] { -webkit-appearance: none; border: none; width: 40px; height: 40px; cursor: pointer; background: none; padding: 0; }
+        #workspace { flex: 1; background-color: #e5e5e5; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        #canvas-container { position: absolute; top: 50%; left: 50%; transform-origin: center center; box-shadow: 0 0 30px rgba(0,0,0,0.2); background: white; }
+        #page-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(20px); background: white; padding: 8px 20px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: center; z-index: 20; }
+        #history-controls { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 5px 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; gap: 5px; z-index: 20; }
+        .history-btn { background: transparent; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 16px; color: #555; }
+        .history-btn:hover { background: #eee; }
+        .page-btn { background: transparent; border: 1px solid #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .page-btn:hover { background: #eee; }
+        input[type="file"] { display: none; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 500px; max-width: 90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 15px; }
+        .modal-content textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; resize: vertical; box-sizing: border-box; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-cancel { background: #ccc; color: #333; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-confirm { background: #6c5ce7; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- HTML Import Modal -->
+    <div id="htmlModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Import HTML (แก้ไขได้ทันที)</h3>
+            <p style="font-size:14px; color:#666; margin:0;">วางโค้ด HTML (div, h1, p, style):</p>
+            <textarea id="htmlInput" placeholder='<div style="background:#ff7675; padding:20px; border-radius:10px;"><h1 style="color:white;">แก้ไขฉันสิ!</h1><p style="background:white; padding:10px;">ข้อความนี้ก็แก้ได้นะ</p></div>'></textarea>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeHtmlModal()">ยกเลิก</button>
+                <button class="btn-confirm" onclick="renderHtmlToCanvas()">นำเข้า</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <h2 style="color:#6c5ce7; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-shapes"></i> MyPresent
+        </h2>
+        
+        <div class="tool-group">
+            <h4>เครื่องมือวาด</h4>
+            <button class="tool-btn" onclick="addText()"><i class="fa-solid fa-font"></i> ข้อความ</button>
+            <button class="tool-btn" onclick="addRect()"><i class="fa-regular fa-square"></i> สี่เหลี่ยม</button>
+            <button class="tool-btn" onclick="addCircle()"><i class="fa-regular fa-circle"></i> วงกลม</button>
+            <button class="tool-btn" onclick="openHtmlModal()" style="background:#e17055;"><i class="fa-solid fa-code"></i> Import HTML</button>
+            <label for="imgLoader" class="tool-btn" style="cursor: pointer;"><i class="fa-regular fa-image"></i> รูปภาพ</label>
+            <input type="file" id="imgLoader">
+        </div>
+        
+        <div class="tool-group">
+            <h4>คุณสมบัติ</h4>
+            <div class="color-wrapper">
+                <input type="color" id="colorPicker" value="#000000">
+                <span>เลือกสีวัตถุ</span>
+            </div>
+        </div>
+        
+        <div class="tool-group">
+             <h4>จัดลำดับ</h4>
+             <div class="button-grid">
+                <button class="tool-btn sm-btn" onclick="bringToFront()" style="background:#0984e3">หน้าสุด</button>
+                <button class="tool-btn sm-btn" onclick="bringForward()" style="background:#74b9ff">ขึ้น 1</button>
+                <button class="tool-btn sm-btn" onclick="sendBackwards()" style="background:#ffeaa7; color:#333">ลง 1</button>
+                <button class="tool-btn sm-btn" onclick="sendToBack()" style="background:#fdcb6e; color:#333">หลังสุด</button>
+            </div>
+        </div>
+        <div class="tool-group">
+             <h4>การจัดการ</h4>
+            <button class="tool-btn" onclick="deleteObject()" style="background-color: #ff7675;"><i class="fa-solid fa-trash"></i> ลบ</button>
+        </div>
+        <div class="tool-group">
+             <h4>Export</h4>
+            <button class="tool-btn" onclick="downloadPDF()" style="background-color: #00b894;"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        </div>
+    </div>
+
+    <div id="workspace">
+        <div id="history-controls">
+            <button class="history-btn" onclick="undo()"><i class="fa-solid fa-rotate-left"></i></button>
+            <button class="history-btn" onclick="redo()"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+        <div id="canvas-container">
+            <canvas id="c" width="1920" height="1080"></canvas>
+        </div>
+    </div>
+
+    <div id="page-controls">
+        <button class="page-btn" onclick="prevPage()">&lt;</button>
+        <span id="page-indicator" style="font-weight:bold; min-width:80px; text-align:center;">หน้า 1 / 1</span>
+        <button class="page-btn" onclick="nextPage()">&gt;</button>
+        <button class="page-btn" onclick="addNewPage()" style="background: #6c5ce7; color: white; border: none;">+ เพิ่มหน้า</button>
+    </div>
+
+    <script>
+        const canvas = new fabric.Canvas('c', { backgroundColor: '#fff', preserveObjectStacking: true });
+        const width = 1920, height = 1080;
+        canvas.setWidth(width); canvas.setHeight(height);
+
+        function resizeWorkspace() {
+            const container = document.getElementById('canvas-container');
+            const workspace = document.getElementById('workspace');
+            const scale = Math.min((workspace.clientWidth - 60)/width, (workspace.clientHeight - 60)/height);
+            container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+        window.addEventListener('resize', resizeWorkspace); setTimeout(resizeWorkspace, 100);
+
+        // --- History ---
+        let history = [], historyStep = -1, isHistoryLocked = false;
+        function saveHistory() {
+            if(isHistoryLocked) return;
+            if(historyStep < history.length - 1) history = history.slice(0, historyStep + 1);
+            history.push(JSON.stringify(canvas)); historyStep++;
+        }
+        saveHistory(); // Initial state
+        
+        function undo() { if(historyStep>0){ isHistoryLocked=true; historyStep--; canvas.loadFromJSON(history[historyStep], ()=>{canvas.renderAll(); isHistoryLocked=false;});}}
+        function redo() { if(historyStep<history.length-1){ isHistoryLocked=true; historyStep++; canvas.loadFromJSON(history[historyStep], ()=>{canvas.renderAll(); isHistoryLocked=false;});}}
+        
+        canvas.on('object:added', ()=> !isHistoryLocked && saveHistory());
+        canvas.on('object:modified', ()=> !isHistoryLocked && saveHistory());
+        canvas.on('object:removed', ()=> !isHistoryLocked && saveHistory());
+        
+        window.addEventListener('keydown', (e) => {
+             if ((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+             if ((e.ctrlKey||e.metaKey)&&e.key==='y'){e.preventDefault();redo();}
+             if (e.key==='Delete') deleteObject();
+        });
+
+        // --- HTML Import Logic (Editable Fix) ---
+        function openHtmlModal() { document.getElementById('htmlModal').style.display = 'flex'; }
+        function closeHtmlModal() { document.getElementById('htmlModal').style.display = 'none'; }
+
+        function renderHtmlToCanvas() {
+            const htmlCode = document.getElementById('htmlInput').value;
+            if (!htmlCode.trim()) return;
+
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '0px'; 
+            tempContainer.style.top = '0px';
+            tempContainer.style.visibility = 'hidden'; 
+            tempContainer.style.width = '800px'; 
+            tempContainer.innerHTML = htmlCode;
+            document.body.appendChild(tempContainer);
+
+            // แยก Array เป็น Background และ Text เพื่อจัดลำดับการวาง (Text ทับ BG เสมอ)
+            const bgObjects = [];
+            const textObjects = [];
+            
+            const rgbToHex = (rgb) => {
+                if (!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return null;
+                return rgb;
+            };
+
+            const containerRect = tempContainer.getBoundingClientRect();
+            // Offset เพื่อวางกลางจอ Canvas
+            const centerX = width / 2 - (containerRect.width / 2);
+            const centerY = height / 2 - (containerRect.height / 2);
+
+            const allElements = tempContainer.querySelectorAll('*');
+
+            // 1. สร้าง Background Rectangles
+            allElements.forEach(el => {
+                const style = window.getComputedStyle(el);
+                const bgColor = rgbToHex(style.backgroundColor);
+                const rect = el.getBoundingClientRect();
+                
+                if (bgColor && rect.width > 0 && rect.height > 0) {
+                    const fabricRect = new fabric.Rect({
+                        left: rect.left - containerRect.left + centerX,
+                        top: rect.top - containerRect.top + centerY,
+                        width: rect.width,
+                        height: rect.height,
+                        fill: bgColor,
+                        rx: parseFloat(style.borderRadius) || 0,
+                        ry: parseFloat(style.borderRadius) || 0,
+                        selectable: true // ให้เลือกได้
+                    });
+                    bgObjects.push(fabricRect);
+                }
+            });
+
+            // 2. สร้าง Text Objects
+            const walker = document.createTreeWalker(tempContainer, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            while (node = walker.nextNode()) {
+                const textContent = node.textContent.trim();
+                if (textContent.length > 0) {
+                    const parentEl = node.parentElement;
+                    const style = window.getComputedStyle(parentEl);
+                    const range = document.createRange();
+                    range.selectNode(node);
+                    const rect = range.getBoundingClientRect();
+
+                    const fabricText = new fabric.Textbox(textContent, {
+                        left: rect.left - containerRect.left + centerX,
+                        top: rect.top - containerRect.top + centerY,
+                        width: rect.width + 10, // เผื่อความกว้าง
+                        fontSize: parseFloat(style.fontSize),
+                        fontFamily: 'Sarabun',
+                        fill: rgbToHex(style.color) || '#000',
+                        fontWeight: style.fontWeight,
+                        fontStyle: style.fontStyle,
+                        textAlign: style.textAlign,
+                        lineHeight: 1.2,
+                        backgroundColor: null 
+                    });
+                    textObjects.push(fabricText);
+                }
+            }
+
+            // 3. รวม Objects และ Add ลง Canvas แบบ *ไม่ Group* (เพื่อให้คลิก Text ได้เลย)
+            const allObjs = [...bgObjects, ...textObjects]; // BG ลงก่อน, Text ลงทีหลัง
+
+            if (allObjs.length > 0) {
+                // ป้องกันการ Save History ทีละชิ้น
+                isHistoryLocked = true;
+                
+                allObjs.forEach(obj => {
+                    canvas.add(obj);
+                });
+
+                // สร้าง Active Selection เพื่อให้ user ขยับทั้งก้อนได้ในครั้งแรก
+                const sel = new fabric.ActiveSelection(allObjs, {
+                    canvas: canvas,
+                });
+                canvas.setActiveObject(sel);
+                canvas.requestRenderAll();
+                
+                isHistoryLocked = false;
+                saveHistory(); // Save แค่ครั้งเดียวหลังจากวางเสร็จ
+            } else {
+                alert("ไม่พบเนื้อหา");
+            }
+
+            document.body.removeChild(tempContainer);
+            closeHtmlModal();
+            document.getElementById('htmlInput').value = '';
+        }
+
+        // --- Other Logic (Same as before) ---
+        const colorPicker = document.getElementById('colorPicker');
+        colorPicker.addEventListener('input', (e)=>{
+            const obj=canvas.getActiveObject(); if(obj){obj.set('fill',e.target.value); canvas.requestRenderAll(); saveHistory();}
+        });
+        canvas.on('selection:created', updateColor); canvas.on('selection:updated', updateColor);
+        function updateColor(){
+            const obj=canvas.getActiveObject(); if(obj && obj.fill && typeof obj.fill==='string') colorPicker.value=obj.fill;
+        }
+
+        function bringToFront(){const o=canvas.getActiveObject();if(o){canvas.bringToFront(o);canvas.discardActiveObject();canvas.requestRenderAll();saveHistory();}}
+        function bringForward(){const o=canvas.getActiveObject();if(o){canvas.bringForward(o);canvas.discardActiveObject();canvas.requestRenderAll();saveHistory();}}
+        function sendBackwards(){const o=canvas.getActiveObject();if(o){canvas.sendBackwards(o);canvas.discardActiveObject();canvas.requestRenderAll();saveHistory();}}
+        function sendToBack(){const o=canvas.getActiveObject();if(o){canvas.sendToBack(o);canvas.discardActiveObject();canvas.requestRenderAll();saveHistory();}}
+
+        let pagesJSON=[]; let currentPageIndex=0; pagesJSON.push(null);
+        function saveCurrentPage(){ pagesJSON[currentPageIndex]=JSON.stringify(canvas); }
+        function loadPage(idx){ isHistoryLocked=true; canvas.clear(); canvas.backgroundColor='#fff';
+            if(pagesJSON[idx]) canvas.loadFromJSON(pagesJSON[idx], ()=>{canvas.renderAll(); isHistoryLocked=false; history=[JSON.stringify(canvas)]; historyStep=0;});
+            else {isHistoryLocked=false; history=[JSON.stringify(canvas)]; historyStep=0;}
+            document.getElementById('page-indicator').innerText=`หน้า ${currentPageIndex+1} / ${pagesJSON.length}`;
+        }
+        function addNewPage(){ saveCurrentPage(); currentPageIndex++; pagesJSON.splice(currentPageIndex,0,null); loadPage(currentPageIndex); }
+        function nextPage(){ if(currentPageIndex<pagesJSON.length-1){ saveCurrentPage(); currentPageIndex++; loadPage(currentPageIndex);}}
+        function prevPage(){ if(currentPageIndex>0){ saveCurrentPage(); currentPageIndex--; loadPage(currentPageIndex);}}
+
+        function addText(){ canvas.add(new fabric.IText('ข้อความ',{left:width/2,top:height/2,fontFamily:'Sarabun',fontSize:80,fill:colorPicker.value,originX:'center',originY:'center'})); saveHistory();}
+        function addRect(){ canvas.add(new fabric.Rect({left:width/2,top:height/2,width:300,height:300,fill:colorPicker.value,originX:'center',originY:'center'})); saveHistory();}
+        function addCircle(){ canvas.add(new fabric.Circle({left:width/2,top:height/2,radius:150,fill:colorPicker.value,originX:'center',originY:'center'})); saveHistory();}
+        document.getElementById('imgLoader').onchange=function(e){
+            const r=new FileReader(); r.onload=function(ev){
+                const i=new Image(); i.src=ev.target.result; i.onload=function(){
+                    const img=new fabric.Image(i); if(img.width>800)img.scaleToWidth(800);
+                    canvas.add(img); canvas.centerObject(img); saveHistory();
+                }
+            }; r.readAsDataURL(e.target.files[0]); e.target.value='';
+        }
+        function deleteObject(){ const o=canvas.getActiveObjects(); if(o.length){canvas.discardActiveObject(); o.forEach(x=>canvas.remove(x)); saveHistory();}}
+        
+        async function downloadPDF(){
+            saveCurrentPage(); const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'landscape',unit:'px',format:[width,height]});
+            const oldIdx=currentPageIndex; isHistoryLocked=true;
+            for(let i=0;i<pagesJSON.length;i++){
+                if(i>0)doc.addPage([width,height],'landscape');
+                await new Promise(r=>{canvas.loadFromJSON(pagesJSON[i]||"{}",()=>{canvas.setBackgroundColor('#fff',()=>{canvas.renderAll();const d=canvas.toDataURL({format:'jpeg',quality:0.9});doc.addImage(d,'JPEG',0,0,width,height);r();});});});
+            }
+            doc.save('presentation.pdf'); loadPage(oldIdx); currentPageIndex=oldIdx; isHistoryLocked=false;
+        }
+    </script>
+</body>
+</html>
