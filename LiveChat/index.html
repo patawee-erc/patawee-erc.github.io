@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <title>Tee Rabai LiveChat</title>
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4096/4096358.png">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -11,9 +11,14 @@
     body { 
       font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif; 
       margin: 0; 
-      /* พื้นหลังไล่สีสไตล์โมเดิร์น */
       background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-      height: 100vh;
+      
+      /* --- ส่วนที่แก้ไข --- */
+      height: 100vh; /* เผื่อเบราว์เซอร์รุ่นเก่า */
+      height: 100dvh; /* ใช้ dvh เพื่อหักลบ Navigation Bar / Safari Toolbar อัตโนมัติ */
+      height: calc(var(--vh, 1vh) * 100); /* สำรองไว้สำหรับ JS */
+      /* ----------------- */
+
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -179,6 +184,17 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
+   
+    function setDocHeight() {
+     
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight/100}px`);
+    }
+    
+    window.addEventListener('resize', setDocHeight);
+    window.addEventListener('orientationchange', setDocHeight);
+    setDocHeight();
+    
+    
     var firebaseConfig = {
       apiKey: "AIzaSyCnX049F08ewwCLXOCa3NrKsG499Qce6bI",
       authDomain: "livechat-75751.firebaseapp.com",
