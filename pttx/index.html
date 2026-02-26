@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="เครื่องมือสร้างพื้นหลัง PowerPoint แบบกำหนดเองพร้อมดาวน์โหลดเป็นไฟล์ PPTX">
+    <title>PowerPoint Background Generator Pro</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5261/5261474.png">
+    
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        
+
+        .hide-on-download { display: block; }
+        .downloading .hide-on-download { display: none !important; }
+        
+       
+        .logo-container {
+            position: absolute;
+            z-index: 20;
+            padding: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-top-right { top: 0; right: 0; }
+        .logo-bottom-right { bottom: 0; right: 0; }
+        .logo-top-left { top: 0; left: 0; }
+        .logo-bottom-left { bottom: 0; left: 0; }
+        .logo-hidden { display: none; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10 px-4">
+
+    <main class="max-w-[95%] w-full flex flex-col md:flex-row gap-8">
+        
+        <!-- Sidebar Controls -->
+        <aside class="w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-lg h-fit flex flex-col gap-6">
+            <header>
+                <h1 class="text-xl font-bold text-gray-800 mb-1">Template Powerpoint ERC</h1>
+                <p class="text-sm text-gray-500">อัตราส่วน 16:9 | Export as PPTX</p>
+            </header>
+
+            <!-- Design Selection (Rendered via JS) -->
+            <section class="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar" id="design-buttons-container">
+                <h2 class="font-semibold text-gray-700 text-sm sticky top-0 bg-white pb-2">เลือกรูปแบบเฟรม:</h2>
+                <!-- ปุ่มจะถูกสร้างที่นี่ด้วย JavaScript -->
+            </section>
+
+            <!-- Logo Controls -->
+            <section class="flex flex-col gap-4 border-t pt-4">
+                <div>
+                    <label for="logo-type" class="block font-semibold text-gray-700 text-sm mb-2">รูปแบบโลโก้:</label>
+                    <select id="logo-type" onchange="updateLogoImage()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="logo-el1">ERC พื้นหลังขาว</option>
+                        <option value="logo-el2">ERC พื้นหลังใส</option>
+                        <option value="logo-el3">ERC ขอบขาว</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="logo-position" class="block font-semibold text-gray-700 text-sm mb-2">ตำแหน่งโลโก้:</label>
+                    <select id="logo-position" onchange="updateLogoPosition()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="logo-bottom-right">ขวาล่าง (แนะนำ)</option>
+                        <option value="logo-top-right">ขวาบน</option>
+                        <option value="logo-top-left">ซ้ายบน</option>
+                        <option value="logo-bottom-left">ซ้ายล่าง</option>
+                        <option value="logo-hidden">ไม่แสดงโลโก้</option>
+                    </select>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="logo-size-slider" class="font-semibold text-gray-700 text-sm">ขนาดโลโก้ (%):</label>
+                        <span id="size-display" class="text-xs font-bold text-[#009bc9]">15%</span>
+                    </div>
+                    <input type="range" id="logo-size-slider" min="5" max="40" value="15" oninput="updateLogoSize()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#009bc9]">
+                </div>
+            </section>
+
+            <section class="flex items-center gap-2 border-t pt-4">
+                <input type="checkbox" id="show-placeholder" checked onchange="togglePlaceholder()" class="w-4 h-4 text-[#009bc9] rounded border-gray-300 focus:ring-[#009bc9]">
+                <label for="show-placeholder" class="text-xs text-gray-700 cursor-pointer select-none">แสดงพื้นที่เนื้อหา (จำลอง)</label>
+            </section>
+
+            <button onclick="exportPPTX()" id="download-btn" class="mt-2 w-full bg-gradient-to-r from-[#f37737] to-[#009bc9] hover:from-[#e0682b] hover:to-[#0086af] text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all transform hover:scale-[1.02] active:scale-95 flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                <span id="btn-text">ดาวน์โหลดไฟล์ (PPTX)</span>
+            </button>
+        </aside>
+
+       
+        <section class="w-full md:w-3/4 flex flex-col items-center">
+            <div id="slide-canvas" class="relative w-full aspect-video bg-white shadow-2xl rounded-sm overflow-hidden border border-gray-200" style="max-width: 1400px;">
+                
+              
+                <div id="logo-el" class="logo-container logo-bottom-right" style="width: 15%;">
+                    <img id="logo-img" crossorigin="anonymous" src="https://wsrv.nl/?url=www.erc.or.th/web-upload/200xf869baf82be74c18cc110e974eea8d5c/filecenter/admin_patawee/L/ERC%20New%20Logo%202014-BG%20white.jpg" style="border-radius: 2px;" alt="Organization Logo" class="w-full h-auto object-contain">
+                </div>
+
+                
+                <div id="svg-container" class="absolute inset-0 w-full h-full pointer-events-none">
+                   
+                </div>
+
+                <!-- Placeholder Overlay -->
+                <div id="placeholder-content" class="absolute inset-0 flex flex-col items-center justify-center text-center p-16 hide-on-download transition-opacity duration-300">
+                    <div class="border-4 border-dashed border-gray-400 rounded-3xl p-10 w-3/4 h-3/4 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm shadow-sm">
+                        <h2 class="text-4xl font-bold text-gray-800 mb-4">พื้นที่สำหรับใส่เนื้อหา</h2>
+                        <p class="text-xl text-gray-600">Content Area - อัตราส่วน 16:9</p>
+                    </div>
+                </div>
+
+            </div>
+            <p class="text-gray-500 text-sm mt-4 text-center">💡 ปรับขนาดโลโก้ได้ตามความต้องการ โดยระบบจะคำนวณเป็น % ของความกว้างสไลด์</p>
+        </section>
+    </main>
+
+    <script>
+
+        const proxy = "https://wsrv.nl/?url=";
+        const logoUrls = {
+            "logo-el1": proxy + "www.erc.or.th/web-upload/200xf869baf82be74c18cc110e974eea8d5c/filecenter/admin_patawee/L/ERC%20New%20Logo%202014-BG%20white.jpg",
+            "logo-el2": proxy + "www.erc.or.th/web-upload/200xf869baf82be74c18cc110e974eea8d5c/filecenter/admin_patawee/L/ERC%20New%20Logo%202014-erc%20is%20white.png",
+            "logo-el3": proxy + "www.erc.or.th/web-upload/200xf869baf82be74c18cc110e974eea8d5c/filecenter/admin_patawee/L/ERC%20New%20Logo%202014-stroke%20white.png"
+        };
+
+
+        const designs = [
+
+            { id: 1, name: "1. คลื่นโมเดิร์น (Waves)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><path d="M0,0 L700,0 C650,500 350,700 0,700 Z" fill="#009bc9" opacity="0.3"/><path d="M0,0 L500,0 C450,300 250,500 0,500 Z" fill="#009bc9" opacity="0.9"/><path d="M1920,1080 L1220,1080 C1270,580 1570,380 1920,380 Z" fill="#f37737" opacity="0.3"/><path d="M1920,1080 L1420,1080 C1470,780 1670,580 1920,580 Z" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 2, name: "2. เรขาคณิต (Geometric)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="1920,0 1300,0 1920,620" fill="#009bc9" opacity="0.4"/><polygon points="1920,0 1500,0 1920,420" fill="#f37737" opacity="0.9"/><polygon points="1920,0 1700,0 1920,220" fill="#009bc9" opacity="0.9"/><polygon points="0,1080 620,1080 0,460" fill="#f37737" opacity="0.4"/><polygon points="0,1080 420,1080 0,660" fill="#009bc9" opacity="0.9"/><polygon points="0,1080 220,1080 0,860" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 3, name: "3. กรอบมินิมอล (Minimal Frame)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><rect x="50" y="50" width="1820" height="980" fill="none" stroke="#009bc9" stroke-width="4" opacity="0.2"/><rect x="70" y="70" width="1780" height="940" fill="none" stroke="#009bc9" stroke-width="2" opacity="0.5"/><rect x="30" y="30" width="250" height="15" fill="#f37737"/><rect x="30" y="30" width="15" height="250" fill="#f37737"/><rect x="1640" y="1035" width="250" height="15" fill="#009bc9"/><rect x="1875" y="800" width="15" height="250" fill="#009bc9"/></svg>` },
+            { id: 4, name: "4. วงกลมซ้อน (Circles)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><circle cx="150" cy="150" r="300" fill="#009bc9" opacity="0.2"/><circle cx="50" cy="50" r="150" fill="#009bc9" opacity="0.8"/><circle cx="1800" cy="950" r="400" fill="#f37737" opacity="0.2"/><circle cx="1850" cy="1000" r="200" fill="#f37737" opacity="0.8"/></svg>` },
+            { id: 5, name: "5. ทแยงมุม (Diagonal)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 800,0 0,800" fill="#009bc9" opacity="0.3"/><polygon points="0,0 600,0 0,600" fill="#009bc9" opacity="0.9"/><polygon points="1920,1080 1120,1080 1920,280" fill="#f37737" opacity="0.3"/><polygon points="1920,1080 1320,1080 1920,480" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 6, name: "6. ออร์แกนิคฟอร์ม (Organic)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><path d="M0,0 L800,0 C800,300 500,500 0,600 Z" fill="#009bc9" opacity="0.4"/><path d="M0,0 L500,0 C600,200 300,400 0,450 Z" fill="#009bc9" opacity="0.8"/><path d="M1920,1080 L1100,1080 C1100,800 1400,600 1920,500 Z" fill="#f37737" opacity="0.4"/><path d="M1920,1080 L1400,1080 C1300,900 1600,700 1920,650 Z" fill="#f37737" opacity="0.8"/></svg>` },
+            { id: 7, name: "7. เส้นสายเทคโนโลยี (Tech Lines)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polyline points="0,200 200,200 300,300 500,300" fill="none" stroke="#009bc9" stroke-width="4" opacity="0.7"/><circle cx="500" cy="300" r="8" fill="#009bc9"/><polyline points="1920,880 1720,880 1620,780 1420,780" fill="none" stroke="#f37737" stroke-width="4" opacity="0.7"/><circle cx="1420" cy="780" r="8" fill="#f37737"/><rect x="40" y="40" width="1840" height="1000" fill="none" stroke="#009bc9" stroke-width="2" opacity="0.2"/></svg>` },
+            { id: 8, name: "8. ริบบิ้น (Ribbon)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><path d="M0,150 C300,300 600,0 960,150 C1320,300 1620,0 1920,150 L1920,0 L0,0 Z" fill="#009bc9" opacity="0.4"/><path d="M0,100 C300,250 600,-50 960,100 C1320,250 1620,-50 1920,100 L1920,0 L0,0 Z" fill="#009bc9" opacity="0.9"/><path d="M0,930 C300,780 600,1080 960,930 C1320,780 1620,1080 1920,930 L1920,1080 L0,1080 Z" fill="#f37737" opacity="0.4"/><path d="M0,980 C300,830 600,1130 960,980 C1320,830 1620,1130 1920,980 L1920,1080 L0,1080 Z" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 9, name: "9. สามเหลี่ยมคลาสสิก (Triangles)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 800,0 0,800" fill="#009bc9" opacity="0.9"/><polygon points="0,0 600,0 0,600" fill="#009bc9" opacity="0.3"/><polygon points="1920,1080 1120,1080 1920,280" fill="#f37737" opacity="0.9"/><polygon points="1920,1080 1320,1080 1920,480" fill="#f37737" opacity="0.3"/></svg>` },
+            { id: 10, name: "10. แถบเฉียงไดนามิก (Slant)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="1920,0 1920,400 0,1080 0,680" fill="#009bc9" opacity="0.1"/><polygon points="1920,400 1920,450 0,1080 0,1030" fill="#009bc9" opacity="0.9"/><polygon points="1920,0 1920,50 0,730 0,680" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 11, name: "11. มุมโค้งมน (Quarter Circles)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><circle cx="0" cy="0" r="500" fill="#009bc9" opacity="0.2"/><circle cx="0" cy="0" r="350" fill="#009bc9" opacity="0.9"/><circle cx="1920" cy="1080" r="600" fill="#f37737" opacity="0.2"/><circle cx="1920" cy="1080" r="450" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 12, name: "12. เส้นโค้งหรูหรา (Elegant Arches)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><circle cx="960" cy="1080" r="700" fill="none" stroke="#009bc9" stroke-width="40" opacity="0.3"/><circle cx="960" cy="1080" r="900" fill="none" stroke="#f37737" stroke-width="20" opacity="0.4"/><circle cx="960" cy="1080" r="500" fill="#009bc9" opacity="0.05"/></svg>` },
+            { id: 13, name: "13. แถบข้างสไตล์เทค (Sidebar)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><rect x="0" y="0" width="50" height="1080" fill="#009bc9" opacity="0.9"/><rect x="50" y="0" width="15" height="1080" fill="#f37737" opacity="0.9"/><rect x="1890" y="0" width="30" height="1080" fill="#009bc9" opacity="0.3"/><rect x="1875" y="0" width="15" height="1080" fill="#f37737" opacity="0.3"/></svg>` },
+            { id: 14, name: "14. เหลี่ยมซ้อนมิติ (Polygons)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 500,0 300,1080 0,1080" fill="#009bc9" opacity="0.3"/><polygon points="0,0 350,0 150,1080 0,1080" fill="#009bc9" opacity="0.9"/><polygon points="0,1080 200,1080 150,700 0,800" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 15, name: "15. แบนเนอร์หัวท้าย (Top & Bottom)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 1920,0 1920,120 0,60" fill="#009bc9" opacity="0.9"/><polygon points="0,1080 1920,1080 1920,1020 0,960" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 16, name: "16. กราฟการเติบโต (Growth Peaks)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,1080 300,800 700,950 1200,600 1920,850 1920,1080" fill="#009bc9" opacity="0.4"/><polygon points="0,1080 400,850 800,1000 1300,700 1920,950 1920,1080" fill="#009bc9" opacity="0.9"/><polygon points="1300,1080 1600,900 1920,1020 1920,1080" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 17, name: "17. คลื่นด้านล่าง (Bottom Waves)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><path d="M0,1080 C400,800 800,1000 1920,700 L1920,1080 Z" fill="#009bc9" opacity="0.4"/><path d="M0,1080 C600,900 1000,1100 1920,800 L1920,1080 Z" fill="#009bc9" opacity="0.8"/><path d="M0,1080 C300,1000 600,950 1000,1080 Z" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 18, name: "18. กรอบล้ำสมัย (Futuristic)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><rect x="40" y="40" width="1840" height="1000" fill="none" stroke="#009bc9" stroke-width="2" opacity="0.3"/><polygon points="30,30 150,30 150,40 40,40 40,150 30,150" fill="#009bc9"/><polygon points="1890,30 1770,30 1770,40 1880,40 1880,150 1890,150" fill="#f37737"/><polygon points="30,1050 150,1050 150,1040 40,1040 40,930 30,930" fill="#f37737"/><polygon points="1890,1050 1770,1050 1770,1040 1880,1040 1880,930 1890,930" fill="#009bc9"/></svg>` },
+            
+
+            { id: 19, name: "19. Corporate Split (แบ่งครึ่งเฉียง)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 1200,0 600,1080 0,1080" fill="#009bc9" opacity="0.05"/><polygon points="0,0 200,0 0,360" fill="#009bc9" opacity="0.9"/><polygon points="1920,1080 1720,1080 1920,720" fill="#f37737" opacity="0.9"/><line x1="1250" y1="0" x2="650" y2="1080" stroke="#f37737" stroke-width="4" opacity="0.5"/></svg>` },
+            { id: 20, name: "20. Digital Flow (เส้นสายดิจิทัล)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><path d="M-100,540 C400,200 800,880 1920,300" fill="none" stroke="#009bc9" stroke-width="40" opacity="0.1"/><path d="M-100,580 C400,240 800,920 1920,340" fill="none" stroke="#f37737" stroke-width="15" opacity="0.8"/><circle cx="1500" cy="500" r="100" fill="#009bc9" opacity="0.15"/><circle cx="300" cy="800" r="50" fill="#f37737" opacity="0.2"/></svg>` },
+            { id: 21, name: "21. Hexagon Network (โครงข่ายหกเหลี่ยม)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><g stroke="#009bc9" stroke-width="2" fill="none" opacity="0.3"><polygon points="150,50 200,136.6 150,223.2 50,223.2 0,136.6 50,50"/><polygon points="300,136.6 350,223.2 300,309.8 200,309.8 150,223.2 200,136.6"/><polygon points="1700,850 1750,936.6 1700,1023.2 1600,1023.2 1550,936.6 1600,850"/></g><polygon points="50,-36.6 100,50 50,136.6 -50,136.6 -100,50 -50,-36.6" fill="#009bc9" opacity="0.8"/><polygon points="1850,936.6 1900,1023.2 1850,1109.8 1750,1109.8 1700,1023.2 1750,936.6" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 22, name: "22. Modern Bauhaus (สี่เหลี่ยมสลับสี)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><rect x="1800" y="0" width="120" height="400" fill="#009bc9"/><rect x="1760" y="300" width="160" height="60" fill="#f37737"/><rect x="0" y="880" width="400" height="200" fill="#009bc9" opacity="0.1"/><rect x="0" y="1040" width="600" height="40" fill="#f37737"/><circle cx="1860" cy="500" r="20" fill="#009bc9" opacity="0.5"/></svg>` },
+            { id: 23, name: "23. Concentric Rings (วงแหวนศูนย์กลาง)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><circle cx="1920" cy="0" r="600" fill="none" stroke="#009bc9" stroke-width="60" opacity="0.1"/><circle cx="1920" cy="0" r="450" fill="none" stroke="#f37737" stroke-width="20" opacity="0.6"/><circle cx="1920" cy="0" r="300" fill="#009bc9" opacity="0.9"/><circle cx="0" cy="1080" r="300" fill="none" stroke="#f37737" stroke-width="40" opacity="0.1"/><circle cx="0" cy="1080" r="150" fill="#f37737" opacity="0.8"/></svg>` },
+            { id: 24, name: "24. Minimal Fold (มุมพับมินิมอล)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 200,0 0,200" fill="#009bc9" opacity="0.9"/><polygon points="200,0 250,0 0,250 0,200" fill="#f37737" opacity="0.8"/><polygon points="1920,1080 1600,1080 1920,760" fill="#009bc9" opacity="0.1"/><polygon points="1920,1080 1850,1080 1920,1010" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 25, name: "25. Dynamic Abstract (รูปทรงอิสระ)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><path d="M0,800 Q300,700 400,1080 L0,1080 Z" fill="#f37737" opacity="0.8"/><path d="M1920,0 Q1600,100 1500,0 Z" fill="#009bc9" opacity="0.9"/><path d="M1920,300 Q1500,500 1920,800 Z" fill="#009bc9" opacity="0.1"/><circle cx="150" cy="750" r="15" fill="#009bc9"/></svg>` },
+            { id: 26, name: "26. Grid Structure (ตารางโครงสร้าง)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="#009bc9" stroke-width="1" opacity="0.1"/></pattern></defs><rect width="100%" height="100%" fill="url(#grid)" /><rect x="0" y="0" width="100%" height="15" fill="#009bc9"/><rect x="0" y="1065" width="100%" height="15" fill="#f37737"/><rect x="1800" y="15" width="60" height="180" fill="#009bc9" opacity="0.8"/><rect x="1740" y="15" width="60" height="60" fill="#f37737" opacity="0.9"/></svg>` },
+            { id: 27, name: "27. Lower Third (แถบข้อความล่าง)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><rect x="0" y="900" width="1920" height="180" fill="#009bc9" opacity="0.05"/><rect x="0" y="900" width="1200" height="180" fill="#009bc9" opacity="0.9"/><polygon points="1200,900 1350,900 1200,1080" fill="#009bc9" opacity="0.9"/><rect x="0" y="885" width="1500" height="15" fill="#f37737"/><polygon points="1500,885 1525,885 1500,900" fill="#f37737"/></svg>` },
+            { id: 28, name: "28. Sharp Angles (มุมแหลมโฉบเฉี่ยว)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><polygon points="0,0 800,0 300,1080 0,1080" fill="#009bc9" opacity="0.08"/><polygon points="0,0 400,0 150,1080 0,1080" fill="#009bc9" opacity="0.9"/><polygon points="0,1080 200,1080 500,400 300,400" fill="#f37737" opacity="0.9"/><polygon points="1920,0 1700,0 1920,400" fill="#f37737" opacity="0.15"/></svg>` },
+
+            { id: 29, name: "29. Data Stream (โหนดเครือข่าย)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><circle cx="200" cy="900" r="400" fill="#009bc9" opacity="0.05"/><circle cx="1700" cy="200" r="500" fill="#f37737" opacity="0.05"/><polyline points="-100,600 300,400 700,700 1100,300 1500,800 2000,500" fill="none" stroke="#009bc9" stroke-width="3" opacity="0.5"/><polyline points="-100,650 350,450 750,750 1150,350 1550,850 2000,550" fill="none" stroke="#f37737" stroke-width="2" opacity="0.7"/><circle cx="300" cy="400" r="8" fill="#009bc9"/><circle cx="700" cy="700" r="10" fill="#f37737"/><circle cx="1100" cy="300" r="8" fill="#009bc9"/><circle cx="1500" cy="800" r="12" fill="#f37737"/></svg>` },
+            { id: 30, name: "30. Layered Blocks (บล็อกซ้อนมิติ)", svg: `<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" class="w-full h-full"><rect x="-100" y="-100" width="400" height="400" fill="#009bc9" opacity="0.1" transform="rotate(25)"/><rect x="-50" y="-150" width="300" height="300" fill="#f37737" opacity="0.9" transform="rotate(15)"/><rect x="1600" y="700" width="500" height="500" fill="#009bc9" opacity="0.9" transform="rotate(15 1600 700)"/><rect x="1750" y="650" width="400" height="400" fill="#f37737" opacity="0.8" transform="rotate(-15 1750 650)"/></svg>` }
+        ];
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderButtons();
+            setDesign(1); 
+        });
+        function renderButtons() {
+            const container = document.getElementById('design-buttons-container');
+
+            const header = container.querySelector('h2').outerHTML;
+            let buttonsHTML = '';
+
+            designs.forEach(design => {
+                buttonsHTML += `
+                    <button 
+                        onclick="setDesign(${design.id})" 
+                        id="btn-design-${design.id}" 
+                        class="design-btn w-full text-left px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-[#009bc9] text-gray-600 transition-all duration-200 text-sm hover:bg-[#f0f9fc]">
+                        ${design.name}
+                    </button>
+                `;
+            });
+
+            container.innerHTML = header + buttonsHTML;
+        }
+
+
+        function setDesign(id) {
+            const design = designs.find(d => d.id === id);
+            if (!design) return;
+
+            document.getElementById('svg-container').innerHTML = design.svg;
+            
+
+            const buttons = document.querySelectorAll('.design-btn');
+            buttons.forEach(btn => {
+                if (btn.id === `btn-design-${id}`) {
+                    btn.classList.add('border-[#009bc9]', 'bg-[#e6f5fa]', 'text-[#007a9e]', 'font-semibold');
+                    btn.classList.remove('border-gray-200', 'text-gray-600', 'hover:bg-[#f0f9fc]');
+                } else {
+                    btn.classList.remove('border-[#009bc9]', 'bg-[#e6f5fa]', 'text-[#007a9e]', 'font-semibold');
+                    btn.classList.add('border-gray-200', 'text-gray-600', 'hover:bg-[#f0f9fc]');
+                }
+            });
+        }
+
+
+        function updateLogoImage() {
+            const selectedType = document.getElementById('logo-type').value;
+            document.getElementById('logo-img').src = logoUrls[selectedType];
+        }
+
+        function updateLogoPosition() {
+            const pos = document.getElementById('logo-position').value;
+            const logoEl = document.getElementById('logo-el');
+            const currentWidth = logoEl.style.width;
+            logoEl.className = 'logo-container ' + pos;
+            logoEl.style.width = currentWidth;
+        }
+
+        function updateLogoSize() {
+            const size = document.getElementById('logo-size-slider').value;
+            const logoEl = document.getElementById('logo-el');
+            const display = document.getElementById('size-display');
+            logoEl.style.width = size + '%';
+            display.innerText = size + '%';
+        }
+
+        function togglePlaceholder() {
+            const isChecked = document.getElementById('show-placeholder').checked;
+            document.getElementById('placeholder-content').style.opacity = isChecked ? '1' : '0';
+        }
+
+
+        function exportPPTX() {
+            const slideElement = document.getElementById('slide-canvas');
+            const btnText = document.getElementById('btn-text');
+            const downloadBtn = document.getElementById('download-btn');
+
+            btnText.innerText = "กำลังประมวลผล...";
+            downloadBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            downloadBtn.disabled = true;
+            slideElement.classList.add('downloading');
+
+            setTimeout(() => {
+                html2canvas(slideElement, {
+                    scale: 1920 / slideElement.offsetWidth, 
+                    width: slideElement.offsetWidth,
+                    height: slideElement.offsetHeight,
+                    backgroundColor: "#ffffff",
+                    useCORS: true, 
+                    allowTaint: false
+                }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+
+                    let pptx = new PptxGenJS();
+                    pptx.layout = 'LAYOUT_16x9'; 
+                    let slide = pptx.addSlide();
+                    
+                    slide.background = { data: imgData };
+
+                    pptx.writeFile({ fileName: 'Template-Corporate-Presentation.pptx' }).then(() => {
+                        resetDownloadState();
+                    });
+
+                }).catch(err => {
+                    console.error("Canvas Rendering Error:", err);
+                    resetDownloadState();
+                    alert("เกิดข้อผิดพลาดในการสร้างไฟล์ กรุณาลองใหม่อีกครั้ง");
+                });
+            }, 100);
+
+            function resetDownloadState() {
+                slideElement.classList.remove('downloading');
+                btnText.innerText = "ดาวน์โหลดไฟล์ (PPTX)";
+                downloadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                downloadBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
