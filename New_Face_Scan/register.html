@@ -13,33 +13,49 @@
     body {
       font-family: 'Sarabun', sans-serif;
       min-height: 100vh;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0d1b2a 100%);
-      color: #e2e8f0;
+      /* พื้นหลังโทนสว่าง สะอาดตา */
+      background: #f1f5f9; 
+      color: #334155;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 28px 16px 60px;
+      justify-content: center;
+      padding: 40px 16px;
       position: relative;
     }
 
-    /* Ambient orb */
+    /* วงกลมแสงตกแต่งพื้นหลังให้ดูมีมิติ (Modern Ambient) */
     body::before {
       content: '';
       position: fixed;
-      width: 400px; height: 400px;
-      background: #6366f1;
+      width: 500px; height: 500px;
+      background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
       border-radius: 50%;
-      filter: blur(100px);
-      opacity: 0.12;
-      top: -80px; left: -80px;
+      filter: blur(80px);
+      top: -100px; left: -100px;
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      width: 400px; height: 400px;
+      background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%);
+      border-radius: 50%;
+      filter: blur(80px);
+      bottom: -100px; right: -100px;
       pointer-events: none; z-index: 0;
     }
 
+    /* กล่องเนื้อหาหลัก (Card) */
     .container {
+      background: #ffffff;
       width: 100%;
-      max-width: 520px;
+      max-width: 500px;
       position: relative; z-index: 1;
-      animation: fadeIn 0.5s ease;
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 40px rgba(148, 163, 184, 0.15);
+      animation: fadeIn 0.6s ease;
     }
 
     /* Header */
@@ -47,56 +63,47 @@
       text-align: center;
       margin-bottom: 24px;
     }
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      color: #64748b; text-decoration: none; font-size: 0.88em;
-      padding: 6px 12px; border-radius: 20px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      transition: all 0.25s ease;
-      margin-bottom: 16px;
-    }
-    .back-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.1); }
-
+    
     h2 {
-      font-size: 1.6em; font-weight: 700;
-      background: linear-gradient(135deg, #a5b4fc, #e2e8f0);
+      font-size: 1.8em; font-weight: 700;
+      /* ไล่สีตัวอักษรให้ดู Modern */
+      background: linear-gradient(135deg, #2563eb, #6366f1);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
     .instruction {
-      font-size: 0.83em; color: #64748b; line-height: 1.6;
+      font-size: 0.9em; color: #64748b; line-height: 1.5;
     }
 
     /* Step dots */
     .step-dots {
-      display: flex; justify-content: center; gap: 10px;
-      margin: 16px 0 20px;
+      display: flex; justify-content: center; gap: 12px;
+      margin: 16px 0 24px;
     }
     .dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.2);
-      transition: all 0.3s ease;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #e2e8f0;
+      transition: all 0.4s ease;
     }
     .dot.active {
-      background: #6366f1;
-      box-shadow: 0 0 10px rgba(99,102,241,0.6);
+      background: #4f46e5;
+      transform: scale(1.2);
+      box-shadow: 0 0 12px rgba(79, 70, 229, 0.4);
     }
 
     /* Status */
     #status {
-      font-size: 0.88em; color: #64748b;
-      margin-bottom: 14px; min-height: 20px;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 0.9em; color: #64748b;
+      margin-bottom: 16px; min-height: 20px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .spinner {
       display: inline-block;
-      width: 14px; height: 14px;
-      border: 2px solid rgba(99,102,241,0.3);
-      border-top-color: #6366f1;
+      width: 16px; height: 16px;
+      border: 2px solid #e2e8f0;
+      border-top-color: #4f46e5;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -106,28 +113,22 @@
       position: relative;
       border-radius: 20px;
       overflow: hidden;
-      border: 2px solid rgba(99,102,241,0.4);
-      box-shadow: 0 0 30px rgba(99,102,241,0.2), inset 0 0 30px rgba(0,0,0,0.3);
-      background: #0a0a1a;
+      background: #f8fafc;
       width: 100%;
       max-width: 480px;
       margin: 0 auto;
+      border: 4px solid #f1f5f9;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
     video {
       width: 100%; display: block;
       transform: scaleX(-1);
-      border-radius: 18px;
+      border-radius: 16px;
     }
 
     /* Form Section */
     .form-section {
-      margin-top: 22px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 18px;
-      padding: 22px 20px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      margin-top: 28px;
     }
 
     .input-group {
@@ -136,138 +137,144 @@
     }
     .input-group input {
       width: 100%;
-      padding: 14px 16px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
-      color: #e2e8f0;
+      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      color: #1e293b;
       font-size: 15px;
       font-family: 'Sarabun', sans-serif;
       outline: none;
       transition: all 0.3s ease;
     }
-    .input-group input::placeholder { color: #475569; }
+    .input-group input::placeholder { color: #94a3b8; }
     .input-group input:focus {
-      border-color: rgba(99,102,241,0.6);
-      background: rgba(99,102,241,0.06);
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+      background: #ffffff;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
     }
 
     #btnSave {
       width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      padding: 16px;
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
       color: white;
       border: none;
-      border-radius: 50px;
+      border-radius: 16px;
       font-size: 16px;
       font-weight: 600;
       font-family: 'Sarabun', sans-serif;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
     }
     #btnSave:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(99,102,241,0.5);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
     }
     #btnSave:disabled {
-      background: rgba(255,255,255,0.1);
-      color: #475569;
+      background: #e2e8f0;
+      color: #94a3b8;
       box-shadow: none;
-      cursor: default;
+      cursor: not-allowed;
+      transform: translateY(0);
     }
 
     .count-badge {
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.25);
       padding: 2px 10px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 14px;
     }
-    #btnSave:not(:disabled) .count-badge {
-      background: rgba(255,255,255,0.25);
+    #btnSave:disabled .count-badge {
+      background: #cbd5e1;
+      color: #64748b;
     }
 
     #msg {
-      margin-top: 14px; min-height: 24px;
-      font-size: 0.9em; font-weight: 600;
+      margin-top: 16px; min-height: 24px;
+      font-size: 0.95em; font-weight: 600;
       text-align: center;
     }
-    .msg-success { color: #34d399; }
-    .msg-error   { color: #f87171; }
+    .msg-success { color: #10b981; }
+    .msg-error   { color: #ef4444; }
 
-    /* ====== ส่วนที่เพิ่ม: CSS สำหรับ Popup Modal ====== */
+    /* ====== Popup Modal (ปรับเป็นสีสว่าง) ====== */
     .modal-overlay {
-      display: none; /* ซ่อนไว้เป็นค่าเริ่มต้น */
+      display: none; 
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.3); /* โปร่งแสง ดูคลีนๆ */
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       z-index: 1000;
       justify-content: center;
       align-items: center;
       animation: fadeIn 0.4s ease;
     }
     .modal-box {
-      background: #1e1e38;
-      border: 1px solid rgba(99,102,241,0.4);
-      padding: 30px;
-      border-radius: 20px;
+      background: #ffffff;
+      padding: 40px 30px;
+      border-radius: 24px;
       text-align: center;
       width: 90%;
-      max-width: 350px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      max-width: 360px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.1);
       animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .modal-box h3 {
-      color: #34d399;
-      margin-bottom: 20px;
-      font-size: 1.5em;
+      color: #10b981;
+      margin-bottom: 8px;
+      font-size: 1.6em;
+    }
+    .modal-box p {
+      color: #64748b;
+      font-size: 0.95em;
+      margin-bottom: 24px;
     }
     .btn-redirect {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #34d399, #10b981);
+      padding: 16px;
+      background: #10b981;
       color: white;
       border: none;
-      border-radius: 50px;
+      border-radius: 16px;
       font-size: 16px;
       font-weight: 600;
       font-family: 'Sarabun', sans-serif;
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(52, 211, 153, 0.3);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
     }
     .btn-redirect:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(52, 211, 153, 0.5);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+      background: #059669;
     }
+    
     @keyframes popIn {
       from { transform: scale(0.8); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
-    /* ======================================= */
-
-    /* Animations */
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin   { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<!-- ส่วนที่เพิ่ม: Popup Modal -->
+<!-- Popup Modal -->
 <div id="successModal" class="modal-overlay">
   <div class="modal-box">
-    <h3>✅ เสร็จสิ้นการ ลงทะเบียน</h3>
-    <button class="btn-redirect" onclick="window.location.href='https://patawee-erc.github.io/New_Face_Scan/scan.html'">เข้าสู่ระบบ สแกนใบหน้า</button>
+    <h3>✅ ลงทะเบียนสำเร็จ</h3>
+    <p>ระบบบันทึกข้อมูลใบหน้าของคุณเรียบร้อยแล้ว</p>
+    <button class="btn-redirect" onclick="window.location.href='https://patawee-erc.github.io/New_Face_Scan/scan.html'">ไปที่หน้า สแกนใบหน้า</button>
   </div>
 </div>
 <!-- ======================= -->
 
 <div class="container">
   <div class="page-header">
-    <a href="index.html" class="back-btn">← กลับ</a>
     <h2>👤 ลงทะเบียนใบหน้า</h2>
     <p class="instruction">บันทึก 3 มุม: หน้าตรง / หันซ้ายเล็กน้อย / หันขวาเล็กน้อย<br>เพื่อความแม่นยำสูงสุด</p>
   </div>
@@ -279,7 +286,7 @@
   </div>
 
   <div id="status">
-    <span class="spinner"></span> กำลังโหลด AI Model...
+    <span class="spinner"></span> กำลังเตรียมระบบ AI...
   </div>
 
   <div class="video-wrapper">
@@ -288,7 +295,7 @@
 
   <div class="form-section">
     <div class="input-group">
-      <input type="text" id="username" placeholder="ชื่อ-นามสกุลพนักงาน">
+      <input type="text" id="username" placeholder="กรอกชื่อ-นามสกุลพนักงาน">
     </div>
 
     <button id="btnSave" onclick="saveFace()" disabled>
@@ -309,7 +316,7 @@
   let saveCounter = 0;
 
   if (!API_URL) {
-    statusDiv.innerHTML = '<span style="color:#f87171">❌ ยังไม่ได้ตั้งค่า API URL — <a href="config.html" style="color:#fbbf24">ไปตั้งค่า</a></span>';
+    statusDiv.innerHTML = '<span style="color:#ef4444">❌ ยังไม่ได้ตั้งค่า API URL — <a href="config.html" style="color:#2563eb">ไปตั้งค่า</a></span>';
   } else {
     window.addEventListener('load', initModels);
   }
@@ -331,7 +338,7 @@
       ]);
       startCamera();
     } catch (e) {
-      statusDiv.innerHTML = '<span style="color:#f87171">❌ โหลด AI Model ล้มเหลว: ' + e.message + '</span>';
+      statusDiv.innerHTML = '<span style="color:#ef4444">❌ โหลด AI Model ล้มเหลว: ' + e.message + '</span>';
     }
   }
 
@@ -343,17 +350,17 @@
         btnSave.disabled = false;
       })
       .catch(err => {
-        statusDiv.innerHTML = '<span style="color:#f87171">❌ เปิดกล้องไม่ได้: ' + err.message + '</span>';
+        statusDiv.innerHTML = '<span style="color:#ef4444">❌ เปิดกล้องไม่ได้: ' + err.message + '</span>';
       });
   }
 
   async function saveFace() {
     const nameInput = document.getElementById('username');
     const name = nameInput.value.trim();
-    if (!name) return alert('กรุณาใส่ชื่อก่อน');
+    if (!name) return alert('กรุณาใส่ชื่อก่อนทำการบันทึกใบหน้า');
 
     btnSave.disabled = true;
-    btnSave.innerHTML = '⏳ กำลังประมวลผล... <span class="count-badge">' + saveCounter + '</span>';
+    btnSave.innerHTML = '<span class="spinner" style="border-top-color: white;"></span> กำลังประมวลผล... <span class="count-badge">' + saveCounter + '</span>';
     msgDiv.innerText = '';
 
     const detection = await faceapi
@@ -362,7 +369,7 @@
       .withFaceDescriptor();
 
     if (!detection) {
-      alert('ไม่พบใบหน้า! กรุณามองกล้องให้ชัดเจน');
+      alert('ไม่พบใบหน้า! กรุณามองกล้องให้ชัดเจนและอยู่ในที่สว่าง');
       btnSave.disabled = false;
       btnSave.innerHTML = '📸 บันทึกใบหน้า <span class="count-badge" id="saveCount">' + saveCounter + '</span>';
       return;
@@ -383,13 +390,12 @@
       }
       updateDots();
 
-      // ====== ส่วนที่เพิ่ม/แก้ไข: เช็คว่าครบ 3 ครั้งหรือยัง ======
       if (saveCounter >= 3) {
         // แสดง Popup
         document.getElementById('successModal').style.display = 'flex';
         
         // ล็อคปุ่มและช่องกรอกชื่อ
-        btnSave.innerHTML = '✅ ลงทะเบียนครบ 3 ครั้งแล้ว';
+        btnSave.innerHTML = '✅ ลงทะเบียนเรียบร้อย';
         btnSave.disabled = true; 
         nameInput.disabled = true;
         msgDiv.innerHTML = '';
@@ -397,14 +403,13 @@
         // กรณียังไม่ครบ 3 ครั้ง
         msgDiv.innerHTML = '<span class="msg-success">✅ บันทึกครั้งที่ ' + saveCounter + ' สำเร็จ! ขยับหน้าเล็กน้อยแล้วกดอีกครั้ง</span>';
         btnSave.disabled = false;
-        btnSave.innerHTML = '📸 บันทึกเพิ่ม <span class="count-badge" id="saveCount">' + saveCounter + '</span>';
+        btnSave.innerHTML = '📸 บันทึกมุมต่อไป <span class="count-badge" id="saveCount">' + saveCounter + '</span>';
       }
-      // ===================================================
 
     } catch (e) {
       msgDiv.innerHTML = '<span class="msg-error">❌ บันทึกล้มเหลว: ' + e.message + '</span>';
       btnSave.disabled = false;
-      btnSave.innerHTML = '📸 บันทึกใบหน้า <span class="count-badge" id="saveCount">' + saveCounter + '</span>';
+      btnSave.innerHTML = '📸 ลองใหม่อีกครั้ง <span class="count-badge" id="saveCount">' + saveCounter + '</span>';
     }
   }
 </script>
