@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>สแกนเข้างาน</title>
+  <title>สแกนเข้างาน ERC</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.js"></script>
@@ -258,8 +258,8 @@
 <div class="page-wrap">
 
   <div class="top-bar">
-    <a href="index.html" class="back-btn">← กลับ</a>
-    <h2>📷 สแกนเข้างาน</h2>
+    <img src="https://www.erc.or.th/web-upload/200xf869baf82be74c18cc110e974eea8d5c/filecenter/admin_patawee/L/ERC%20New%20Logo%202014.png" width="35%">
+    <h2>📷 สแกนเข้างาน ERC</h2>
     <div class="spacer"></div>
   </div>
 
@@ -321,7 +321,7 @@
 
   // ===== Init =====
   if (!API_URL) {
-    showError('ยังไม่ได้ตั้งค่า API URL — <a href="config.html" style="color:#fbbf24">ไปตั้งค่า</a>');
+    showError('โหลดค่า API URL ไม่สำเร็จ');
   } else {
     window.addEventListener('load', init);
   }
