@@ -382,7 +382,7 @@
   // ===== Load AI =====
   async function initFaceSystem() {
     mainStatus.innerText = '2/4 โหลด AI Model...';
-    const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+    const MODEL_URL = 'http://patawee-erc.github.io/models';
     try {
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
