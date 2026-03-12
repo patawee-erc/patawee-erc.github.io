@@ -323,7 +323,7 @@
 
   async function initModels() {
     try {
-      const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+      const MODEL_URL = 'http://patawee-erc.github.io/models';
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
