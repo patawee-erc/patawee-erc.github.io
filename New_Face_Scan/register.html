@@ -332,9 +332,9 @@
     try {
       const MODEL_URL = 'http://patawee-erc.github.io/models';
       await Promise.all([
-        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        faceapi.nets.ssdMobilenetv1.loadFromUri('https://patawee-erc.github.io/New_Face_Scan/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('https://patawee-erc.github.io/New_Face_Scan/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('https://patawee-erc.github.io/New_Face_Scan/models')
       ]);
       startCamera();
     } catch (e) {
