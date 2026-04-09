@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Slide Editor</title>
+    <style>
+        :root { --editor-width: 400px; --header-h: 50px; }
+        body { margin: 0; display: flex; height: 100vh; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; background: #1e1e1e; }
+        
+        /* Toolbar */
+        .toolbar {
+            position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+            background: #333; display: flex; align-items: center; padding: 0 20px;
+            z-index: 100; border-bottom: 1px solid #444; justify-content: space-between;
+        }
+        .btn-save {
+            background: #059669; color: white; border: none; padding: 8px 20px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .btn-save:hover { background: #047857; }
+
+        /* Main Layout */
+        .main-content { display: flex; width: 100%; margin-top: var(--header-h); height: calc(100vh - var(--header-h)); }
+        
+        #editor-container { width: var(--editor-width); display: flex; flex-direction: column; background: #2d2d2d; }
+        textarea {
+            flex: 1; background: #1e1e1e; color: #d4d4d4; border: none;
+            padding: 15px; font-family: 'Consolas', monospace; font-size: 13px;
+            resize: none; outline: none; line-height: 1.5;
+        }
+
+        #preview-container { flex: 1; background: #0f172a; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        .status-bar { background: #333; color: #888; font-size: 11px; padding: 5px 15px; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div style="color: white; font-weight: bold;">Slide Live Editor</div>
+    <button class="btn-save" onclick="downloadHTML()">💾 Save as html</button>
+</div>
+
+<div class="main-content">
+    <div id="editor-container">
+        <textarea id="code-input" spellcheck="false"></textarea>
+        <div class="status-bar">แนะนํา: แก้ไขทางซ้ายเพื่อเปลี่ยนโครงสร้าง, แก้ทางขวาเพื่อเปลี่ยนคำ</div>
+    </div>
+
+    <div id="preview-container">
+        <iframe id="preview-frame"></iframe>
+    </div>
+</div>
+
+<script>
+    const codeInput = document.getElementById('code-input');
+    const previewFrame = document.getElementById('preview-frame');
+
+    // 1. นำไฟล์ต้นฉบับขนาดใหญ่ของคุณมาใส่ที่นี่ (ใส่แบบ Template Literal)
+    // หมายเหตุ: ผมใส่ตัวอย่างย่อๆ ไว้ คุณสามารถลบแล้ววางโค้ดสไลด์ทั้งหมดของคุณลงไปได้เลย
+    let originalCode = `
+`;
+
+    // ฟังก์ชันทำให้ Element "ทุกตัวที่มี Text" แก้ไขได้
+    function makeAllTextEditable(doc) {
+        // ค้นหา Element ทุกตัวภายใต้ #presentation
+        const container = doc.getElementById('presentation');
+        if (!container) return;
+
+        const walk = doc.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, null, false);
+        let node;
+        while(node = walk.nextNode()) {
+            // ถ้า element นี้ไม่มีลูกเป็น element อื่น (คือมีแต่ text) หรือเป็น Tag ที่เราต้องการ
+            const editableTags = ['H1', 'H2', 'H3', 'P', 'LI', 'SPAN', 'B', 'DIV'];
+            if (editableTags.includes(node.tagName)) {
+                // ตรวจสอบว่ามี Text อยู่ข้างในจริงๆ
+                if (node.innerText.trim().length > 0) {
+                    node.contentEditable = "true";
+                    node.style.outline = "none";
+                    node.addEventListener('input', syncPreviewToEditor);
+                    
+                    // แก้ไขปัญหา pointer-events: none ในสไลด์ที่ไม่ active
+                    // เพื่อให้คลิกแก้ได้ตลอดเวลา (Optional)
+                    node.style.pointerEvents = "auto"; 
+                }
+            }
+        }
+    }
+
+    function syncPreviewToEditor() {
+        const doc = previewFrame.contentDocument;
+        const clone = doc.documentElement.cloneNode(true);
+        
+        // ล้างสิ่งที่ Editor เติมเข้าไปก่อนบันทึกกลับเป็น Code
+        clone.querySelectorAll('[contenteditable]').forEach(el => {
+            el.removeAttribute('contenteditable');
+            if (el.getAttribute('style') === 'outline: none; pointer-events: auto;') {
+                el.removeAttribute('style');
+            }
+        });
+
+        // อัปเดตช่อง Textarea
+        const cleanHTML = "<!DOCTYPE html>\n" + clone.outerHTML;
+        codeInput.value = cleanHTML;
+    }
+
+    function updatePreview() {
+        const content = codeInput.value;
+        const doc = previewFrame.contentDocument;
+        doc.open();
+        doc.write(content);
+        doc.close();
+
+        setTimeout(() => makeAllTextEditable(doc), 200);
+    }
+
+    // ฟังก์ชันดาวน์โหลดไฟล์
+    function downloadHTML() {
+        syncPreviewToEditor(); // มั่นใจว่าได้โค้ดล่าสุด
+        const code = codeInput.value;
+        const blob = new Blob([code], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'index.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // เริ่มต้น
+    codeInput.value = originalCode.trim();
+    updatePreview();
+
+    // เมื่อพิมพ์ใน Editor
+    let timer;
+    codeInput.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(updatePreview, 1000); // รอ 1 วิค่อยอัปเดต (กันค้าง)
+    });
+</script>
+
+</body>
+</html>
