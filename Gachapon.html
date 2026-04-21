@@ -322,6 +322,21 @@
         .winner-overlay.open .close-winner-btn { opacity: 1; transform: translateY(0); transition-delay: 0.8s; }
         .close-winner-btn:hover { transform: scale(1.1); background: #fff; box-shadow: 0 20px 45px rgba(0,0,0,0.4); }
 
+
+        /* --- SUSPENSE SHAKE ANIMATION --- */
+        @keyframes suspenseShake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-4px, 3px) rotate(-2deg); }
+            50% { transform: translate(4px, -3px) rotate(2deg); }
+            75% { transform: translate(-3px, -4px) rotate(-1deg); }
+        }
+        .capsule-open.shaking {
+            animation: suspenseShake 0.1s infinite;
+        }
+        
+        /* ปรับให้จังหวะฝาแคปซูลเปิดช้าลงและดูอลังการขึ้น (แทนที่ของเดิม) */
+        .capsule-half { width: 380px; height: 190px; position: absolute; transition: 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+
     </style>
 </head>
 <body>
@@ -518,11 +533,12 @@
                 resultBall.classList.add('drop');
                 playSound(300, 'sine', 0.2, 0.3);
 
-                setTimeout(() => { revealWinner(winColorObj); }, 800);
+                // เปลี่ยนเวลาตรงนี้ จาก 800 เป็น 1500 (1.5 วินาที)
+                setTimeout(() => { revealWinner(winColorObj); }, 1500); 
             }, 800);
         }
 
-        function revealWinner(colorObj) {
+       function revealWinner(colorObj) {
             const winnerIdx = Math.floor(Math.random() * namesArray.length);
             const winner = namesArray[winnerIdx];
             
@@ -533,18 +549,35 @@
             winnerOverlay.classList.add('active');
             addToLog(winner, colorObj.main);
 
+            // --- เริ่มเอฟเฟกต์บิ้วอารมณ์ (Suspense) ---
+            const capsuleContainer = document.querySelector('.capsule-open');
+            capsuleContainer.classList.add('shaking'); // ทำให้แคปซูลสั่น
+            
+            // เล่นเสียงตึกตักรัวๆ
+            let ticks = 0;
+            let tickInterval = setInterval(() => {
+                playSound(150 + (ticks * 20), 'square', 0.1, 0.1); // เสียงค่อยๆ สูงขึ้นนิดๆ
+                ticks++;
+            }, 250); 
+
+            // รอ 3 วินาที (3000ms) ก่อนเปิดแคปซูล
             setTimeout(() => {
+                clearInterval(tickInterval); // หยุดเสียงตึกตัก
+                capsuleContainer.classList.remove('shaking'); // หยุดสั่น
+                
                 playSound(600, 'sine', 0.5, 0.3);
                 playSound(800, 'triangle', 0.6, 0.3);
                 winnerOverlay.classList.add('open');
                 fireConfetti();
-            }, 200);
+            }, 1800); 
+            // ----------------------------------------
 
             namesArray.splice(winnerIdx, 1);
             nameInput.value = namesArray.join('\n');
             updateCount();
             resultBall.classList.remove('drop');
         }
+
 
         function addToLog(name, colorStr) {
             winnerHistory.push({name, color: colorStr});
