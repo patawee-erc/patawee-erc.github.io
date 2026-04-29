@@ -128,7 +128,7 @@
     </div>
 
     <!-- [ใหม่] เพิ่มพื้นที่ซ่อนสำหรับ iframe ที่ใช้แคปภาพ -->
-    <div id="captureContainer" style="position: absolute; top: -9999px; left: -9999px; width: 1920px; height: 1080px; overflow: hidden; pointer-events: none;"></div>
+   <div id="captureContainer" style="position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; opacity: 0; pointer-events: none; z-index: -9999; overflow: hidden;"></div>
 
 
     <script>
@@ -207,8 +207,9 @@
         };
         resizer.addEventListener('mousedown', mouseDownHandler);
 
+       
         // ==========================================
-        //  [ใหม่] ฟังก์ชัน Export to PPTX ทั้งหมด
+        //  ฟังก์ชัน Export to PPTX (รองรับฟอนต์ Kanit & Google Fonts เต็มรูปแบบ)
         // ==========================================
         async function exportToPptx() {
             const htmlContent = editor.getValue();
@@ -217,17 +218,18 @@
                 return;
             }
 
-            // แสดง Modal
             const modal = document.getElementById('progressModal');
             const progressFill = document.getElementById('progressFill');
             const statusText = document.getElementById('statusText');
             modal.style.display = 'flex';
             progressFill.style.width = '0%';
-            statusText.innerText = "⏳ กำลังเตรียมพื้นที่เรนเดอร์...";
+            statusText.innerText = "⏳ กำลังสร้างพื้นที่และโหลดโค้ด...";
 
-            // 1. สร้าง Iframe ลับเพื่อโหลดโค้ด
+            // 1. สร้าง Iframe (ซ่อนอยู่หลังจอ)
             const captureContainer = document.getElementById('captureContainer');
+            captureContainer.style.cssText = "position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; opacity: 0.01; pointer-events: none; z-index: -1;";
             captureContainer.innerHTML = '';
+            
             const iframe = document.createElement('iframe');
             iframe.style.width = '1920px';
             iframe.style.height = '1080px';
@@ -239,59 +241,107 @@
             doc.write(htmlContent);
             doc.close();
 
-            // 2. รอให้ทรัพยากร (เช่น font) โหลดเสร็จ
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            statusText.innerText = "⏳ กำลังดาวน์โหลดฟอนต์ Kanit (Google Fonts)...";
 
-            // 3. ปิด Animation และ UI Controls ใน iframe ลับ
-            const style = doc.createElement('style');
-            style.innerHTML = `
-                .slide { transition: none !important; opacity: 0 !important; visibility: hidden !important; transform: none !important; }
+            // 2. [เพิ่มใหม่] บังคับ Inject โค้ด Google Fonts Kanit เข้าไปใน Iframe เพื่อความชัวร์
+            const kanitLink = doc.createElement('link');
+            kanitLink.href = 'https://fonts.googleapis.com/css2?family=Kanit:wght@100;200;300;400;500;600;700;800;900&display=swap';
+            kanitLink.rel = 'stylesheet';
+            doc.head.appendChild(kanitLink);
+
+            // รอ Iframe สร้าง DOM พื้นฐาน
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // 3. [สำคัญมาก] บังคับให้ Browser รอจนกว่าฟอนต์ "Kanit" จะถูกโหลดเสร็จจริงๆ
+            try {
+                if (doc.fonts) {
+                    // สั่งให้โหลดฟอนต์ Kanit ล่วงหน้า (บังคับโหลดแบบ 400 ธรรมดา และ 700 ตัวหนา)
+                    await doc.fonts.load('400 16px "Kanit"');
+                    await doc.fonts.load('700 16px "Kanit"');
+                    await doc.fonts.ready; // รอให้ฟอนต์ทุกตัวในระบบพร้อม
+                }
+            } catch (e) {
+                console.warn("Font API loading issue", e);
+            }
+
+            // ให้เวลา Render อีกนิดหลังฟอนต์มาถึง
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 4. Inject CSS แก้ปัญหาฟอนต์ Kanit (สระจม/ตัวหนังสือติดกัน)
+            const fixStyle = doc.createElement('style');
+            fixStyle.innerHTML = `
+                .slide { transition: none !important; opacity: 0 !important; visibility: hidden !important; transform: none !important; animation: none !important; }
                 .slide.active { opacity: 1 !important; visibility: visible !important; transform: none !important; }
                 #presentation { transform: scale(1) !important; margin: 0 !important; top: 0 !important; left: 0 !important; }
                 .controls, .progress-bar-container, .slide-counter { display: none !important; }
+                
+                /* [สำคัญสำหรับ Kanit] แก้ตัวอักษรเกยกันและสระด้านบน/ล่างถูกตัด */
+                * {
+                    font-kerning: none !important;
+                    text-rendering: geometricPrecision !important;
+                    -webkit-font-smoothing: antialiased !important;
+                    letter-spacing: 0px !important;
+                    line-height: 1.5 !important; /* ป้องกันสระภาษาไทยด้านบน/ล่าง (เช่น ไม้โท, สระอู) โดนตัด */
+                }
             `;
-            doc.head.appendChild(style);
+            doc.head.appendChild(fixStyle);
 
             const presentation = doc.getElementById('presentation');
             const slides = doc.querySelectorAll('.slide');
 
             if (!presentation || !slides || slides.length === 0) {
-                statusText.innerText = "❌ ไม่พบ Element หลัก (#presentation) หรือสไลด์ (.slide) ในโค้ดครับ";
+                statusText.innerText = "❌ ไม่พบ #presentation หรือ .slide ในโค้ดครับ";
                 await new Promise(resolve => setTimeout(resolve, 3000));
                 modal.style.display = 'none';
                 return;
             }
             
-            // 4. เริ่มสร้าง PPTX และวนลูปแคปภาพ
+            // 5. เริ่มสร้าง PPTX และวนลูปแคปภาพ
             let pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_16x9';
 
             for (let i = 0; i < slides.length; i++) {
-                statusText.innerText = `📸 กำลังประมวลผลสไลด์... (${i + 1}/${slides.length})`;
+                statusText.innerText = `📸 กำลังเรนเดอร์สไลด์... (${i + 1}/${slides.length})`;
+                
                 slides.forEach(s => s.classList.remove('active'));
                 slides[i].classList.add('active');
-                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // รอหน้าจออัปเดต
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-                const canvas = await html2canvas(presentation, { scale: 1, useCORS: true, logging: false });
-                const imgData = canvas.toDataURL("image/png");
+                try {
+                    const canvas = await html2canvas(presentation, { 
+                        scale: 2,               
+                        useCORS: true,          // จำเป็นมากสำหรับ Google Fonts
+                        allowTaint: true,       
+                        logging: false,
+                        backgroundColor: window.getComputedStyle(presentation).backgroundColor || '#ffffff',
+                    });
+                    
+                    const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-                let pptSlide = pptx.addSlide();
-                pptSlide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
+                    let pptSlide = pptx.addSlide();
+                    pptSlide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
+
+                } catch (err) {
+                    console.error("Error capturing slide", i, err);
+                }
 
                 let progressPercent = ((i + 1) / slides.length) * 100;
                 progressFill.style.width = progressPercent + '%';
             }
 
-            // 5. บันทึกและดาวน์โหลดไฟล์
-            statusText.innerText = "💾 กำลังสร้างไฟล์ PowerPoint...";
-            pptx.writeFile({ fileName: "Presentation_Export.pptx" }).then(() => {
-                statusText.innerText = "✅ สำเร็จ! ไฟล์กำลังจะถูกดาวน์โหลด";
-                setTimeout(() => { modal.style.display = 'none'; }, 2000);
-            }).catch((err) => {
-                statusText.innerText = "❌ เกิดข้อผิดพลาด: " + err.message;
+            // 6. บันทึกและดาวน์โหลดไฟล์
+            statusText.innerText = "💾 กำลังแพ็คไฟล์ PowerPoint...";
+            try {
+                await pptx.writeFile({ fileName: "Presentation_Export.pptx" });
+                statusText.innerText = "✅ สำเร็จ! ไฟล์กำลังถูกดาวน์โหลด";
+                setTimeout(() => { modal.style.display = 'none'; captureContainer.innerHTML = ''; }, 2000);
+            } catch (err) {
+                statusText.innerText = "❌ เกิดข้อผิดพลาดตอนเซฟ: " + err.message;
                 console.error(err);
-                setTimeout(() => { modal.style.display = 'none'; }, 5000);
-            });
+                setTimeout(() => { modal.style.display = 'none'; captureContainer.innerHTML = ''; }, 5000);
+            }
         }
 
     </script>
