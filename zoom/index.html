@@ -164,33 +164,29 @@
 
                 days.push(
                     <div 
-                        key={d} 
-                        onClick={() => onSelectDate(dateObj)}
-                        className={`min-h-[90px] p-2 border border-gray-100 cursor-pointer transition-all relative flex flex-col group
-                            ${isSelected ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset shadow-inner rounded-md' : 'bg-white hover:bg-gray-50'}
-                        `}
-                    >
-                        <span className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full z-10
-                            ${isToday ? 'bg-blue-600 text-white shadow-md' : (isSelected ? 'text-blue-800' : 'text-gray-700')}
-                            ${!isToday && !isSelected ? 'group-hover:bg-gray-200' : ''}
-                        `}>
-                            {d}
-                        </span>
-                        
-                        <div className="mt-2 flex flex-col gap-1 overflow-hidden z-10">
-                            {hasMeetings && dayMeetings.slice(0, 3).map((m, idx) => (
-                                <div key={idx} className="text-[11px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded truncate font-medium border border-green-200" title={m.title}>
-                                    <span className="font-bold mr-1">{m.time ? m.time.split('-')[0].split('.')[0].trim() : ''}</span>
-                                    {m.title}
-                                </div>
-                            ))}
-                            {dayMeetings.length > 3 && (
-                                <div className="text-[10px] text-gray-500 font-medium pl-1">
-                                    + อีก {dayMeetings.length - 3} รายการ
-                                </div>
-                            )}
-                        </div>
-                    </div>
+    key={d} 
+    onClick={() => onSelectDate(dateObj)}
+    className={`min-h-[80px] p-2 border border-gray-100 cursor-pointer transition-all relative flex flex-col items-center group
+        ${isSelected ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset shadow-inner rounded-md' : 'bg-white hover:bg-gray-50'}
+    `}
+>
+    {/* ตัวเลขวันที่ */}
+    <span className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full z-10 mb-1
+        ${isToday ? 'bg-blue-600 text-white shadow-md' : (isSelected ? 'text-blue-800' : 'text-gray-700')}
+        ${!isToday && !isSelected ? 'group-hover:bg-gray-200' : ''}
+    `}>
+        {d}
+    </span>
+    
+    {/* แสดงแค่จำนวนรายการประชุม (ถ้ามี) */}
+    {hasMeetings && (
+        <div className="mt-auto w-full z-10">
+            <div className="text-xs bg-green-100 text-green-700 px-1 py-1.5 rounded-md font-bold border border-green-200 text-center shadow-sm">
+                {dayMeetings.length} รายการ
+            </div>
+        </div>
+    )}
+</div>
                 );
             }
 
