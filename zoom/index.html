@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบปฏิทินการประชุม (ใช้งานจริง)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- PapaParse for CSV reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Helper Functions & Parsers ---
+
+        const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const thaiMonthsAbbr = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+        const parseDateString = (dateStr) => {
+            if (!dateStr) return null;
+            dateStr = dateStr.toString().trim();
+            
+            // 1. ตรวจสอบรูปแบบมาตรฐาน DD/MM/YYYY หรือ D/M/YYYY (อนุญาตให้มีเวลาต่อท้ายได้)
+            const matchSlash = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (matchSlash) {
+                let day = parseInt(matchSlash[1]);
+                let month = parseInt(matchSlash[2]) - 1;
+                let year = parseInt(matchSlash[3]);
+                if (year > 2500) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+                return new Date(year, month, day);
+            }
+
+            // 2. ตรวจสอบรูปแบบภาษาไทย (เช่น 13 สิงหาคม 2564 หรือ 6 ส.ค. 64)
+            const parts = dateStr.split(/\s+/);
+            if (parts.length >= 3) {
+                let day = parseInt(parts[0]);
+                let monthStr = parts[1];
+                let year = parseInt(parts[2]);
+
+                let monthIndex = thaiMonths.indexOf(monthStr);
+                if (monthIndex === -1) monthIndex = thaiMonthsAbbr.indexOf(monthStr);
+
+                if (monthIndex !== -1 && !isNaN(day) && !isNaN(year)) {
+                    if (year < 100) year += 2500; 
+                    if (year > 2500) year -= 543; 
+                    return new Date(year, monthIndex, day);
+                }
+            }
+
+            // 3. ถ้าไม่ตรงกับเงื่อนไขด้านบน ให้ระบบมาตรฐานของ JavaScript ลองอ่าน
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d;
+            
+            return null;
+        };
+
+        const isSameDay = (d1, d2) => {
+            return d1 && d2 && d1.getDate() === d2.getDate() &&
+                d1.getMonth() === d2.getMonth() &&
+                d1.getFullYear() === d2.getFullYear();
+        };
+
+        const getCsvValue = (row, keywords) => {
+            const keys = Object.keys(row);
+            
+            // กรอง key ที่เป็น "ประทับเวลา" หรือ "timestamp" ทิ้งไปเลยแต่แรก เพื่อป้องกันการดึงผิดคอลัมน์
+            const validKeys = keys.filter(k => {
+                const lowerK = k.toLowerCase();
+                return !lowerK.includes('ประทับเวลา') &&
+                       !lowerK.includes('timestamp') &&
+                       !lowerK.includes('ประทับ') &&
+                       lowerK !== ''; 
+            });
+
+            // 1. ค้นหาแบบตรงตัวเป๊ะๆ ก่อน (Exact match)
+            for (let kw of keywords) {
+                const exactKey = validKeys.find(k => k.trim().toLowerCase() === kw.toLowerCase());
+                if (exactKey && row[exactKey] !== undefined && row[exactKey] !== '') {
+                    return row[exactKey].trim();
+                }
+            }
+            
+            // 2. ค้นหาแบบมีคำที่เกี่ยวข้อง (Partial match)
+            for (let kw of keywords) {
+                const partialKey = validKeys.find(k => k.toLowerCase().includes(kw.toLowerCase()));
+                if (partialKey && row[partialKey] !== undefined && row[partialKey] !== '') {
+                    return row[partialKey].trim();
+                }
+            }
+            
+            return '';
+        };
+
+        const generateMockData = () => {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = today.getMonth();
+            const d = today.getDate();
+            
+            return [
+                { id: 1, department: "ฝ่าย ทฟ.", title: "(ตัวอย่าง) ซักซ้อมแนวปฏิบัติ", date: new Date(y, m, d + 1), time: "15.00 น.", room: "ห้อง 2", app: "Zoom", host: "ITsup", contact: "ณฐกฤต" },
+                { id: 2, department: "ฝ่าย ตพ.", title: "(ตัวอย่าง) นิเทศน์นักศึกษาฝึกงาน", date: today, time: "15:00 - 16:00 น.", room: "ห้องประชุม 9", app: "Zoom", host: "ITsup", contact: "หทัยชนก" },
+                { id: 3, department: "ฝ่าย สข.", title: "(ตัวอย่าง) ประชุมการบริหารจัดการ", date: today, time: "10.30 - 12.00 น.", room: "-", app: "MS Teams", host: "ITsup", contact: "จิราภรณ์" },
+                { id: 4, department: "ฝ่าย อพ.", title: "(ตัวอย่าง) คณะอนุกรรมการกลั่นกรอง", date: new Date(y, m, d - 2), time: "13.30 น.", room: "ห้อง 11", app: "-", host: "Admin", contact: "780" },
+            ];
+        };
+
+        // --- Components ---
+
+        const Calendar = ({ currentMonth, onMonthChange, meetings, selectedDate, onSelectDate }) => {
+            const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+            const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+            
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const dayNames = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+
+            const handlePrevMonth = () => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+            const handleNextMonth = () => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+            const handleToday = () => {
+                const today = new Date();
+                onMonthChange(new Date(today.getFullYear(), today.getMonth(), 1));
+                onSelectDate(today);
+            };
+
+            const days = [];
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                days.push(<div key={`empty-${i}`} className="p-2 border border-transparent bg-gray-50/50"></div>);
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d);
+                const isSelected = selectedDate && isSameDay(dateObj, selectedDate);
+                const isToday = isSameDay(dateObj, new Date());
+                
+                const dayMeetings = meetings.filter(m => m.date && isSameDay(m.date, dateObj));
+                const hasMeetings = dayMeetings.length > 0;
+
+                days.push(
+                    <div 
+                        key={d} 
+                        onClick={() => onSelectDate(dateObj)}
+                        className={`min-h-[90px] p-2 border border-gray-100 cursor-pointer transition-all relative flex flex-col group
+                            ${isSelected ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset shadow-inner rounded-md' : 'bg-white hover:bg-gray-50'}
+                        `}
+                    >
+                        <span className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full z-10
+                            ${isToday ? 'bg-blue-600 text-white shadow-md' : (isSelected ? 'text-blue-800' : 'text-gray-700')}
+                            ${!isToday && !isSelected ? 'group-hover:bg-gray-200' : ''}
+                        `}>
+                            {d}
+                        </span>
+                        
+                        <div className="mt-2 flex flex-col gap-1 overflow-hidden z-10">
+                            {hasMeetings && dayMeetings.slice(0, 3).map((m, idx) => (
+                                <div key={idx} className="text-[11px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded truncate font-medium border border-green-200" title={m.title}>
+                                    <span className="font-bold mr-1">{m.time ? m.time.split('-')[0].split('.')[0].trim() : ''}</span>
+                                    {m.title}
+                                </div>
+                            ))}
+                            {dayMeetings.length > 3 && (
+                                <div className="text-[10px] text-gray-500 font-medium pl-1">
+                                    + อีก {dayMeetings.length - 3} รายการ
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-gray-800 w-48">
+                                {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear() + 543}
+                            </h2>
+                            <button onClick={handleToday} className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md transition-colors">
+                                วันนี้
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <i data-lucide="chevron-left" className="w-5 h-5 text-gray-600"></i>
+                            </button>
+                            <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <i data-lucide="chevron-right" className="w-5 h-5 text-gray-600"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+                        {dayNames.map((day, idx) => (
+                            <div key={day} className={`py-2 text-center text-xs font-bold uppercase tracking-wider border-r last:border-r-0 border-gray-200 
+                                ${idx === 0 || idx === 6 ? 'text-red-500' : 'text-gray-500'}`}>
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 bg-gray-200 gap-px">
+                        {days}
+                    </div>
+                </div>
+            );
+        };
+
+        const MeetingCard = ({ meeting }) => (
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+                <div className="flex justify-between items-start mb-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                        {meeting.department || 'ไม่ระบุฝ่าย'}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-700 flex items-center bg-gray-100 px-2 py-0.5 rounded-md">
+                        <i data-lucide="clock" className="w-3.5 h-3.5 mr-1.5 text-gray-500"></i>
+                        {meeting.time || 'ไม่ระบุ'}
+                    </span>
+                </div>
+                <h3 className="text-base font-bold text-gray-900 mb-3 leading-snug">{meeting.title || 'ไม่มีชื่อการประชุม'}</h3>
+                
+                <div className="grid grid-cols-1 gap-2.5 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                        <i data-lucide="map-pin" className="w-4 h-4 text-blue-500 flex-shrink-0"></i>
+                        <span className="truncate font-medium" title={meeting.room}>{meeting.room || 'ไม่ระบุสถานที่'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <i data-lucide="monitor-play" className="w-4 h-4 text-green-500 flex-shrink-0"></i>
+                        <span className="truncate">
+                            <span className="font-medium text-gray-800">{meeting.app || '-'}</span> 
+                            {meeting.host && <span className="text-gray-500 text-xs ml-1">(Host: {meeting.host})</span>}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <i data-lucide="user" className="w-4 h-4 text-purple-500 flex-shrink-0"></i>
+                        <span className="truncate text-xs" title={meeting.contact}>ผู้ประสานงาน: {meeting.contact || '-'}</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            // URL จาก Google Sheets ของคุณ
+            const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_BDMZZ15QU3L4n8EydUZgfTX9bXOVzKL28WvVbs5qLeCz3k_FccEIOo7l7Rmz71YW2caj0od8MdsG/pub?gid=186420657&single=true&output=csv";
+
+            const [meetings, setMeetings] = useState([]);
+            const [currentMonth, setCurrentMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+            const [selectedDate, setSelectedDate] = useState(new Date());
+            const [searchQuery, setSearchQuery] = useState("");
+            
+            const [isUploading, setIsUploading] = useState(false);
+            const [isFetching, setIsFetching] = useState(false);
+            const [csvUrl, setCsvUrl] = useState(DEFAULT_CSV_URL);
+            const [hasUserData, setHasUserData] = useState(false);
+
+            useEffect(() => {
+                const loadLocalOrMock = () => {
+                    const savedData = localStorage.getItem('meeting_calendar_data_v2');
+                    if (savedData) {
+                        try {
+                            const parsed = JSON.parse(savedData);
+                            const formattedData = parsed.map(m => ({
+                                ...m,
+                                date: m.date ? new Date(m.date) : null
+                            }));
+                            setMeetings(formattedData);
+                            setHasUserData(true);
+                        } catch (e) {
+                            console.error("Error parsing local data", e);
+                            setMeetings(generateMockData());
+                        }
+                    } else {
+                        setMeetings(generateMockData());
+                    }
+                };
+
+                // โหลดข้อมูลอัตโนมัติจาก URL ทันทีเมื่อเปิดเว็บ
+                if (DEFAULT_CSV_URL && DEFAULT_CSV_URL.startsWith("http")) {
+                    setIsFetching(true);
+                    Papa.parse(DEFAULT_CSV_URL, {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            processParsedData(results.data, true); // ส่ง true เพื่อปิดแจ้งเตือนตอนโหลดอัตโนมัติ
+                            setIsFetching(false);
+                        },
+                        error: function(error) {
+                            console.error("Error auto-fetching CSV:", error);
+                            loadLocalOrMock(); // ถ้าโหลดไม่ได้ ให้ดึงข้อมูลเก่ามาแสดงแทน
+                            setIsFetching(false);
+                        }
+                    });
+                } else {
+                    loadLocalOrMock();
+                }
+            }, []);
+
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+
+            // ฟังก์ชันกลางสำหรับประมวลผล Data
+            const processParsedData = (data, isAutoLoad = false) => {
+                const parsedData = data.map((row, index) => {
+                    const dateStr = getCsvValue(row, ['วันที่จัดประชุม', 'วันที่', 'date']);
+                    const dateObj = parseDateString(dateStr);
+                    
+                    // หาข้อมูลเวลาที่แฝงอยู่ในช่องวันที่ (เผื่อเคสฉุกเฉิน)
+                    let extractedTime = "";
+                    if (dateStr) {
+                        const timeMatch = dateStr.match(/\b(\d{1,2}[:\.]\d{2}(?:[:\.]\d{2})?(?:\s*-\s*\d{1,2}[:\.]\d{2}(?:[:\.]\d{2})?)?(?:\s*[น\.]| AM| PM)?)\b/i);
+                        if (timeMatch) {
+                            extractedTime = timeMatch[1];
+                        }
+                    }
+                    
+                    // สำคัญ: ดึงข้อมูลจากช่อง "เวลาที่จัดประชุม" ก่อนเสมอเป็นอันดับ 1
+                    const baseTime = getCsvValue(row, ['เวลาที่จัดประชุม', 'เวลา', 'time']);
+                    
+                    // ถ้าช่องเวลาว่างเปล่าจริงๆ ค่อยไปใช้เวลาที่แฝงมาจากช่องวันที่
+                    const finalTime = baseTime || extractedTime;
+
+                    return {
+                        id: Date.now() + index, 
+                        department: getCsvValue(row, ['ฝ่ายงาน', 'ฝ่าย', 'department']),
+                        title: getCsvValue(row, ['ชื่อการประชุม', 'หัวข้อ', 'title', 'name']),
+                        date: dateObj,
+                        time: finalTime,
+                        room: getCsvValue(row, ['ห้องประชุม', 'ห้อง', 'room']),
+                        app: getCsvValue(row, ['โปรแกรม video conference', 'โปรแกรม', 'app', 'zoom', 'teams']),
+                        host: getCsvValue(row, ['account', 'host', 'ผู้ดูแล']),
+                        contact: getCsvValue(row, ['ชื่อผู้ประสานงาน', 'เบอร์ติดต่อ', 'contact', 'ผู้ติดต่อ'])
+                    };
+                }).filter(m => m.title !== '');
+
+                if (parsedData.length > 0) {
+                    setMeetings(parsedData);
+                    setHasUserData(true);
+                    // บันทึกลง LocalStorage เพื่อให้มีข้อมูลไว้แสดงกรณีเน็ตหลุด
+                    localStorage.setItem('meeting_calendar_data_v2', JSON.stringify(parsedData));
+                    
+                    const validDates = parsedData.filter(m => m.date).map(m => m.date.getTime());
+                    if(validDates.length > 0) {
+                        const maxDate = new Date(Math.max(...validDates));
+                        setCurrentMonth(new Date(maxDate.getFullYear(), maxDate.getMonth(), 1));
+                        setSelectedDate(maxDate);
+                    }
+                    
+                    // แจ้งเตือนเฉพาะกรณีที่มีคนมากดปุ่มดึงข้อมูลเอง
+                    if (!isAutoLoad) {
+                        alert(`โหลดข้อมูลสำเร็จ ${parsedData.length} รายการ\nระบบได้อัปเดตข้อมูลล่าสุดแล้ว`);
+                    }
+                } else {
+                    if (!isAutoLoad) {
+                        alert("ไม่พบข้อมูลหรือรูปแบบคอลัมน์ไม่ถูกต้อง กรุณาตรวจสอบไฟล์ CSV");
+                    }
+                }
+            };
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setIsUploading(true);
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        processParsedData(results.data, false);
+                        setIsUploading(false);
+                        event.target.value = ''; 
+                    },
+                    error: function(error) {
+                        console.error("Error parsing CSV:", error);
+                        alert("เกิดข้อผิดพลาดในการอ่านไฟล์");
+                        setIsUploading(false);
+                    }
+                });
+            };
+
+            const handleFetchUrl = () => {
+                if (!csvUrl) return;
+                setIsFetching(true);
+                
+                Papa.parse(csvUrl, {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        processParsedData(results.data, false);
+                        setIsFetching(false);
+                    },
+                    error: function(error) {
+                        console.error("Error fetching CSV from URL:", error);
+                        alert("เกิดข้อผิดพลาดในการดึงข้อมูลจาก URL\nโปรดตรวจสอบว่า URL ถูกต้องและรองรับการเข้าถึงแบบสาธารณะ (CORS Policy)");
+                        setIsFetching(false);
+                    }
+                });
+            };
+
+            const handleClearData = () => {
+                if(confirm('คุณต้องการล้างข้อมูลที่นำเข้าไว้ทั้งหมด และกลับไปใช้ข้อมูลตัวอย่างใช่หรือไม่?')) {
+                    localStorage.removeItem('meeting_calendar_data_v2');
+                    localStorage.removeItem('meeting_calendar_data');
+                    setMeetings(generateMockData());
+                    setHasUserData(false);
+                    const today = new Date();
+                    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                    setSelectedDate(today);
+                }
+            };
+
+            const filteredMeetings = useMemo(() => {
+                let filtered = meetings;
+                if (searchQuery.trim() !== "") {
+                    const query = searchQuery.toLowerCase();
+                    filtered = filtered.filter(m => 
+                        (m.title && m.title.toLowerCase().includes(query)) ||
+                        (m.department && m.department.toLowerCase().includes(query)) ||
+                        (m.contact && m.contact.toLowerCase().includes(query)) ||
+                        (m.room && m.room.toLowerCase().includes(query))
+                    );
+                } else if (selectedDate) {
+                    filtered = filtered.filter(m => isSameDay(m.date, selectedDate));
+                }
+                return filtered.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            }, [meetings, searchQuery, selectedDate]);
+
+            const meetingsInMonthCount = useMemo(() => {
+                return meetings.filter(m => m.date && 
+                    m.date.getMonth() === currentMonth.getMonth() &&
+                    m.date.getFullYear() === currentMonth.getFullYear()
+                ).length;
+            }, [meetings, currentMonth]);
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* Header */}
+                    <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-600 p-2.5 rounded-lg shadow-sm text-white">
+                                    <i data-lucide="calendar-range" className="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-gray-900 leading-tight">ระบบปฏิทินการขอประชุม</h1>
+                                    <p className="text-xs text-gray-500 font-medium">
+                                        {hasUserData ? "กำลังแสดงข้อมูลจากการนำเข้าล่าสุด" : "กำลังแสดงข้อมูลตัวอย่าง (Mock Data)"}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-3">
+                                {/* Input สำหรับ URL */}
+                                <div className="flex items-center shadow-sm rounded-md">
+                                    <input 
+                                        type="url" 
+                                        placeholder="วาง URL ของ CSV (เช่นลิงก์จาก Google Sheets)" 
+                                        className="text-sm border border-gray-300 rounded-l-md px-3 py-2 w-56 sm:w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-500"
+                                        value={csvUrl}
+                                        onChange={(e) => setCsvUrl(e.target.value)}
+                                        disabled={isFetching || isUploading}
+                                    />
+                                    <button 
+                                        onClick={handleFetchUrl} 
+                                        disabled={!csvUrl || isFetching || isUploading}
+                                        className="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold text-white bg-indigo-600 border border-transparent rounded-r-md hover:bg-indigo-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        title="อัปเดตข้อมูลจาก URL"
+                                    >
+                                        <i data-lucide={isFetching ? "loader-2" : "refresh-cw"} className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''} sm:mr-1.5`}></i>
+                                        <span className="hidden sm:inline">{isFetching ? 'กำลังโหลด...' : 'อัปเดตข้อมูล'}</span>
+                                    </button>
+                                </div>
+
+                                <div className="hidden sm:block w-px h-8 bg-gray-200 mx-1"></div>
+
+                                <label className="cursor-pointer inline-flex items-center justify-center px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none transition-colors">
+                                    <i data-lucide={isUploading ? "loader-2" : "upload"} className={`w-4 h-4 mr-1.5 text-gray-500 ${isUploading ? 'animate-spin' : ''}`}></i>
+                                    <span className="hidden sm:inline">{isUploading ? 'กำลังอัปโหลด...' : 'อัปโหลด CSV'}</span>
+                                    <span className="sm:hidden">{isUploading ? 'กำลังอัปโหลด...' : 'อัปโหลด'}</span>
+                                    <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isUploading || isFetching} />
+                                </label>
+
+                                {hasUserData && (
+                                    <button onClick={handleClearData} className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors" title="ลบข้อมูลที่นำเข้า">
+                                        <i data-lucide="trash-2" className="w-4 h-4 sm:mr-1.5"></i> <span className="hidden sm:inline">ล้างข้อมูล</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex flex-col lg:flex-row gap-6">
+                        
+                        {/* Left Column: Calendar & Stats */}
+                        <div className="w-full lg:w-2/3 flex flex-col gap-6">
+                            
+                            {/* Stats/Info Bar */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                                    <div className="bg-blue-50 p-3 rounded-full text-blue-600 border border-blue-100">
+                                        <i data-lucide="bar-chart-2" className="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">การประชุมทั้งหมด</p>
+                                        <p className="text-2xl font-black text-gray-800">{meetings.length}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                                    <div className="bg-green-50 p-3 rounded-full text-green-600 border border-green-100">
+                                        <i data-lucide="calendar-check" className="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">การประชุมเดือนนี้</p>
+                                        <p className="text-2xl font-black text-gray-800">{meetingsInMonthCount}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+                                    <div className="bg-purple-50 p-3 rounded-full text-purple-600 border border-purple-100 flex-shrink-0">
+                                        <i data-lucide="search" className="w-5 h-5"></i>
+                                    </div>
+                                    <div className="w-full">
+                                        <input 
+                                            type="text" 
+                                            placeholder="ค้นหาชื่อ, ฝ่าย, ห้อง..." 
+                                            className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent px-0 py-1 font-medium transition-colors"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Calendar Component */}
+                            <Calendar 
+                                currentMonth={currentMonth} 
+                                onMonthChange={setCurrentMonth}
+                                meetings={meetings}
+                                selectedDate={selectedDate}
+                                onSelectDate={(date) => {
+                                    setSelectedDate(date);
+                                    setSearchQuery(""); 
+                                }}
+                            />
+                        </div>
+
+                        {/* Right Column: Meeting Details List */}
+                        <div className="w-full lg:w-1/3 flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden h-[calc(100vh-6rem)] sticky top-20">
+                            <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center z-10">
+                                <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                                    <i data-lucide="clipboard-list" className="w-5 h-5 text-blue-600"></i>
+                                    {searchQuery ? 'ผลการค้นหา' : (
+                                        selectedDate ? (
+                                            isSameDay(selectedDate, new Date()) 
+                                            ? 'รายการประชุมวันนี้' 
+                                            : `วันที่ ${selectedDate.getDate()} ${['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`
+                                        ) : 'รายการทั้งหมด'
+                                    )}
+                                </h2>
+                                <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-200">
+                                    {filteredMeetings.length} รายการ
+                                </span>
+                            </div>
+                            
+                            <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-3 bg-gray-50/50">
+                                {filteredMeetings.length > 0 ? (
+                                    filteredMeetings.map(meeting => (
+                                        <MeetingCard key={meeting.id} meeting={meeting} />
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                                        <div className="bg-gray-100 p-4 rounded-full">
+                                            <i data-lucide="calendar-x" className="w-10 h-10 text-gray-300"></i>
+                                        </div>
+                                        <p className="text-sm font-medium">ไม่พบรายการประชุมในเงื่อนไขที่เลือก</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
