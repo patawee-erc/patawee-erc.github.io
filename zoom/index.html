@@ -227,39 +227,55 @@
             );
         };
 
-        const MeetingCard = ({ meeting }) => (
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
-                <div className="flex justify-between items-start mb-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-                        {meeting.department || 'ไม่ระบุฝ่าย'}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-700 flex items-center bg-gray-100 px-2 py-0.5 rounded-md">
-                        <i data-lucide="clock" className="w-3.5 h-3.5 mr-1.5 text-gray-500"></i>
-                        {meeting.time || 'ไม่ระบุ'}
+   const pastelThemes = [
+    { card: "bg-blue-50 border-blue-200 hover:border-blue-400", badge: "bg-blue-100 text-blue-800 border-blue-200", innerBox: "bg-white/70 border-blue-100" },
+    { card: "bg-rose-50 border-rose-200 hover:border-rose-400", badge: "bg-rose-100 text-rose-800 border-rose-200", innerBox: "bg-white/70 border-rose-100" },
+    { card: "bg-emerald-50 border-emerald-200 hover:border-emerald-400", badge: "bg-emerald-100 text-emerald-800 border-emerald-200", innerBox: "bg-white/70 border-emerald-100" },
+    { card: "bg-purple-50 border-purple-200 hover:border-purple-400", badge: "bg-purple-100 text-purple-800 border-purple-200", innerBox: "bg-white/70 border-purple-100" },
+    { card: "bg-amber-50 border-amber-200 hover:border-amber-400", badge: "bg-amber-100 text-amber-800 border-amber-200", innerBox: "bg-white/70 border-amber-100" },
+    { card: "bg-sky-50 border-sky-200 hover:border-sky-400", badge: "bg-sky-100 text-sky-800 border-sky-200", innerBox: "bg-white/70 border-sky-100" },
+    { card: "bg-fuchsia-50 border-fuchsia-200 hover:border-fuchsia-400", badge: "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200", innerBox: "bg-white/70 border-fuchsia-100" },
+    { card: "bg-teal-50 border-teal-200 hover:border-teal-400", badge: "bg-teal-100 text-teal-800 border-teal-200", innerBox: "bg-white/70 border-teal-100" }
+];
+
+const MeetingCard = ({ meeting }) => {
+    // ใช้รหัส ID ของการประชุมมาหารเอาเศษ เพื่อเลือกชุดสีจาก Array (ทำให้สีไม่เปลี่ยนสลับไปมาเวลากดคลิก)
+    const colorIndex = Number(meeting.id) % pastelThemes.length;
+    const theme = pastelThemes[colorIndex || 0];
+
+    return (
+        <div className={`p-4 rounded-lg shadow-sm border transition-all hover:shadow-md ${theme.card}`}>
+            <div className="flex justify-between items-start mb-2">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${theme.badge}`}>
+                    {meeting.department || 'ไม่ระบุฝ่าย'}
+                </span>
+                <span className="text-sm font-semibold text-gray-700 flex items-center bg-white/80 px-2 py-0.5 rounded-md shadow-sm">
+                    <i data-lucide="clock" className="w-3.5 h-3.5 mr-1.5 text-gray-500"></i>
+                    {meeting.time || 'ไม่ระบุ'}
+                </span>
+            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-3 leading-snug">{meeting.title || 'ไม่มีชื่อการประชุม'}</h3>
+            
+            <div className={`grid grid-cols-1 gap-2.5 text-sm text-gray-700 p-3 rounded-md border ${theme.innerBox}`}>
+                <div className="flex items-center gap-2.5">
+                    <i data-lucide="map-pin" className="w-4 h-4 text-blue-500 flex-shrink-0"></i>
+                    <span className="truncate font-medium" title={meeting.room}>{meeting.room || 'ไม่ระบุสถานที่'}</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                    <i data-lucide="monitor-play" className="w-4 h-4 text-green-500 flex-shrink-0"></i>
+                    <span className="truncate">
+                        <span className="font-medium text-gray-800">{meeting.app || '-'}</span> 
+                        {meeting.host && <span className="text-gray-500 text-xs ml-1">(Host: {meeting.host})</span>}
                     </span>
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-3 leading-snug">{meeting.title || 'ไม่มีชื่อการประชุม'}</h3>
-                
-                <div className="grid grid-cols-1 gap-2.5 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100">
-                    <div className="flex items-center gap-2.5">
-                        <i data-lucide="map-pin" className="w-4 h-4 text-blue-500 flex-shrink-0"></i>
-                        <span className="truncate font-medium" title={meeting.room}>{meeting.room || 'ไม่ระบุสถานที่'}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                        <i data-lucide="monitor-play" className="w-4 h-4 text-green-500 flex-shrink-0"></i>
-                        <span className="truncate">
-                            <span className="font-medium text-gray-800">{meeting.app || '-'}</span> 
-                            {meeting.host && <span className="text-gray-500 text-xs ml-1">(Host: {meeting.host})</span>}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                        <i data-lucide="user" className="w-4 h-4 text-purple-500 flex-shrink-0"></i>
-                        <span className="truncate text-xs" title={meeting.contact}>ผู้ประสานงาน: {meeting.contact || '-'}</span>
-                    </div>
+                <div className="flex items-center gap-2.5">
+                    <i data-lucide="user" className="w-4 h-4 text-purple-500 flex-shrink-0"></i>
+                    <span className="truncate text-xs" title={meeting.contact}>ผู้ประสานงาน: {meeting.contact || '-'}</span>
                 </div>
             </div>
-        );
-
+        </div>
+    );
+};
         const App = () => {
             // URL จาก Google Sheets
             const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_BDMZZ15QU3L4n8EydUZgfTX9bXOVzKL28WvVbs5qLeCz3k_FccEIOo7l7Rmz71YW2caj0od8MdsG/pub?gid=186420657&single=true&output=csv";
