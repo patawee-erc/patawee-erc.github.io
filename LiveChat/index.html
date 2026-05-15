@@ -374,7 +374,7 @@
         }
 
         if (msg.startsWith('/name ')) {
-          var newName = msg.replace('/ชื่อ ', '').trim().substring(0, 20);
+          var newName = msg.replace('/name ', '').trim().substring(0, 20);
           if (newName) {
             myName = newName;
             localStorage.setItem('chat_name', myName);
