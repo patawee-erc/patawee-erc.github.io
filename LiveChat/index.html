@@ -305,7 +305,9 @@
             const helpHtml = `
               <div style="text-align:center; font-weight:bold; margin-bottom:5px;">🤖 รายการคำสั่ง</div>
               • <b>/ชื่อ</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
+              • <b>/name</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
               • <b>/ลบหมด</b> -> ล้างแชท (ใส่รหัส)<br>
+              • <b>/del</b> -> ล้างแชท (ใส่รหัส)<br>
             `;
             createSystemMessage(helpHtml);
             inputField.value = '';
@@ -335,7 +337,43 @@
             return;
         }
 
+        if (msg === '/del') {
+            let password = prompt("🔐 ใส่รหัสลับเพื่อยืนยันการลบ (Admin):");
+            if (!password) { inputField.value = ''; return; }
+
+            createSystemMessage("🔄 กำลังตรวจสอบสิทธิ์...", '#e2e3e5', '#383d41');
+            
+            database.ref('admins/' + myId).set(password)
+            .then(() => {
+                return database.ref('chats').remove();
+            })
+            .then(() => {
+                createSystemMessage("✅ รหัสถูกต้อง! ลบข้อมูลแชทเรียบร้อยแล้ว", '#d4edda', '#155724');
+                database.ref('admins/' + myId).remove();
+            })
+            .catch((error) => {
+                console.error(error);
+                createSystemMessage("❌ รหัสผิด! หรือคุณไม่มีสิทธิ์ลบ", '#f8d7da', '#721c24');
+            });
+
+            inputField.value = '';
+            return;
+        }
+
         if (msg.startsWith('/ชื่อ ')) {
+          var newName = msg.replace('/ชื่อ ', '').trim().substring(0, 20);
+          if (newName) {
+            myName = newName;
+            localStorage.setItem('chat_name', myName);
+            userBadge.textContent = myName; // อัพเดทที่ Header ด้วย
+            createSystemMessage(`✅ เปลี่ยนชื่อเป็น: <b>${myName}</b> เรียบร้อย`, '#d4edda', '#155724');
+            database.ref('typing/' + myId).remove();
+          }
+          inputField.value = '';
+          return; 
+        }
+
+        if (msg.startsWith('/name ')) {
           var newName = msg.replace('/ชื่อ ', '').trim().substring(0, 20);
           if (newName) {
             myName = newName;
