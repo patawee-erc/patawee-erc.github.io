@@ -304,10 +304,10 @@
         if (msg === '/help' || msg === '/เมนู') {
             const helpHtml = `
               <div style="text-align:center; font-weight:bold; margin-bottom:5px;">🤖 รายการคำสั่ง</div>
-              • <b>/ชื่อ</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
-              • <b>/name</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
-              • <b>/ลบหมด</b> -> ล้างแชท (ใส่รหัส)<br>
-              • <b>/del</b> -> ล้างแชท (ใส่รหัส)<br>
+               <b>/ชื่อ</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
+               <b>/name</b> [ชื่อใหม่] -> เปลี่ยนชื่อ<br>
+               <b>/ลบหมด</b> -> ล้างแชท (ใส่รหัส)<br>
+               <b>/del</b> -> ล้างแชท (ใส่รหัส)<br>
             `;
             createSystemMessage(helpHtml);
             inputField.value = '';
