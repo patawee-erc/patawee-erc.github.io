@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Hand Tracking by MediaPipe</title>
+    
+    <!-- โหลดไลบรารีของ MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        /* วิดีโอซ่อนไว้ เพราะเราจะวาดทุกอย่างลงบน Canvas แทน */
+        .input_video {
+            display: none; 
+        }
+        /* Canvas สำหรับวาดเส้นและแสดงภาพ */
+        .output_canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            /* กลับซ้ายขวาให้เหมือนกระจก */
+            transform: scaleX(-1); 
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>ระบบตรวจจับมือ (Hand Tracking)</h2>
+    
+    <div class="container">
+        <div class="loading" id="loadingText">กำลังเปิดกล้องและโหลดโมเดล...</div>
+        <video class="input_video"></video>
+        <canvas class="output_canvas" width="640" height="480"></canvas>
+    </div>
+
+    <script>
+        // 1. อ้างอิงถึง Element ต่างๆ ใน HTML
+        const videoElement = document.querySelector('.input_video');
+        const canvasElement = document.querySelector('.output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const loadingText = document.getElementById('loadingText');
+
+        // 2. ฟังก์ชันนี้จะถูกเรียกทุกครั้งที่ตรวจจับมือเจอ
+        function onResults(results) {
+            // ปิดข้อความโหลดเมื่อภาพมาแล้ว
+            loadingText.style.display = 'none';
+
+            // ล้างหน้าจอ Canvas ให้ว่างเปล่า
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            // วาดภาพจากกล้องลงไปบน Canvas
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            // ถ้าพบมือในเฟรม
+            if (results.multiHandLandmarks) {
+                // วนลูปตามจำนวนมือที่เจอ (results.multiHandLandmarks)
+                for (const landmarks of results.multiHandLandmarks) {
+                    // วาดเส้นเชื่อมต่อระหว่างจุด (กระดูกมือ)
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                        color: '#00FF00', // สีเขียว
+                        lineWidth: 3
+                    });
+                    
+                    // วาดจุด 21 จุดบนมือ (ข้อต่อ)
+                    drawLandmarks(canvasCtx, landmarks, {
+                        color: '#FF0000', // สีแดง
+                        lineWidth: 2,
+                        radius: 3
+                    });
+
+                    // *ตัวอย่างการดึงค่าพิกัดจุดที่ 8 (ปลายนิ้วชี้)*
+                    // const indexFingerTip = landmarks[8];
+                    // console.log(`นิ้วชี้อยู่ที่ X: ${indexFingerTip.x}, Y: ${indexFingerTip.y}`);
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        // 3. ตั้งค่าโมเดล MediaPipe Hands
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+
+        hands.setOptions({
+            maxNumHands: 2, // จำนวนมือสูงสุดที่ตรวจจับ (1 หรือ 2)
+            modelComplexity: 1, // ความแม่นยำ (0 หรือ 1) 1 แม่นยำกว่าแต่กินสเปคกว่า
+            minDetectionConfidence: 0.5, // ความมั่นใจขั้นต่ำในการตรวจจับครั้งแรก
+            minTrackingConfidence: 0.5 // ความมั่นใจขั้นต่ำในการติดตามมืออย่างต่อเนื่อง
+        });
+
+        // กำหนดฟังก์ชันที่จะให้ทำงานเมื่อประมวลผลเสร็จ
+        hands.onResults(onResults);
+
+        // 4. เปิดกล้อง Webcam และส่งภาพไปให้ MediaPipe
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+
+        // เริ่มต้นกล้อง
+        camera.start();
+    </script>
+</body>
+</html>
