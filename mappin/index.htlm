@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แผนที่ไทย - ปักหมุดรัศมี 10 กม.</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Sarabun', sans-serif; }
+        #map { width: 100%; height: 100vh; }
+        
+        /* สไตล์กล่องคำแนะนำ */
+        .info-box {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="info-box">
+        <b>วิธีใช้:</b> คลิกที่ไหนก็ได้บนแผนที่เพื่อปักหมุดและดูรัศมี 10 กม.
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 1. ตั้งค่าแผนที่
+        const map = L.map('map').setView([13.5, 100.5], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // ตัวแปรสำหรับเก็บ Marker และ Circle เพื่อให้ลบอันเก่าได้
+        let currentMarker = null;
+        let currentCircle = null;
+        let geojsonLayer;
+
+        // 2. ฟังก์ชันเมื่อคลิกบนแผนที่ (ปักหมุด + รัศมี)
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            // ลบหมุดและวงกลมเก่า (ถ้ามี)
+            if (currentMarker) map.removeLayer(currentMarker);
+            if (currentCircle) map.removeLayer(currentCircle);
+
+            // สร้างหมุดใหม่
+            currentMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(`จุดที่ปัก: ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+                .openPopup();
+
+            // สร้างวงกลมรัศมี 10 กิโลเมตร (10,000 เมตร)
+            currentCircle = L.circle([lat, lng], {
+                color: '#EA4335',      // สีเส้นขอบวงกลม
+                fillColor: '#EA4335',  // สีพื้นวงกลม
+                fillOpacity: 0.2,      // ความโปร่งใส
+                radius: 10000          // รัศมีหน่วยเป็น "เมตร" (10 กม.)
+            }).addTo(map);
+
+            // ซูมไปที่จุดที่คลิก (เลือกใช้หรือไม่ใช้ก็ได้)
+            // map.panTo(e.latlng);
+        });
+
+        // 3. ส่วนของข้อมูลจังหวัด (เหมือนเดิม)
+        function style(feature) {
+            return {
+                fillColor: '#4285F4',
+                weight: 1,
+                opacity: 1,
+                color: 'white',
+                fillOpacity: 0.3
+            };
+        }
+
+        function onEachFeature(feature, layer) {
+            const provinceName = feature.properties.pro_th || feature.properties.name || "จังหวัด";
+            layer.bindTooltip(provinceName, { sticky: true });
+            
+            layer.on({
+                mouseover: (e) => {
+                    e.target.setStyle({ weight: 2, fillOpacity: 0.5 });
+                },
+                mouseout: (e) => {
+                    geojsonLayer.resetStyle(e.target);
+                }
+            });
+        }
+
+        // โหลดข้อมูล GeoJSON จังหวัด
+        const geojsonUrl = 'https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/provinces.geojson';
+        fetch(geojsonUrl)
+            .then(res => res.json())
+            .then(data => {
+                geojsonLayer = L.geoJson(data, {
+                    style: style,
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+            });
+
+    </script>
+</body>
+</html>
