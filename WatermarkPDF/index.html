@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Watermark (Ultimate Density Control)</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4726/4726010.png">
+    
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.js"></script>
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; height: 100vh; box-sizing: border-box; }
+        .layout-container { display: flex; gap: 20px; height: calc(100vh - 40px); max-width: 1400px; margin: 0 auto; }
+        
+        .sidebar { width: 350px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; overflow-y: auto; }
+        .preview-container { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+        .preview-header { display: flex; justify-content: flex-end; }
+        .preview-area { flex-grow: 1; background: #e9ecef; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; position: relative; }
+        
+        h2 { text-align: center; color: #333; margin-top: 0; font-size: 18px; margin-bottom: 5px; }
+        .form-group { margin-bottom: 5px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 13px;}
+        
+        input[type="file"], select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+        
+        input[type="range"] { width: 100%; cursor: pointer; }
+        .val-display { color: #007bff; font-weight: bold; }
+        .line-counter { color: #888; font-size: 11px; font-weight: normal; }
+
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px;}
+        button:hover { background-color: #0056b3; }
+        
+        .btn-download { background-color: #28a745; display: none; text-align: center; text-decoration: none; padding: 12px; color: white; border-radius: 5px; font-weight: bold; margin-top: auto; }
+        .btn-download:hover { background-color: #218838; }
+        .btn-newtab { background-color: #6c757d; display: none; text-align: center; text-decoration: none; padding: 8px 15px; color: white; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        .btn-newtab:hover { background-color: #5a6268; }
+
+        #loading { display: none; text-align: center; color: #ff9800; font-weight: bold; font-size: 14px;}
+        #pdfViewer { width: 100%; height: 100%; border: none; display: none; }
+        .placeholder-text { color: #888; font-size: 16px; text-align: center; padding: 20px; line-height: 1.5; }
+
+        .checkbox-label { justify-content: flex-start; gap: 8px; font-weight: normal; cursor: pointer; margin-top: 5px; color: #d9534f;}
+
+        /* สไตล์กล่องพรีวิวข้อความ */
+        .text-preview-box { background: #e9ecef; border: 1px solid #ccc; padding: 10px; border-radius: 5px; font-size: 14px; white-space: pre-wrap; word-break: break-word; max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #808080; text-align: center; font-weight: bold; }
+        .btn-edit-text { background-color: #ffc107; color: #333; margin-top: 5px; padding: 10px; font-size: 14px; }
+        .btn-edit-text:hover { background-color: #e0a800; }
+
+        /* สไตล์ปุ่มเลือกสี */
+        .color-options { display: flex; gap: 5px; }
+        .btn-color { flex: 1; padding: 8px; font-size: 14px; border: 1px solid #ced4da; border-radius: 5px; cursor: pointer; text-align: center; font-weight: normal; background-color: white; margin-top: 0;}
+        .btn-color.active { font-weight: bold; border-width: 2px; }
+        
+        #color-gray { color: #808080; border-color: #808080; }
+        #color-gray.active { background-color: #808080; color: white; }
+        
+        #color-black { color: #000000; border-color: #000000; }
+        #color-black.active { background-color: #000000; color: white; }
+        
+        #color-red { color: #dc3545; border-color: #dc3545; }
+        #color-red.active { background-color: #dc3545; color: white; }
+
+        /* สไตล์สำหรับ Popup (Modal) */
+        .modal-overlay { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+        .modal-content { background-color: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 10px; }
+        .modal-content h3 { margin: 0 0 5px 0; color: #333; font-size: 18px; }
+        
+        /* สไตล์ปุ่มจัดตำแหน่งข้อความ */
+        .align-options { display: flex; gap: 5px; margin-bottom: 5px; }
+        .btn-align { flex: 1; padding: 8px; font-size: 14px; background-color: #f1f3f5; color: #333; border: 1px solid #ced4da; border-radius: 5px; font-weight: normal; margin-top: 0;}
+        .btn-align:hover { background-color: #e2e6ea; }
+        .btn-align.active { background-color: #007bff; color: white; border-color: #007bff; font-weight: bold; }
+
+        .modal-content textarea { width: 100%; height: 150px; font-size: 16px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; resize: none; line-height: 1.5; font-family: inherit; box-sizing: border-box; text-align: center;}
+        .btn-save-text { background-color: #28a745; margin-top: 10px; }
+        .btn-save-text:hover { background-color: #218838; }
+
+        @media (max-width: 768px) {
+            .layout-container { flex-direction: column; height: auto; }
+            .sidebar { width: auto; }
+            .preview-container { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout-container">
+    <div class="sidebar">
+        <h2>เครื่องมือใส่ลายน้ำ PDF</h2>
+        
+        <div class="form-group">
+            <label for="pdfFile">1. เลือกไฟล์ PDF:</label>
+            <input type="file" id="pdfFile" accept="application/pdf" onchange="handleFileSelect()">
+        </div>
+        
+        <div class="form-group">
+            <label>2. ข้อความลายน้ำ:</label>
+            <div id="textPreviewDisplay" class="text-preview-box">เอกสารลับเฉพาะ</div>
+            <button class="btn-edit-text" onclick="openTextModal()">📝 คลิกเพื่อพิมพ์/แก้ไขข้อความ</button>
+        </div>
+
+        <div class="form-group">
+            <label for="watermarkPattern">3. รูปแบบลายน้ำ:</label>
+            <select id="watermarkPattern" onchange="toggleControls()">
+                <option value="grid">แบบเต็มหน้า (ตารางเรียงตรง)</option>
+                <option value="zigzag">แบบเต็มหน้า (สับฟันปลา)</option>
+                
+                <option value="diagonal">แบบตรงกลาง (ตัวใหญ่ 1 จุด)</option>
+            </select>
+        </div>
+
+        <!-- เพิ่มปุ่มเลือกสีตรงนี้ -->
+        <div class="form-group">
+            <label>4. สีลายน้ำ:</label>
+            <div class="color-options">
+                <button class="btn-color active" id="color-gray" onclick="setTextColor('gray')">⚪ เทา</button>
+                <button class="btn-color" id="color-black" onclick="setTextColor('black')">⚫ ดำ</button>
+                <button class="btn-color" id="color-red" onclick="setTextColor('red')">🔴 แดง</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="fontSize">5. ขนาดตัวหนังสือ: <span class="val-display" id="fontSizeVal">20</span></label>
+            <input type="range" id="fontSize" min="10" max="150" value="40" oninput="document.getElementById('fontSizeVal').innerText = this.value">
+        </div>
+
+        <div class="form-group">
+            <label for="opacity">6. ความเข้ม (Opacity): <span class="val-display" id="opacityVal">0.3</span></label>
+            <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.3" oninput="document.getElementById('opacityVal').innerText = this.value">
+        </div>
+
+        <div class="form-group">
+            <label for="rotationAngle">7. องศาการเอียง: <span class="val-display" id="angleVal">45°</span></label>
+            <input type="range" id="rotationAngle" min="-180" max="180" value="45" oninput="document.getElementById('angleVal').innerText = this.value + '°'">
+            
+            <label class="checkbox-label">
+                <input type="checkbox" id="flipUpsideDown" style="width: auto; margin: 0;"> 
+                🔄 พลิกข้อความกลับหัว (แก้ปัญหาอักษรกลับหัว)
+            </label>
+        </div>
+
+        <div class="form-group" id="densityGroup">
+            <label for="spacing">8. ระยะห่าง (ความถี่): <span class="val-display" id="spacingVal">60px</span></label>
+            <input type="range" id="spacing" min="0" max="300" step="10" value="60" oninput="document.getElementById('spacingVal').innerText = this.value + 'px'">
+        </div>
+
+        <button id="btnSubmit" onclick="generatePreview()">สร้างและดูตัวอย่าง</button>
+        <div id="loading">กำลังประมวลผล...</div>
+        
+        <a id="downloadLink" class="btn-download">⬇️ ดาวน์โหลดไฟล์ PDF</a>
+    </div>
+
+    <div class="preview-container">
+        <div class="preview-header">
+            <a id="openTabLink" class="btn-newtab" target="_blank">↗️ เปิดพรีวิวในแท็บใหม่</a>
+        </div>
+        <div class="preview-area">
+            <div id="placeholder" class="placeholder-text">อัปโหลดไฟล์ เลือกการตั้งค่า<br>แล้วกดสร้างเพื่อดูตัวอย่างที่นี่</div>
+            <iframe id="pdfViewer" title="PDF Preview"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- Popup (Modal) สำหรับพิมพ์ข้อความ -->
+<div id="textModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>✏️ แก้ไขข้อความลายน้ำ</h3>
+        
+        <div class="align-options">
+            <button class="btn-align" id="align-left" onclick="setTextAlign('left')">⬅️ ชิดซ้าย</button>
+            <button class="btn-align active" id="align-center" onclick="setTextAlign('center')">🔲 ตรงกลาง</button>
+            <button class="btn-align" id="align-right" onclick="setTextAlign('right')">➡️ ชิดขวา</button>
+        </div>
+
+        <label for="watermarkText" style="display: flex; justify-content: space-between; font-weight: normal; margin-bottom: 5px; font-size: 13px;">
+            <span>สามารถขึ้นบรรทัดใหม่ได้</span>
+            <span class="line-counter" id="lineCount">1/5 บรรทัด</span>
+        </label>
+        <textarea id="watermarkText" placeholder="พิมพ์ข้อความที่นี่&#10;(สูงสุด 5 บรรทัด)">เอกสารลับเฉพาะ</textarea>
+        <button class="btn-save-text" onclick="closeTextModal()">✅ บันทึกและปิดหน้าต่าง</button>
+    </div>
+</div>
+
+<script>
+    // ตัวแปรเก็บค่าการจัดตำแหน่ง (ค่าเริ่มต้นคือตรงกลาง)
+    let currentTextAlign = 'center';
+    
+    // ตัวแปรเก็บสี (ค่าเริ่มต้นคือเทา)
+    let currentTextColor = 'gray';
+
+    // ฟังก์ชันเปลี่ยนสี
+    function setTextColor(color) {
+        currentTextColor = color;
+        
+        // อัปเดต CSS ปุ่ม
+        document.querySelectorAll('.btn-color').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`color-${color}`).classList.add('active');
+        
+        // อัปเดตสีข้อความในกล่องพรีวิวด้านซ้าย
+        const previewDisplay = document.getElementById('textPreviewDisplay');
+        if(color === 'black') previewDisplay.style.color = '#000000';
+        else if(color === 'red') previewDisplay.style.color = '#dc3545';
+        else previewDisplay.style.color = '#808080';
+    }
+
+    // ฟังก์ชันเปลี่ยนการจัดตำแหน่ง
+    function setTextAlign(align) {
+        currentTextAlign = align;
+        
+        document.querySelectorAll('.btn-align').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`align-${align}`).classList.add('active');
+        document.getElementById('watermarkText').style.textAlign = align;
+    }
+
+    // ฟังก์ชัน เปิด-ปิด Popup ข้อความ
+    function openTextModal() {
+        document.getElementById('textModal').style.display = 'flex';
+    }
+    
+    function closeTextModal() {
+        document.getElementById('textModal').style.display = 'none';
+        
+        const currentText = document.getElementById('watermarkText').value.trim();
+        const previewDisplay = document.getElementById('textPreviewDisplay');
+        previewDisplay.innerText = currentText ? currentText : '(ไม่ได้ระบุข้อความ)';
+        previewDisplay.style.textAlign = currentTextAlign;
+    }
+
+    function toggleControls() {
+        const pattern = document.getElementById('watermarkPattern').value;
+        const densityGroup = document.getElementById('densityGroup');
+        if (pattern === 'diagonal') {
+            densityGroup.style.display = 'none'; 
+        } else {
+            densityGroup.style.display = 'block'; 
+        }
+    }
+
+    const textarea = document.getElementById('watermarkText');
+    const lineCountDisplay = document.getElementById('lineCount');
+    
+    textarea.addEventListener('input', function() {
+        const lines = this.value.split('\n');
+        if (lines.length > 5) {
+            this.value = lines.slice(0, 5).join('\n');
+        }
+        lineCountDisplay.innerText = `${this.value.split('\n').length}/5 บรรทัด`;
+    });
+
+    let cachedFontBytes = null;
+    let originalPdfBytes = null;
+    let currentBlobUrl = null;
+
+    async function handleFileSelect() {
+        const fileInput = document.getElementById('pdfFile');
+        if (fileInput.files.length > 0) {
+            originalPdfBytes = await fileInput.files[0].arrayBuffer();
+            document.getElementById('downloadLink').style.display = 'none';
+            document.getElementById('openTabLink').style.display = 'none';
+        }
+    }
+
+    async function generatePreview() {
+        const fileInput = document.getElementById('pdfFile');
+        const rawText = document.getElementById('watermarkText').value || ' ';
+        const pattern = document.getElementById('watermarkPattern').value;
+        const fontSize = parseInt(document.getElementById('fontSize').value);
+        const opacity = parseFloat(document.getElementById('opacity').value);
+        const extraSpacing = parseInt(document.getElementById('spacing').value); 
+        
+        let angleDeg = parseInt(document.getElementById('rotationAngle').value);
+        const isFlipped = document.getElementById('flipUpsideDown').checked;
+        if (isFlipped) {
+            angleDeg += 180;
+        }
+
+        const angleRad = angleDeg * (Math.PI / 180);
+        const pdfAngle = PDFLib.degrees(angleDeg); 
+        
+        const loadingText = document.getElementById('loading');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const placeholder = document.getElementById('placeholder');
+        const downloadLink = document.getElementById('downloadLink');
+        const openTabLink = document.getElementById('openTabLink');
+
+        if (!originalPdfBytes) {
+            alert('กรุณาเลือกไฟล์ PDF ก่อนครับ');
+            return;
+        }
+
+        loadingText.style.display = 'block';
+
+        try {
+            const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
+            pdfDoc.registerFontkit(window.fontkit);
+
+            if (!cachedFontBytes) {
+                const fontUrl = 'https://raw.githubusercontent.com/Phonbopit/sarabun-webfont/master/fonts/thsarabunnew-webfont.ttf';
+                cachedFontBytes = await fetch(fontUrl).then((res) => res.arrayBuffer());
+            }
+
+            const customFont = await pdfDoc.embedFont(cachedFontBytes);
+            const pages = pdfDoc.getPages();
+            
+            // เช็คและกำหนดสีลายน้ำที่ผู้ใช้เลือก
+            let drawColor;
+            if (currentTextColor === 'black') drawColor = PDFLib.rgb(0, 0, 0);
+            else if (currentTextColor === 'red') drawColor = PDFLib.rgb(0.86, 0.2, 0.27); // #dc3545 (แดง)
+            else drawColor = PDFLib.rgb(0.5, 0.5, 0.5); // เทา
+
+            // คำนวณความกว้างของแต่ละบรรทัด
+            const textLines = rawText.split('\n');
+            let maxTextWidth = 0;
+            const lineWidths = [];
+            for (const line of textLines) {
+                const w = customFont.widthOfTextAtSize(line, fontSize);
+                lineWidths.push(w);
+                if (w > maxTextWidth) maxTextWidth = w;
+            }
+            
+            const lineHeight = fontSize * 1.2; 
+            const totalTextHeight = textLines.length * lineHeight; 
+
+            // คำนวณขนาดกล่องเมื่อหมุนองศา
+            const boxW = Math.abs(maxTextWidth * Math.cos(angleRad)) + Math.abs(totalTextHeight * Math.sin(angleRad));
+            const boxH = Math.abs(maxTextWidth * Math.sin(angleRad)) + Math.abs(totalTextHeight * Math.cos(angleRad));
+
+            // ฟังก์ชันช่วยวาดข้อความแบบทีละบรรทัดเพื่อให้จัด Align ได้
+            const drawAlignedMultilineText = (page, baseX, baseY) => {
+                for (let i = 0; i < textLines.length; i++) {
+                    const line = textLines[i];
+                    const w = lineWidths[i];
+                    
+                    let dxLocal = 0;
+                    if (currentTextAlign === 'center') {
+                        dxLocal = (maxTextWidth - w) / 2;
+                    } else if (currentTextAlign === 'right') {
+                        dxLocal = maxTextWidth - w;
+                    }
+
+                    let dyLocal = -i * lineHeight;
+
+                    const dxGlobal = dxLocal * Math.cos(angleRad) - dyLocal * Math.sin(angleRad);
+                    const dyGlobal = dxLocal * Math.sin(angleRad) + dyLocal * Math.cos(angleRad);
+
+                    page.drawText(line, {
+                        x: baseX + dxGlobal,
+                        y: baseY + dyGlobal,
+                        size: fontSize,
+                        font: customFont,
+                        color: drawColor, 
+                        opacity: opacity,
+                        rotate: pdfAngle 
+                    });
+                }
+            };
+
+            for (const page of pages) {
+                const { width, height } = page.getSize();
+
+                if (pattern === 'zigzag' || pattern === 'grid') {
+                    const xSpacing = Math.max(boxW + extraSpacing, 20); 
+                    const ySpacing = Math.max(boxH + extraSpacing, 20); 
+                    
+                    let row = 0;
+
+                    for (let y = -height; y < height * 2; y += ySpacing) {
+                        let xOffset = 0;
+                        if (pattern === 'zigzag') {
+                            xOffset = (row % 2 === 0) ? 0 : (xSpacing / 2);
+                        }
+
+                        for (let x = -width; x < width * 2; x += xSpacing) {
+                            drawAlignedMultilineText(page, x + xOffset, y);
+                        }
+                        row++;
+                    }
+                } 
+                else if (pattern === 'diagonal') {
+                    const cx = width / 2;
+                    const cy = height / 2;
+                    
+                    const shiftX = (maxTextWidth / 2) * Math.cos(angleRad) - ((totalTextHeight/2) - (fontSize/1.5)) * Math.sin(angleRad);
+                    const shiftY = (maxTextWidth / 2) * Math.sin(angleRad) + ((totalTextHeight/2) - (fontSize/1.5)) * Math.cos(angleRad);
+                    
+                    drawAlignedMultilineText(page, cx - shiftX, cy - shiftY);
+                }
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+            }
+            currentBlobUrl = URL.createObjectURL(blob);
+
+            placeholder.style.display = 'none';
+            pdfViewer.style.display = 'block';
+            pdfViewer.src = currentBlobUrl; 
+
+            downloadLink.href = currentBlobUrl;
+            downloadLink.download = 'watermark_' + fileInput.files[0].name;
+            downloadLink.style.display = 'block';
+
+            openTabLink.href = currentBlobUrl;
+            openTabLink.style.display = 'block';
+
+        } catch (error) {
+            console.error(error);
+            alert("เกิดข้อผิดพลาด: " + error.message);
+        } finally {
+            loadingText.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
