@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แผนที่ไทย - ปักหมุดรัศมี 10 กม.</title>
+    <title>แผนที่ไทย - ปักหมุดระบุรัศมี</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -11,24 +11,45 @@
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Sarabun', sans-serif; }
         #map { width: 100%; height: 100vh; }
         
-        /* สไตล์กล่องคำแนะนำ */
+        /* สไตล์กล่องควบคุมและคำแนะนำ */
         .info-box {
             position: absolute;
             top: 10px;
             left: 50px;
             z-index: 1000;
             background: white;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            pointer-events: none;
+            /* เปลี่ยนเป็น auto เพื่อให้สามารถคลิกปุ่มหรือช่องกรอกข้อมูลได้ */
+            pointer-events: auto; 
+        }
+
+        .input-group {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .input-group input {
+            width: 70px;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
     <div class="info-box">
-        <b>วิธีใช้:</b> คลิกที่ไหนก็ได้บนแผนที่เพื่อปักหมุดและดูรัศมี 10 กม.
+        <b>วิธีใช้:</b> คลิกที่ไหนก็ได้บนแผนที่เพื่อปักหมุดและแสดงรัศมี
+        <div class="input-group">
+            <label for="radius-km">ระบุรัศมี:</label>
+            <input type="number" id="radius-km" value="10" min="0.1" step="0.5">
+            <span>กิโลเมตร</span>
+        </div>
     </div>
     <div id="map"></div>
 
@@ -48,10 +69,23 @@
         let currentCircle = null;
         let geojsonLayer;
 
+        // ดึง Element ของช่องกรอกรัศมี
+        const radiusInput = document.getElementById('radius-km');
+
         // 2. ฟังก์ชันเมื่อคลิกบนแผนที่ (ปักหมุด + รัศมี)
         map.on('click', function(e) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
+
+            // ดึงค่ารัศมีจาก Input และแปลงเป็นตัวเลข (หากค่าไม่ถูกต้องจะใช้ค่าเริ่มต้นเป็น 10)
+            let radiusKm = parseFloat(radiusInput.value);
+            if (isNaN(radiusKm) || radiusKm <= 0) {
+                radiusKm = 10;
+                radiusInput.value = 10;
+            }
+
+            // แปลงกิโลเมตรเป็นเมตร (1 กม. = 1,000 เมตร)
+            const radiusMeters = radiusKm * 1000;
 
             // ลบหมุดและวงกลมเก่า (ถ้ามี)
             if (currentMarker) map.removeLayer(currentMarker);
@@ -59,22 +93,19 @@
 
             // สร้างหมุดใหม่
             currentMarker = L.marker([lat, lng]).addTo(map)
-                .bindPopup(`จุดที่ปัก: ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+                .bindPopup(`จุดที่ปัก: ${lat.toFixed(4)}, ${lng.toFixed(4)}<br>รัศมี: ${radiusKm} กม.`)
                 .openPopup();
 
-            // สร้างวงกลมรัศมี 10 กิโลเมตร (10,000 เมตร)
+            // สร้างวงกลมตามรัศมีที่กำหนด
             currentCircle = L.circle([lat, lng], {
                 color: '#EA4335',      // สีเส้นขอบวงกลม
                 fillColor: '#EA4335',  // สีพื้นวงกลม
                 fillOpacity: 0.2,      // ความโปร่งใส
-                radius: 10000          // รัศมีหน่วยเป็น "เมตร" (10 กม.)
+                radius: radiusMeters   // รัศมีหน่วยเป็น "เมตร"
             }).addTo(map);
-
-            // ซูมไปที่จุดที่คลิก (เลือกใช้หรือไม่ใช้ก็ได้)
-            // map.panTo(e.latlng);
         });
 
-        // 3. ส่วนของข้อมูลจังหวัด (เหมือนเดิม)
+        // 3. ส่วนของข้อมูลจังหวัด
         function style(feature) {
             return {
                 fillColor: '#4285F4',
