@@ -28,6 +28,13 @@ let currentDetailTask = null;
 // ==========================================
 // 3. INITIALIZATION
 // ==========================================
+// ตรวจสอบธีมที่บันทึกไว้ใน localStorage ตอนโหลดหน้าเว็บ
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // แสดงชื่อและ Avatar ของผู้ใช้งานปัจจุบัน
     document.getElementById('current-user-name').textContent = currentUser.Name;
@@ -44,7 +51,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    setupEventListeners();
+    // ค้นหาฟังก์ชัน setupEventListeners() เดิมของคุณ แล้วเพิ่มโค้ดชุดนี้เข้าไปด้านในครับ
+function setupEventListeners() {
+    // ... โค้ดอีเวนต์อื่นๆ ที่มีอยู่แล้ว ...
+
+    // ฟังก์ชันสำหรับสลับธีม Dark / Light
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            
+            // บันทึกสถานะลง localStorage เพื่อจำธีมในครั้งต่อไป
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    }
+}
     fetchData(); // โหลดข้อมูลจาก Google Sheets
 });
 
