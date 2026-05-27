@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traceroute Map Simulator</title>
-     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/16644/16644259.png">
+    <title>Traceroute & NSLookup Simulator</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/16644/16644259.png">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -30,6 +30,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         h1 {
@@ -53,7 +55,6 @@
         }
 
         button {
-            background-color: #4caf50;
             color: white;
             border: none;
             padding: 8px 15px;
@@ -63,12 +64,22 @@
             transition: background 0.2s;
         }
 
-        button:hover {
+        .btn-trace {
+            background-color: #4caf50;
+        }
+        .btn-trace:hover {
             background-color: #45a049;
         }
 
+        .btn-ns {
+            background-color: #008cba;
+        }
+        .btn-ns:hover {
+            background-color: #007399;
+        }
+
         button:disabled {
-            background-color: #555;
+            background-color: #555 !important;
             cursor: not-allowed;
         }
 
@@ -92,7 +103,7 @@
             flex-direction: column;
             overflow: hidden;
             max-width: 450px;
-            min-width: 320px;
+            min-width: 350px;
         }
 
         .terminal-header {
@@ -128,7 +139,16 @@
         .warning-text {
             color: #ffcc00;
             font-size: 0.8rem;
+        }
+
+        .dns-section {
+            color: #ffffff;
             margin-bottom: 10px;
+        }
+
+        .dns-type {
+            color: #ff55ff;
+            font-weight: bold;
         }
 
         .leaflet-container {
@@ -139,10 +159,11 @@
 <body>
 
     <header>
-        <h1>Traceroute Map Simulator</h1>
+        <h1>Network Diagnostic Tools</h1>
         <div class="search-container">
-            <input type="text" id="target-input" placeholder="ใส่ชื่อเว็บไซต์ เช่น google.com" value="google.com">
-            <button id="trace-btn" onclick="startTraceroute()">Trace Route</button>
+            <input type="text" id="target-input" placeholder="ใส่โดเมน เช่น google.com" value="google.com">
+            <button class="btn-trace" id="trace-btn" onclick="startTraceroute()">Trace Route</button>
+            <button class="btn-ns" id="ns-btn" onclick="startNSLookup()">NSLookup</button>
         </div>
     </header>
 
@@ -151,7 +172,7 @@
         <div class="sidebar">
             <div class="terminal-header">CONSOLE OUTPUT</div>
             <div class="terminal" id="terminal-output">
-                กดปุ่ม "Trace Route" เพื่อเริ่มการจำลองการส่งข้อมูล...
+                เลือกเครื่องมือด้านบน "Trace Route" หรือ "NSLookup" เพื่อเริ่มต้น...
             </div>
         </div>
     </div>
@@ -170,7 +191,6 @@
         let activeMarkers = [];
         let activePolyline = null;
 
-        // รายชื่อจุดเชื่อมต่ออินเทอร์เน็ตจำลองที่สำคัญของโลก
         const internetHubs = [
             { name: "Local Gateway", lat: 13.7367, lon: 100.5231, ip: "192.168.1.1", country: "TH" },
             { name: "ISP Core Router", lat: 13.7563, lon: 100.5018, ip: "110.224.0.1", country: "TH" },
@@ -182,30 +202,91 @@
             { name: "Frankfurt DE-CIX", lat: 50.1109, lon: 8.6821, ip: "80.81.192.1", country: "DE" }
         ];
 
-        async function startTraceroute() {
+        // ฟังก์ชันช่วยทำความสะอาดโดเมนเนม
+        function getCleanDomain() {
             const input = document.getElementById('target-input').value.trim();
-            if (!input) return;
+            return input.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+        }
+
+        // ==========================================
+        //  ฟังก์ชัน NSLOOKUP (ผ่าน Cloudflare DoH)
+        // ==========================================
+        async function startNSLookup() {
+            const domain = getCleanDomain();
+            if (!domain) return;
+
+            const terminal = document.getElementById('terminal-output');
+            terminal.innerHTML = `> nslookup ${domain}<br>`;
+            terminal.innerHTML += `Server:  cloudflare-dns.com<br>`;
+            terminal.innerHTML += `Address: 1.1.1.1<br><br>`;
+            terminal.innerHTML += `กำลังค้นหาระเบียนข้อมูล DNS...<br><br>`;
+
+            setButtonsDisabled(true);
+
+            // รายการประเภทระเบียน DNS ที่เราต้องการดึงข้อมูล
+            const recordTypes = ['A', 'AAAA', 'MX', 'TXT'];
+
+            try {
+                for (let type of recordTypes) {
+                    const records = await queryDNS(domain, type);
+                    if (records && records.length > 0) {
+                        terminal.innerHTML += `<div class="dns-section">`;
+                        terminal.innerHTML += `Non-authoritative answer for <span class="dns-type">[${type} Record]</span>:<br>`;
+                        records.forEach(rec => {
+                            // จัดรูปแบบการแสดงผลตามชนิดระเบียน
+                            let data = rec.data;
+                            // ตัดเครื่องหมายอัญประกาศคู่ส่วนเกินในระเบียน TXTออก
+                            if (type === 'TXT') data = data.replace(/^"|"$/g, ''); 
+                            terminal.innerHTML += ` &nbsp;Name: &nbsp;${rec.name}<br>`;
+                            terminal.innerHTML += ` &nbsp;Data: &nbsp;<span style="color:#00ffff;">${data}</span> (TTL: ${rec.TTL})<br><br>`;
+                        });
+                        terminal.innerHTML += `</div>`;
+                    }
+                }
+            } catch (err) {
+                terminal.innerHTML += `<span style="color:#ff3333;">เกิดข้อผิดพลาดในการดึงข้อมูล DNS: ${err.message}</span><br>`;
+            } finally {
+                setButtonsDisabled(false);
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+
+        // ฟังก์ชันเรียกขอข้อมูลจาก API DoH ของ Cloudflare
+        async function queryDNS(domain, type) {
+            const url = `https://cloudflare-dns.com/dns-query?name=${domain}&type=${type}`;
+            const response = await fetch(url, {
+                headers: {
+                    'accept': 'application/dns-json'
+                }
+            });
+            if (!response.ok) throw new Error('Network response error');
+            const result = await response.json();
+            return result.Answer;
+        }
+
+        // ==========================================
+        //  ฟังก์ชัน TRACEROUTE (เดิมที่ปรับปรุงแล้ว)
+        // ==========================================
+        async function startTraceroute() {
+            const domain = getCleanDomain();
+            if (!domain) return;
 
             clearMap();
             const terminal = document.getElementById('terminal-output');
-            terminal.innerHTML = `กำลังจัดเตรียมข้อมูลสำหรับ: ${input}...<br>`;
-            document.getElementById('trace-btn').disabled = true;
+            terminal.innerHTML = `กำลังเตรียมเส้นทางสำหรับ: ${domain}...<br>`;
+            setButtonsDisabled(true);
 
-            const domain = input.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
-            
             let startPoint = null;
             let endPoint = null;
             let isSimulationMode = false;
 
-            // ตรวจสอบว่าเป็นไฟล์โลคอล (file://) หรือไม่
             if (window.location.protocol === 'file:') {
                 isSimulationMode = true;
-                terminal.innerHTML += `<span class="warning-text">[คำเตือน] เปิดผ่านไฟล์โลคอล: เข้าสู่โหมดจำลองพิกัดอัตโนมัติ (CORS Bypass)</span><br><br>`;
+                terminal.innerHTML += `<span class="warning-text">[SYSTEM] Local File detected. Auto-switching to bypass CORS.</span><br><br>`;
             }
 
             if (!isSimulationMode) {
                 try {
-                    // ขั้นตอนดึงพิกัดผู้ใช้จริง
                     const userLocRes = await fetch('https://ipapi.co/json/');
                     const userData = await userLocRes.json();
                     startPoint = {
@@ -217,7 +298,6 @@
                         country: userData.country_name || "Thailand"
                     };
 
-                    // ขั้นตอนดึงพิกัดเซิร์ฟเวอร์ปลายทางจริง
                     const destLocRes = await fetch(`https://ipapi.co/${domain}/json/`);
                     const destData = await destLocRes.json();
 
@@ -236,11 +316,10 @@
 
                 } catch (err) {
                     isSimulationMode = true;
-                    terminal.innerHTML += `<span class="warning-text">[ระบบสำรอง] ไม่สามารถเชื่อมต่อ API ได้ (ใช้ข้อมูลจำลองตามภูมิศาสตร์แทน)</span><br><br>`;
+                    terminal.innerHTML += `<span class="warning-text">[SYSTEM] เปลียนเข้าสู่โหมดจำลองพิกัดโครงข่าย</span><br><br>`;
                 }
             }
 
-            // หากอยู่ในโหมดจำลอง (เปิดไฟล์โดยตรง / API ลิมิต)
             if (isSimulationMode) {
                 startPoint = {
                     name: "Your Location (Simulated)",
@@ -250,18 +329,21 @@
                     city: "Bangkok",
                     country: "Thailand"
                 };
-
-                // คำนวณพิกัดปลายทางจำลองตามนามสกุลโดเมน
                 endPoint = generateMockDestination(domain);
             }
 
             const route = generateSimulatedRoute(startPoint, endPoint);
             await animateRoute(route);
-            document.getElementById('trace-btn').disabled = false;
+            setButtonsDisabled(false);
+        }
+
+        // ตัวเปลี่ยนสถานะปุ่มไม่ให้ผู้ใช้กดซ้ำขณะประมวลผล
+        function setButtonsDisabled(disabled) {
+            document.getElementById('trace-btn').disabled = disabled;
+            document.getElementById('ns-btn').disabled = disabled;
         }
 
         function generateMockDestination(domain) {
-            // ค่าตั้งต้นเป็นสหรัฐอเมริกา
             let dest = {
                 name: domain,
                 lat: 37.7749,
@@ -271,7 +353,6 @@
                 country: "United States"
             };
 
-            // ตรวจสอบโดเมนสัญชาติเพื่อย้ายพิกัดให้สมจริง
             if (domain.endsWith('.th')) {
                 dest.lat = 13.7563;
                 dest.lon = 100.5018;
@@ -312,8 +393,6 @@
 
         function generateSimulatedRoute(start, end) {
             const route = [];
-            
-            // Hop 1-2
             route.push({ ...start, hop: 1, delay: Math.floor(Math.random() * 5) + 1 });
             route.push({ 
                 name: "ISP Gateway", 
@@ -331,7 +410,6 @@
                 if (start.country === "Thailand" || end.country === "Singapore") {
                     midHubs.push(internetHubs.find(h => h.country === "SG"));
                 }
-                
                 if (end.country === "United States") {
                     midHubs.push(internetHubs.find(h => h.country === "JP"));
                     midHubs.push(internetHubs.find(h => h.country === "US"));
