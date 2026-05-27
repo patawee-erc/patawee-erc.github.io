@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traceroute Map Simulator</title>
+     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/16644/16644259.png">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background-color: #1f1f1f;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #4caf50;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 4px;
+            width: 250px;
+            outline: none;
+        }
+
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #map {
+            flex: 2;
+            height: 100%;
+            background-color: #1a1a1a;
+        }
+
+        .sidebar {
+            flex: 1;
+            background-color: #1e1e1e;
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            max-width: 450px;
+            min-width: 320px;
+        }
+
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            color: #aaa;
+            border-bottom: 1px solid #333;
+        }
+
+        .terminal {
+            flex: 1;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            background-color: #151515;
+            color: #33ff33;
+        }
+
+        .hop-row {
+            margin-bottom: 8px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 4px;
+        }
+
+        .hop-num { color: #888; }
+        .hop-ip { color: #00ffff; }
+        .hop-loc { color: #ffaa00; }
+        .hop-ms { color: #33ff33; }
+
+        .warning-text {
+            color: #ffcc00;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .leaflet-container {
+            background: #111 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Traceroute Map Simulator</h1>
+        <div class="search-container">
+            <input type="text" id="target-input" placeholder="ใส่ชื่อเว็บไซต์ เช่น google.com" value="google.com">
+            <button id="trace-btn" onclick="startTraceroute()">Trace Route</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div id="map"></div>
+        <div class="sidebar">
+            <div class="terminal-header">CONSOLE OUTPUT</div>
+            <div class="terminal" id="terminal-output">
+                กดปุ่ม "Trace Route" เพื่อเริ่มการจำลองการส่งข้อมูล...
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([13.7367, 100.5231], 3);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        let activeMarkers = [];
+        let activePolyline = null;
+
+        // รายชื่อจุดเชื่อมต่ออินเทอร์เน็ตจำลองที่สำคัญของโลก
+        const internetHubs = [
+            { name: "Local Gateway", lat: 13.7367, lon: 100.5231, ip: "192.168.1.1", country: "TH" },
+            { name: "ISP Core Router", lat: 13.7563, lon: 100.5018, ip: "110.224.0.1", country: "TH" },
+            { name: "Thailand Internet Exchange (THIX)", lat: 13.8048, lon: 100.5401, ip: "203.150.0.4", country: "TH" },
+            { name: "Singapore Equinix IX", lat: 1.3521, lon: 103.8198, ip: "202.158.12.5", country: "SG" },
+            { name: "Hong Kong HKIX", lat: 22.3193, lon: 114.1694, ip: "206.111.0.12", country: "HK" },
+            { name: "Tokyo Equinix Ty2", lat: 35.6762, lon: 139.6503, ip: "203.190.250.1", country: "JP" },
+            { name: "San Jose Equinix SV1", lat: 37.3382, lon: -121.8863, ip: "206.223.116.1", country: "US" },
+            { name: "Frankfurt DE-CIX", lat: 50.1109, lon: 8.6821, ip: "80.81.192.1", country: "DE" }
+        ];
+
+        async function startTraceroute() {
+            const input = document.getElementById('target-input').value.trim();
+            if (!input) return;
+
+            clearMap();
+            const terminal = document.getElementById('terminal-output');
+            terminal.innerHTML = `กำลังจัดเตรียมข้อมูลสำหรับ: ${input}...<br>`;
+            document.getElementById('trace-btn').disabled = true;
+
+            const domain = input.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+            
+            let startPoint = null;
+            let endPoint = null;
+            let isSimulationMode = false;
+
+            // ตรวจสอบว่าเป็นไฟล์โลคอล (file://) หรือไม่
+            if (window.location.protocol === 'file:') {
+                isSimulationMode = true;
+                terminal.innerHTML += `<span class="warning-text">[คำเตือน] เปิดผ่านไฟล์โลคอล: เข้าสู่โหมดจำลองพิกัดอัตโนมัติ (CORS Bypass)</span><br><br>`;
+            }
+
+            if (!isSimulationMode) {
+                try {
+                    // ขั้นตอนดึงพิกัดผู้ใช้จริง
+                    const userLocRes = await fetch('https://ipapi.co/json/');
+                    const userData = await userLocRes.json();
+                    startPoint = {
+                        name: "Your Location",
+                        lat: userData.latitude || 13.7367,
+                        lon: userData.longitude || 100.5231,
+                        ip: userData.ip || "Client IP",
+                        city: userData.city || "Bangkok",
+                        country: userData.country_name || "Thailand"
+                    };
+
+                    // ขั้นตอนดึงพิกัดเซิร์ฟเวอร์ปลายทางจริง
+                    const destLocRes = await fetch(`https://ipapi.co/${domain}/json/`);
+                    const destData = await destLocRes.json();
+
+                    if (destData.error) {
+                        throw new Error("API Limit หรือหาโดเมนไม่พบ");
+                    }
+
+                    endPoint = {
+                        name: domain,
+                        lat: destData.latitude,
+                        lon: destData.longitude,
+                        ip: destData.ip || "127.0.0.1",
+                        city: destData.city || "Destination",
+                        country: destData.country_name || "Unknown"
+                    };
+
+                } catch (err) {
+                    isSimulationMode = true;
+                    terminal.innerHTML += `<span class="warning-text">[ระบบสำรอง] ไม่สามารถเชื่อมต่อ API ได้ (ใช้ข้อมูลจำลองตามภูมิศาสตร์แทน)</span><br><br>`;
+                }
+            }
+
+            // หากอยู่ในโหมดจำลอง (เปิดไฟล์โดยตรง / API ลิมิต)
+            if (isSimulationMode) {
+                startPoint = {
+                    name: "Your Location (Simulated)",
+                    lat: 13.7367,
+                    lon: 100.5231,
+                    ip: "182.52.112.45",
+                    city: "Bangkok",
+                    country: "Thailand"
+                };
+
+                // คำนวณพิกัดปลายทางจำลองตามนามสกุลโดเมน
+                endPoint = generateMockDestination(domain);
+            }
+
+            const route = generateSimulatedRoute(startPoint, endPoint);
+            await animateRoute(route);
+            document.getElementById('trace-btn').disabled = false;
+        }
+
+        function generateMockDestination(domain) {
+            // ค่าตั้งต้นเป็นสหรัฐอเมริกา
+            let dest = {
+                name: domain,
+                lat: 37.7749,
+                lon: -122.4194,
+                ip: "104.244.42.1",
+                city: "San Francisco",
+                country: "United States"
+            };
+
+            // ตรวจสอบโดเมนสัญชาติเพื่อย้ายพิกัดให้สมจริง
+            if (domain.endsWith('.th')) {
+                dest.lat = 13.7563;
+                dest.lon = 100.5018;
+                dest.ip = "203.150.20.1";
+                dest.city = "Bangkok";
+                dest.country = "Thailand";
+            } else if (domain.endsWith('.jp')) {
+                dest.lat = 35.6762;
+                dest.lon = 139.6503;
+                dest.ip = "210.140.10.3";
+                dest.city = "Tokyo";
+                dest.country = "Japan";
+            } else if (domain.endsWith('.sg')) {
+                dest.lat = 1.3521;
+                dest.lon = 103.8198;
+                dest.ip = "115.84.1.2";
+                dest.city = "Singapore";
+                dest.country = "Singapore";
+            } else if (domain.endsWith('.uk') || domain.endsWith('.eu')) {
+                dest.lat = 50.1109;
+                dest.lon = 8.6821;
+                dest.ip = "80.81.192.1";
+                dest.city = "Frankfurt";
+                dest.country = "Germany";
+            }
+
+            return dest;
+        }
+
+        function clearMap() {
+            activeMarkers.forEach(m => map.removeLayer(m));
+            activeMarkers = [];
+            if (activePolyline) {
+                map.removeLayer(activePolyline);
+                activePolyline = null;
+            }
+        }
+
+        function generateSimulatedRoute(start, end) {
+            const route = [];
+            
+            // Hop 1-2
+            route.push({ ...start, hop: 1, delay: Math.floor(Math.random() * 5) + 1 });
+            route.push({ 
+                name: "ISP Gateway", 
+                lat: start.lat + (Math.random() - 0.5) * 0.1, 
+                lon: start.lon + (Math.random() - 0.5) * 0.1, 
+                ip: "10.25.1.1", 
+                city: start.city, 
+                country: start.country,
+                hop: 2,
+                delay: Math.floor(Math.random() * 10) + 5
+            });
+
+            let midHubs = [];
+            if (start.country !== end.country) {
+                if (start.country === "Thailand" || end.country === "Singapore") {
+                    midHubs.push(internetHubs.find(h => h.country === "SG"));
+                }
+                
+                if (end.country === "United States") {
+                    midHubs.push(internetHubs.find(h => h.country === "JP"));
+                    midHubs.push(internetHubs.find(h => h.country === "US"));
+                } else if (end.country === "Germany" || end.country === "United Kingdom") {
+                    midHubs.push(internetHubs.find(h => h.country === "DE"));
+                }
+            }
+
+            let currentHop = 3;
+            let currentDelay = 15;
+            midHubs.forEach(hub => {
+                if (hub) {
+                    currentDelay += Math.floor(Math.random() * 50) + 30;
+                    route.push({
+                        name: hub.name,
+                        lat: hub.lat,
+                        lon: hub.lon,
+                        ip: hub.ip,
+                        city: hub.name,
+                        country: hub.country,
+                        hop: currentHop++,
+                        delay: currentDelay
+                    });
+                }
+            });
+
+            currentDelay += Math.floor(Math.random() * 40) + 20;
+            route.push({
+                ...end,
+                hop: currentHop,
+                delay: currentDelay
+            });
+
+            return route;
+        }
+
+        async function animateRoute(route) {
+            const terminal = document.getElementById('terminal-output');
+            terminal.innerHTML += `traceroute to ${route[route.length-1].name} (${route[route.length-1].ip}), 30 hops max<br><br>`;
+            
+            const coordinates = [];
+            const bounds = L.latLngBounds();
+
+            for (let i = 0; i < route.length; i++) {
+                const step = route[i];
+                const point = [step.lat, step.lon];
+                coordinates.push(point);
+                bounds.extend(point);
+
+                const marker = L.circleMarker(point, {
+                    radius: i === 0 || i === route.length - 1 ? 8 : 5,
+                    color: i === route.length - 1 ? '#ff3333' : '#4caf50',
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                marker.bindPopup(`<b>Hop ${step.hop}</b><br>${step.name}<br>IP: ${step.ip}<br>Delay: ${step.delay} ms`);
+                activeMarkers.push(marker);
+
+                if (activePolyline) {
+                    activePolyline.setLatLngs(coordinates);
+                } else {
+                    activePolyline = L.polyline(coordinates, { color: '#33ff33', weight: 2, dashArray: '5, 10' }).addTo(map);
+                }
+
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 6 });
+
+                terminal.innerHTML += `
+                    <div class="hop-row">
+                        <span class="hop-num">${step.hop}</span> &nbsp;
+                        <span class="hop-ip">${step.ip.padEnd(15, ' ')}</span> &nbsp;
+                        <span class="hop-loc">(${step.city || 'Internal Exchange'}, ${step.country})</span> &nbsp;
+                        <span class="hop-ms">${step.delay} ms</span>
+                    </div>
+                `;
+                terminal.scrollTop = terminal.scrollHeight;
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            terminal.innerHTML += `<br><span style="color:#4caf50;">Trace Complete.</span>`;
+        }
+    </script>
+</body>
+</html>
