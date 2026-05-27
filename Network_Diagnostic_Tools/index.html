@@ -159,7 +159,7 @@
 <body>
 
     <header>
-        <h1>Network Diagnostic Tools (Real API)</h1>
+        <h1>Network Diagnostic Tools</h1>
         <div class="search-container">
             <input type="text" id="target-input" placeholder="ใส่โดเมน เช่น google.com" value="google.com">
             <button class="btn-trace" id="trace-btn" onclick="startTraceroute()">Trace Route</button>
@@ -197,13 +197,24 @@
             return input.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
         }
 
+        // ล้างข้อมูลเก่าบนแผนที่
+        function clearMap() {
+            activeMarkers.forEach(m => map.removeLayer(m));
+            activeMarkers = [];
+            if (activePolyline) {
+                map.removeLayer(activePolyline);
+                activePolyline = null;
+            }
+        }
+
         // ==========================================
-        //  ฟังก์ชัน NSLOOKUP (ผ่าน Cloudflare DoH)
+        //  ฟังก์ชัน NSLOOKUP (ค้นหาพร้อมปักหมุดบนแผนที่)
         // ==========================================
         async function startNSLookup() {
             const domain = getCleanDomain();
             if (!domain) return;
 
+            clearMap(); // ล้างข้อมูลแผนที่เดิมก่อนเริ่มค้นหาใหม่
             const terminal = document.getElementById('terminal-output');
             terminal.innerHTML = `> nslookup ${domain}<br>`;
             terminal.innerHTML += `Server:  cloudflare-dns.com<br>`;
@@ -213,6 +224,7 @@
             setButtonsDisabled(true);
 
             const recordTypes = ['A', 'AAAA', 'MX', 'TXT'];
+            const resolvedIPs = []; // เก็บ IP เพื่อนำไปปักหมุดภายหลัง
 
             try {
                 for (let type of recordTypes) {
@@ -225,10 +237,24 @@
                             if (type === 'TXT') data = data.replace(/^"|"$/g, ''); 
                             terminal.innerHTML += ` &nbsp;Name: &nbsp;${rec.name}<br>`;
                             terminal.innerHTML += ` &nbsp;Data: &nbsp;<span style="color:#00ffff;">${data}</span> (TTL: ${rec.TTL})<br><br>`;
+                            
+                            // เก็บ IPv4 (A Record) เอาไว้ไปค้นหาพิกัด
+                            if (type === 'A') {
+                                resolvedIPs.push(data);
+                            }
                         });
                         terminal.innerHTML += `</div>`;
                     }
                 }
+
+                // หากพบ IPv4 ให้ไปดึงพิกัดภูมิศาสตร์และปักหมุด
+                if (resolvedIPs.length > 0) {
+                    terminal.innerHTML += `กำลังระบุตำแหน่งพิกัดของ IP ที่พบบนแผนที่...<br>`;
+                    await pinNSLookupLocations(domain, resolvedIPs);
+                } else {
+                    terminal.innerHTML += `<span class="warning-text">ไม่พบระเบียน IP ประเภท A Record สำหรับระบุพิกัดบนแผนที่</span><br>`;
+                }
+
             } catch (err) {
                 terminal.innerHTML += `<span style="color:#ff3333;">เกิดข้อผิดพลาดในการดึงข้อมูล DNS: ${err.message}</span><br>`;
             } finally {
@@ -247,8 +273,59 @@
             return result.Answer;
         }
 
+        // ฟังก์ชันในการดึงพิกัด Geolocation และสร้างหมุด NSLookup
+        async function pinNSLookupLocations(domain, ips) {
+            const terminal = document.getElementById('terminal-output');
+            const bounds = L.latLngBounds();
+            let pinnedCount = 0;
+
+            // จำกัดการเช็กพิกัดสูงสุด 3 ไอพี เพื่อป้องกันการถูกจำกัดสิทธิ์จาก API
+            const targetIPs = ips.slice(0, 3); 
+
+            for (let ip of targetIPs) {
+                try {
+                    const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+                    if (geoRes.ok) {
+                        const geoData = await geoRes.json();
+                        if (!geoData.error && geoData.latitude && geoData.longitude) {
+                            const point = [geoData.latitude, geoData.longitude];
+                            bounds.extend(point);
+
+                            // สร้างหมุดสีฟ้าอ่อนบนแผนที่เพื่อระบุตำแหน่งของเซิร์ฟเวอร์โดเมนนั้น
+                            const marker = L.circleMarker(point, {
+                                radius: 10,
+                                color: '#00ffff',
+                                fillColor: '#008cba',
+                                fillOpacity: 0.7
+                            }).addTo(map);
+
+                            marker.bindPopup(`
+                                <b>NSLookup Target:</b> ${domain}<br>
+                                <b>IP Address:</b> ${ip}<br>
+                                <b>Location:</b> ${geoData.city}, ${geoData.country_name}<br>
+                                <b>Provider:</b> ${geoData.org || 'Unknown'}
+                            `).openPopup();
+
+                            activeMarkers.push(marker);
+                            pinnedCount++;
+                        }
+                    }
+                } catch (e) {
+                    // หากมีจุดใดพิกัดมีข้อผิดพลาดให้ข้ามไป
+                }
+            }
+
+            if (pinnedCount > 0) {
+                // ปรับขนาดแผ่นที่ให้ไปโฟกัสพิกัดเซิร์ฟเวอร์ที่ปักหมุด
+                map.fitBounds(bounds, { padding: [100, 100], maxZoom: 6 });
+                terminal.innerHTML += `<span style="color:#00ffff;">ปักหมุดตำแหน่งเซิร์ฟเวอร์เรียบร้อยแล้ว (${pinnedCount} จุด)</span><br>`;
+            } else {
+                terminal.innerHTML += `<span class="warning-text">ไม่สามารถระบุพิกัดทางภูมิศาสตร์ของไอพีเหล่านี้ได้ในขณะนี้</span><br>`;
+            }
+        }
+
         // ==========================================
-        //  ฟังก์ชัน TRACEROUTE (ดึงพิกัดตามเส้นทางจริงผ่าน API)
+        //  ฟังก์ชัน TRACEROUTE 
         // ==========================================
         async function startTraceroute() {
             const domain = getCleanDomain();
@@ -260,14 +337,11 @@
             setButtonsDisabled(true);
 
             try {
-                // 1. เรียกใช้งาน API ทดสอบ Traceroute ของ HackerTarget (รันสด ณ ขณะนั้น)
                 terminal.innerHTML += `เรียกใช้ข้อมูลเส้นทางจาก HackerTarget API...<br>`;
                 const traceRes = await fetch(`https://api.hackertarget.com/mtr/?q=${domain}`);
                 if (!traceRes.ok) throw new Error("API จำกัดสิทธิ์หรือเชื่อมต่อไม่ได้");
                 
                 const traceText = await traceRes.text();
-                
-                // กรองรายชื่อ IP จากผลลัพธ์ของระบบ MTR
                 const ips = parseIPsFromMTR(traceText);
                 
                 if (ips.length === 0) {
@@ -278,13 +352,10 @@
 
                 const route = [];
                 let hopCount = 1;
-
-                // จำกัดความเร็วในการเรียกเช็กพิกัดสูงสุด 8 จุด เพื่อป้องกันการถูกบล็อกจาก API พิกัดฟรี
                 const limitIPs = ips.slice(0, 8); 
 
                 for (let ip of limitIPs) {
                     try {
-                        // 2. ส่ง IP ไปแปลงเป็นพิกัดภูมิศาสตร์จริง ๆ ผ่าน https://ipapi.co
                         const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
                         if (geoRes.ok) {
                             const geoData = await geoRes.json();
@@ -297,12 +368,12 @@
                                     ip: ip,
                                     city: geoData.city || "Unknown City",
                                     country: geoData.country_name || "Unknown Country",
-                                    delay: Math.floor(Math.random() * 40) + (hopCount * 12) // จำลอง Latency ตามระยะ Hop
+                                    delay: Math.floor(Math.random() * 40) + (hopCount * 12)
                                 });
                             }
                         }
                     } catch (e) {
-                        // หากมีจุดใดพิกัดมีปัญหาให้ข้ามไป เพื่อให้ระบบไม่ค้าง
+                        // ข้ามตัวที่มีปัญหา
                     }
                 }
 
@@ -310,11 +381,9 @@
                      throw new Error("หาพิกัดทางภูมิศาสตร์ของเส้นทางไม่ได้");
                 }
 
-                // 3. วาดแผนที่และรายงานผลตามพิกัดจริงที่ได้
                 await animateRoute(route);
 
             } catch (err) {
-                // หากติดข้อจำกัด/ข้อผิดพลาดใด ๆ ระบบจะสลับไปโหมดจำลองพิกัดทันทีเพื่อความราบรื่นในการใช้งาน
                 terminal.innerHTML += `<span class="warning-text">[SYSTEM] API จำกัดสิทธิ์ชั่วคราว: กำลังเปิดใช้งานโหมดจำลองพิกัดเพื่อแสดงผลต่อเนื่อง...</span><br><br>`;
                 runSimulatedTraceroute(domain);
             } finally {
@@ -322,11 +391,9 @@
             }
         }
 
-        // ฟังก์ชันสำหรับกรองหา IPv4 จากข้อความดิบ
         function parseIPsFromMTR(text) {
             const ipRegex = /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g;
             const found = text.match(ipRegex) || [];
-            // กรองเอา IP ส่วนตัวภายใน (Private / Local IP) ออกเหลือแต่ Public IP
             return [...new Set(found)].filter(ip => {
                 return !ip.startsWith('192.168.') && 
                        !ip.startsWith('10.') && 
@@ -336,9 +403,6 @@
             });
         }
 
-        // ==========================================
-        //  โหมดสำรอง: ทำงานแบบจำลอง (เมื่อ API จริงมีปัญหา)
-        // ==========================================
         async function runSimulatedTraceroute(domain) {
             const startPoint = {
                 name: "Your Location (Simulated)",
@@ -380,18 +444,6 @@
             });
             route.push({ ...end, hop: 3, delay: 145 });
             return route;
-        }
-
-        // ==========================================
-        //  เครื่องมือจัดการแผนที่และการเคลื่อนไหว
-        // ==========================================
-        function clearMap() {
-            activeMarkers.forEach(m => map.removeLayer(m));
-            activeMarkers = [];
-            if (activePolyline) {
-                map.removeLayer(activePolyline);
-                activePolyline = null;
-            }
         }
 
         function setButtonsDisabled(disabled) {
