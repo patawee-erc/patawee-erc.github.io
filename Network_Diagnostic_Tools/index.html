@@ -214,7 +214,7 @@
             const domain = getCleanDomain();
             if (!domain) return;
 
-            clearMap(); // ล้างข้อมูลแผนที่เดิมก่อนเริ่มค้นหาใหม่
+            clearMap(); // ล้างข้อมูลแผนที่เดิม
             const terminal = document.getElementById('terminal-output');
             terminal.innerHTML = `> nslookup ${domain}<br>`;
             terminal.innerHTML += `Server:  cloudflare-dns.com<br>`;
@@ -224,7 +224,7 @@
             setButtonsDisabled(true);
 
             const recordTypes = ['A', 'AAAA', 'MX', 'TXT'];
-            const resolvedIPs = []; // เก็บ IP เพื่อนำไปปักหมุดภายหลัง
+            const resolvedIPs = [];
 
             try {
                 for (let type of recordTypes) {
@@ -238,7 +238,7 @@
                             terminal.innerHTML += ` &nbsp;Name: &nbsp;${rec.name}<br>`;
                             terminal.innerHTML += ` &nbsp;Data: &nbsp;<span style="color:#00ffff;">${data}</span> (TTL: ${rec.TTL})<br><br>`;
                             
-                            // เก็บ IPv4 (A Record) เอาไว้ไปค้นหาพิกัด
+                            // เก็บ IPv4 ไว้ใช้ระบุพิกัด
                             if (type === 'A') {
                                 resolvedIPs.push(data);
                             }
@@ -247,12 +247,12 @@
                     }
                 }
 
-                // หากพบ IPv4 ให้ไปดึงพิกัดภูมิศาสตร์และปักหมุด
+                // ปักหมุดพิกัดจริง
                 if (resolvedIPs.length > 0) {
-                    terminal.innerHTML += `กำลังระบุตำแหน่งพิกัดของ IP ที่พบบนแผนที่...<br>`;
+                    terminal.innerHTML += `กำลังวิเคราะห์ที่ตั้งทางภูมิศาสตร์ของ IP...<br>`;
                     await pinNSLookupLocations(domain, resolvedIPs);
                 } else {
-                    terminal.innerHTML += `<span class="warning-text">ไม่พบระเบียน IP ประเภท A Record สำหรับระบุพิกัดบนแผนที่</span><br>`;
+                    terminal.innerHTML += `<span class="warning-text">ไม่พบระเบียน IPv4 (A Record) สำหรับระบุพิกัดบนแผนที่</span><br>`;
                 }
 
             } catch (err) {
@@ -273,25 +273,26 @@
             return result.Answer;
         }
 
-        // ฟังก์ชันในการดึงพิกัด Geolocation และสร้างหมุด NSLookup
+        // ฟังก์ชันระบุพิกัดและปักหมุด NSLookup (ปรับปรุงมาใช้ ipwho.is)
         async function pinNSLookupLocations(domain, ips) {
             const terminal = document.getElementById('terminal-output');
             const bounds = L.latLngBounds();
             let pinnedCount = 0;
 
-            // จำกัดการเช็กพิกัดสูงสุด 3 ไอพี เพื่อป้องกันการถูกจำกัดสิทธิ์จาก API
+            // ค้นหาพิกัดสูงสุด 3 ไอพี เพื่อป้องกันการชนโควตาของ API
             const targetIPs = ips.slice(0, 3); 
 
             for (let ip of targetIPs) {
                 try {
-                    const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+                    // เรียกใช้งาน API ของ ipwho.is (มีเสถียรภาพและไม่ติดปัญหา CORS)
+                    const geoRes = await fetch(`https://ipwho.is/${ip}`);
                     if (geoRes.ok) {
                         const geoData = await geoRes.json();
-                        if (!geoData.error && geoData.latitude && geoData.longitude) {
+                        if (geoData.success && geoData.latitude && geoData.longitude) {
                             const point = [geoData.latitude, geoData.longitude];
                             bounds.extend(point);
 
-                            // สร้างหมุดสีฟ้าอ่อนบนแผนที่เพื่อระบุตำแหน่งของเซิร์ฟเวอร์โดเมนนั้น
+                            // วาดวงกลมตำแหน่งบนแผนที่สีฟ้าอ่อน
                             const marker = L.circleMarker(point, {
                                 radius: 10,
                                 color: '#00ffff',
@@ -302,30 +303,30 @@
                             marker.bindPopup(`
                                 <b>NSLookup Target:</b> ${domain}<br>
                                 <b>IP Address:</b> ${ip}<br>
-                                <b>Location:</b> ${geoData.city}, ${geoData.country_name}<br>
-                                <b>Provider:</b> ${geoData.org || 'Unknown'}
-                            `).openPopup();
+                                <b>Location:</b> ${geoData.city}, ${geoData.country}<br>
+                                <b>ISP:</b> ${geoData.connection?.isp || geoData.isp || 'Unknown'}
+                            `);
 
                             activeMarkers.push(marker);
                             pinnedCount++;
                         }
                     }
                 } catch (e) {
-                    // หากมีจุดใดพิกัดมีข้อผิดพลาดให้ข้ามไป
+                    console.error("Geolocation error:", e);
                 }
             }
 
             if (pinnedCount > 0) {
-                // ปรับขนาดแผ่นที่ให้ไปโฟกัสพิกัดเซิร์ฟเวอร์ที่ปักหมุด
+                // ปรับขอบเขตแผนที่และซูมเข้าไปยังตำแหน่งที่ปักหมุด
                 map.fitBounds(bounds, { padding: [100, 100], maxZoom: 6 });
-                terminal.innerHTML += `<span style="color:#00ffff;">ปักหมุดตำแหน่งเซิร์ฟเวอร์เรียบร้อยแล้ว (${pinnedCount} จุด)</span><br>`;
+                terminal.innerHTML += `<span style="color:#00ffff;">ปักหมุดที่ตั้งเซิร์ฟเวอร์บนแผนที่เรียบร้อยแล้ว (${pinnedCount} จุด)</span><br>`;
             } else {
-                terminal.innerHTML += `<span class="warning-text">ไม่สามารถระบุพิกัดทางภูมิศาสตร์ของไอพีเหล่านี้ได้ในขณะนี้</span><br>`;
+                terminal.innerHTML += `<span class="warning-text">ไม่สามารถวิเคราะห์ระบุพิกัดแผนที่จากผู้ให้บริการภายนอกได้</span><br>`;
             }
         }
 
         // ==========================================
-        //  ฟังก์ชัน TRACEROUTE 
+        //  ฟังก์ชัน TRACEROUTE (ปรับปรุงมาใช้ ipwho.is)
         // ==========================================
         async function startTraceroute() {
             const domain = getCleanDomain();
@@ -356,18 +357,18 @@
 
                 for (let ip of limitIPs) {
                     try {
-                        const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+                        const geoRes = await fetch(`https://ipwho.is/${ip}`);
                         if (geoRes.ok) {
                             const geoData = await geoRes.json();
-                            if (!geoData.error && geoData.latitude && geoData.longitude) {
+                            if (geoData.success && geoData.latitude && geoData.longitude) {
                                 route.push({
                                     hop: hopCount++,
-                                    name: geoData.org || "Network Node",
+                                    name: geoData.connection?.isp || geoData.isp || "Network Node",
                                     lat: geoData.latitude,
                                     lon: geoData.longitude,
                                     ip: ip,
                                     city: geoData.city || "Unknown City",
-                                    country: geoData.country_name || "Unknown Country",
+                                    country: geoData.country || "Unknown Country",
                                     delay: Math.floor(Math.random() * 40) + (hopCount * 12)
                                 });
                             }
@@ -384,7 +385,7 @@
                 await animateRoute(route);
 
             } catch (err) {
-                terminal.innerHTML += `<span class="warning-text">[SYSTEM] API จำกัดสิทธิ์ชั่วคราว: กำลังเปิดใช้งานโหมดจำลองพิกัดเพื่อแสดงผลต่อเนื่อง...</span><br><br>`;
+                terminal.innerHTML += `<span class="warning-text">[SYSTEM] ระบบ API ปิดกั้นการเข้าถึงชั่วคราว: กำลังเปิดใช้งานโหมดจำลองพิกัด...</span><br><br>`;
                 runSimulatedTraceroute(domain);
             } finally {
                 setButtonsDisabled(false);
