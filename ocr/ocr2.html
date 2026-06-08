@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Area Selector OCR</title>
+    <!-- นำเข้าฟอนต์ Prompt เพื่อความทันสมัยและอ่านภาษาไทยง่ายขึ้น -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- PDF.js สำหรับเรนเดอร์ PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Tesseract.js สำหรับทำ OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: rgba(37, 99, 235, 0.15);
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header Section */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dropzone {
+            width: 100%;
+            max-width: 600px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background-color: #fafafa;
+        }
+
+        .dropzone:hover {
+            border-color: var(--primary);
+            background-color: #f0f7ff;
+        }
+
+        .dropzone input[type="file"] {
+            display: none;
+        }
+
+        .dropzone-text h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: var(--text-main);
+        }
+
+        .dropzone-text p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Main Workspace */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 992px) {
+            .workspace {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .panel-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        /* PDF Viewer Styling */
+        .viewer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            flex-grow: 1;
+            overflow: auto;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            padding: 1rem;
+            position: relative;
+        }
+
+        .canvas-container {
+            position: relative;
+            cursor: crosshair;
+            user-select: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        #pdf-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Modernized Selection Box */
+        #selection-box {
+            position: absolute;
+            border: 2px solid var(--primary);
+            background-color: var(--primary-light);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.15); /* สร้าเอฟเฟกต์หรี่แสงพื้นที่ส่วนที่ไม่ได้เลือก */
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Status Bar */
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            font-weight: 400;
+            transition: var(--transition);
+            display: inline-block;
+            margin-bottom: 1rem;
+            width: 100%;
+            text-align: center;
+        }
+
+        .status-badge.active {
+            background-color: #eff6ff;
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+        }
+
+        /* Textarea and Controls */
+        .textarea-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #ocr-text {
+            width: 100%;
+            flex-grow: 1;
+            min-height: 350px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            color: var(--text-main);
+            background-color: #fafafa;
+            transition: var(--transition);
+        }
+
+        #ocr-text:focus {
+            border-color: var(--primary);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Action Buttons */
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Helper placeholder when no PDF loaded */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>ตัวช่วยอ่านไฟล์เอกสาร PDF เป็นตัวหนังสือ (OCR)</h1>
+            <p>อัปโหลดไฟล์ PDF ลากเมาส์ครอบพื้นที่เพื่อคัดลอกเฉพาะจุดที่ต้องการแปลผลเป็นข้อความ</p>
+        </header>
+
+        <!-- Dropzone สำหรับอัปโหลดไฟล์ -->
+        <section class="upload-section">
+            <label class="dropzone" id="dropzone">
+                <input type="file" id="file-input" accept="application/pdf">
+                <div class="dropzone-text">
+                    <svg style="width:36px;height:36px;margin:0 auto 0.75rem;display:block;color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <h3>เลือกไฟล์ PDF หรือลากไฟล์มาวางที่นี่</h3>
+                    <p>จำกัดการสแกนในหน้ารวมหน้าแรกเป็นตัวอย่างในการแปลงข้อความ</p>
+                </div>
+            </label>
+        </section>
+
+        <!-- แถบแจ้งเตือนสถานะการทำงาน -->
+        <div id="status" class="status-badge">กรุณาอัปโหลดไฟล์ PDF เพื่อเริ่มต้นใช้งาน</div>
+
+        <main class="workspace">
+            <!-- ซ้าย: การแสดงผลเอกสาร PDF และการครอปภาพ -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">ตัวอย่างเอกสาร PDF</h2>
+                </div>
+                <div class="viewer-container">
+                    <div id="pdf-placeholder" class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>ยังไม่มีการเลือกไฟล์ภาพหรือเอกสารแสดงผล</p>
+                    </div>
+                    <div class="canvas-container" id="canvas-container" style="display: none;">
+                        <canvas id="pdf-canvas"></canvas>
+                        <div id="selection-box"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ขวา: ผลลัพธ์จากการทำ OCR -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">ข้อความที่สกัดได้ (เฉพาะพื้นที่ที่เลือก)</h2>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="copyText()">คัดลอกข้อความ</button>
+                        <button class="btn btn-secondary" onclick="clearText()">ล้างข้อมูล</button>
+                    </div>
+                </div>
+                <div class="textarea-container">
+                    <textarea id="ocr-text" placeholder="เมื่อลากกล่องพื้นที่สีน้ำเงินบนเอกสาร ข้อความที่สกัดได้จะมาปรากฏขึ้นที่นี่อัตโนมัติ..."></textarea>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        const fileInput = document.getElementById('file-input');
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        const placeholder = document.getElementById('pdf-placeholder');
+        const selectionBox = document.getElementById('selection-box');
+        const statusDiv = document.getElementById('status');
+        const ocrTextarea = document.getElementById('ocr-text');
+        const dropzone = document.getElementById('dropzone');
+
+        let isDrawing = false;
+        let startX, startY;
+        let scaleX = 1, scaleY = 1;
+
+        // จัดการเหตุการณ์ Drag over & Leave สำหรับ Dropzone
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = "var(--primary)";
+                dropzone.style.backgroundColor = "#f0f7ff";
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = "var(--border-color)";
+                dropzone.style.backgroundColor = "#fafafa";
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) {
+                fileInput.files = files;
+                handleFileLoad(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFileLoad(file);
+        });
+
+        // --- 1. จัดการการโหลดและเรนเดอร์ PDF ---
+        async function handleFileLoad(file) {
+            statusDiv.textContent = 'กำลังโหลดไฟล์ PDF...';
+            statusDiv.classList.add('active');
+            ocrTextarea.value = '';
+            selectionBox.style.display = 'none';
+
+            const fileReader = new FileReader();
+            fileReader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                try {
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    const page = await pdf.getPage(1); // แสดงผลหน้าแรกเป็นตัวหลักในการสแกน
+                    
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    statusDiv.textContent = 'กำลังเรนเดอร์หน้ากระดาษ...';
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    
+                    // ปิดซ่อน Placeholder และ แสดง Canvas แทนน
+                    placeholder.style.display = 'none';
+                    container.style.display = 'block';
+                    
+                    statusDiv.textContent = 'พร้อมใช้งาน: ลากเมาส์ล้อมกรอบพื้นที่บนเอกสารที่ต้องการอ่านตัวหนังสือได้ทันที';
+                } catch (error) {
+                    console.error(error);
+                    statusDiv.textContent = 'เกิดข้อผิดพลาดในการโหลดไฟล์ PDF';
+                }
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+
+        // --- 2. การทำงานส่วนลากเมาส์เพื่อเลือกพื้นที่ ---
+        container.addEventListener('mousedown', (e) => {
+            if (canvas.width === 0) return; 
+            
+            isDrawing = true;
+            const rect = container.getBoundingClientRect();
+            
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            selectionBox.style.left = startX + 'px';
+            selectionBox.style.top = startY + 'px';
+            selectionBox.style.width = '0px';
+            selectionBox.style.height = '0px';
+            selectionBox.style.display = 'block';
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const rect = container.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            const width = currentX - startX;
+            const height = currentY - startY;
+
+            selectionBox.style.width = Math.abs(width) + 'px';
+            selectionBox.style.height = Math.abs(height) + 'px';
+            selectionBox.style.left = (width < 0 ? currentX : startX) + 'px';
+            selectionBox.style.top = (height < 0 ? currentY : startY) + 'px';
+        });
+
+        container.addEventListener('mouseup', async (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            const boxRect = selectionBox.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+
+            scaleX = canvas.width / canvasRect.width;
+            scaleY = canvas.height / canvasRect.height;
+
+            const sx = (boxRect.left - canvasRect.left) * scaleX;
+            const sy = (boxRect.top - canvasRect.top) * scaleY;
+            const sWidth = boxRect.width * scaleX;
+            const sHeight = boxRect.height * scaleY;
+
+            if (sWidth > 10 && sHeight > 10) {
+                await cropAndOCR(sx, sy, sWidth, sHeight);
+            }
+        });
+
+        // --- 3. การตัดภาพเฉพาะส่วนและเรียกใช้ OCR ---
+        async function cropAndOCR(sx, sy, sWidth, sHeight) {
+            statusDiv.textContent = 'กำลังประมวลผลอ่านพิกเซลตัวอักษร OCR...';
+            statusDiv.classList.add('active');
+            ocrTextarea.value = '';
+
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = sWidth;
+            cropCanvas.height = sHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+
+            cropCtx.drawImage(canvas, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+
+            try {
+                const result = await Tesseract.recognize(
+                    cropCanvas,
+                    'tha+eng', 
+                    { logger: m => console.log(m.status) }
+                );
+
+                ocrTextarea.value = result.data.text;
+                statusDiv.textContent = 'ระบบดึงข้อความจากการสแกนเรียบร้อยแล้ว';
+            } catch (error) {
+                console.error(error);
+                statusDiv.textContent = 'เกิดข้อผิดพลาดในการประมวลผลตัวหนังสือ';
+            }
+        }
+
+        // --- ฟังก์ชันช่วยเหลืออื่นๆ ---
+        function copyText() {
+            if (!ocrTextarea.value) {
+                alert('ไม่มีข้อความที่สามารถคัดลอกได้');
+                return;
+            }
+            ocrTextarea.select();
+            document.execCommand('copy');
+            alert('คัดลอกข้อความลงในคลิปบอร์ดแล้ว');
+        }
+
+        function clearText() {
+            ocrTextarea.value = '';
+        }
+    </script>
+</body>
+</html>
