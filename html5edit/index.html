@@ -40,6 +40,10 @@
         button.popup { background-color: #e67e22; }
         button.font-btn { background-color: #555; border: 1px solid #666; min-width: 35px; }
         button.font-btn:hover { background-color: #666; }
+        
+        /* สไตล์สำหรับปุ่มที่เกี่ยวกับการจัดการบรรทัด */
+        button.single-break { background-color: #1abc9c; }
+        
         .auto-run-label { font-size: 0.8rem; margin-left: 15px; cursor: pointer; user-select: none; white-space: nowrap; }
         .container { display: flex; flex: 1; width: 100%; height: calc(100vh - 50px); position: relative; }
         #editor-container { width: 50%; height: 100%; position: relative; }
@@ -90,6 +94,10 @@
             <button class="font-btn" onclick="changeFontSize(-2)" title="ลดขนาด">A-</button>
             <button class="font-btn" onclick="changeFontSize(2)" title="เพิ่มขนาด">A+</button>
             <span style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></span>
+            
+            <!-- ปุ่มจัดการเว้นบรรทัด -->
+            <button class="single-break" onclick="keepSingleLineBreak()" title="ยุบแถวว่างหลายบรรทัดให้เหลือบรรทัดเดียว">🚫 Keep Single Break</button>
+            
             <button class="clear" onclick="clearCode()">Clear</button>
             <button class="run" onclick="runCode()">Run ▶</button>
             <button class="popup" onclick="openPopup()">↗ Popup</button>
@@ -180,6 +188,48 @@
                 alert("โปรดอนุญาตให้ Pop-up ทำงาน (Allow Pop-ups) สำหรับหน้านี้");
             }
         }
+        
+        // ฟังก์ชันลบการขึ้นบรรทัดใหม่ทั้งหมด (เปลี่ยนเป็นวรรค)
+        function removeLineBreaks() {
+            var selectedText = editor.getSelectedText();
+            if (selectedText) {
+                var cleanedText = selectedText.replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
+                editor.insert(cleanedText);
+            } else {
+                var code = editor.getValue();
+                if (!code.trim()) {
+                    alert("ไม่มีข้อความในช่องแก้ไข");
+                    return;
+                }
+                if (confirm("คุณต้องการลบการขึ้นบรรทัดใหม่ทั้งหมดในหน้าต่างแก้ไขใช่หรือไม่?")) {
+                    var cleanedCode = code.replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
+                    editor.setValue(cleanedCode, -1);
+                }
+            }
+        }
+
+        // ฟังก์ชันยุบบรรทัดว่างหลายบรรทัดให้เหลือบรรทัดเดียว (Keep Single Line Break)
+        function keepSingleLineBreak() {
+            var selectedText = editor.getSelectedText();
+            if (selectedText) {
+                // แปลง Carriage Return ให้เป็น newline มาตรฐาน จากนั้นแทนที่ newline ซ้ำๆ ด้วยอันเดียว
+                var cleanedText = selectedText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                cleanedText = cleanedText.replace(/\n{2,}/g, '\n');
+                editor.insert(cleanedText);
+            } else {
+                var code = editor.getValue();
+                if (!code.trim()) {
+                    alert("ไม่มีข้อความในช่องแก้ไข");
+                    return;
+                }
+                if (confirm("คุณต้องการยุบการเว้นวรรคบรรทัดที่ซ้ำกันให้เหลือเพียง 1 บรรทัดใช่หรือไม่?")) {
+                    var cleanedCode = code.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                    cleanedCode = cleanedCode.replace(/\n{2,}/g, '\n');
+                    editor.setValue(cleanedCode, -1);
+                }
+            }
+        }
+
         window.onload = runCode;
         const resizer = document.getElementById('dragMe');
         const leftSide = document.getElementById('editor-container');
