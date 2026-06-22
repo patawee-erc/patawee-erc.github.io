@@ -6,23 +6,12 @@
     <title>HTML Editor - Ultimate</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
     
-    <!-- 1. โหลด Monaco Editor Loader เป็นตัวแรก -->
+    <!-- [เปลี่ยนใหม่] โหลด Monaco Editor (VS Code) แทน Ace Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
     
-    <!-- 2. [สำคัญ] ซ่อนตัวแปร define ของ Monaco ชั่วคราวเพื่อป้องกันสิทธิ์ไลบรารีอื่นถูกทับซ้อน -->
-    <script>
-        var monacoDefine = window.define;
-        window.define = undefined;
-    </script>
-    
-    <!-- 3. โหลด Libraries สำหรับ Export PPTX ตามปกติ -->
+    <!-- โหลด Libraries สำหรับ Export PPTX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-    
-    <!-- 4. [สำคัญ] คืนค่า define กลับคืนมาให้ระบบของ Monaco Editor ทำงานต่อได้ -->
-    <script>
-        window.define = monacoDefine;
-    </script>
     
     <style>
         * { box-sizing: border-box; }
@@ -57,7 +46,7 @@
         
         .auto-run-label { font-size: 0.8rem; margin-left: 15px; cursor: pointer; user-select: none; white-space: nowrap; }
         .container { display: flex; flex: 1; width: 100%; height: calc(100vh - 50px); position: relative; }
-        #editor-container { width: 50%; height: 100%; position: relative; }
+        #editor-container { width: 50%; height: 100%; position: relative; overflow: hidden; }
         
         /* สไตล์ Container สำหรับ Monaco */
         #editor { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
@@ -157,32 +146,46 @@
         var editor; // ตัวแปรเก็บออบเจกต์ Monaco Editor
         var currentFontSize = 16;
 
-        // เรียกใช้ Monaco Editor ผ่าน CDN
+        // [กำหนดค่า] เรียกใช้ Monaco Editor ผ่าน CDN
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
-            editor = monaco.editor.create(document.getElementById('editor'), {
-                value: '<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n</head>\n<body>\n    \n</body>\n</html>',
-                language: 'html',
-                theme: 'vs-dark',
-                fontSize: currentFontSize,
-                fontFamily: "Consolas, 'Courier New', monospace",
-                automaticLayout: true, // ปรับขนาดตัวเองอัตโนมัติตาม Resizer
-                minimap: { enabled: false },
-                wordWrap: "on",
+        editor = monaco.editor.create(document.getElementById('editor'), {
+        value: '',
+        language: 'html',
+        theme: 'vs-dark',
+        fontSize: currentFontSize,
+        fontFamily: "Consolas, 'Courier New', monospace",
+        automaticLayout: true,
+        minimap: { enabled: false },
+        wordWrap: "on",
 
-                // เครื่องมือช่วยพิมพ์ (Typing Tools)
-                autoClosingBrackets: 'always',
-                autoClosingTags: true,
-                autoClosingQuotes: 'always',
-                autoSurround: 'languageDefined',
-                formatOnType: true,
-                formatOnPaste: true,
-                suggestOnTriggerCharacters: true,
-                acceptSuggestionOnEnter: 'on',
-                tabCompletion: 'on',
-                snippetSuggestions: 'inline',
-                parameterHints: { enabled: true }
-            });
+        // === [แก้ไขเพิ่มเติม] จำกัดขอบเขตของ Scrollbar ไม่ให้เลื่อนเกินเนื้อหา ===
+        scrollBeyondLastLine: false, // ปิดการเลื่อนลงไปในพื้นที่ว่างด้านล่างบรรทัดสุดท้าย
+        scrollBeyondLastColumn: 0, // ปิดการเลื่อนออกไปนอกคอลัมน์สุดท้ายขวาจัด
+
+        // ตั้งค่าพฤติกรรมและการแสดงผลของแถบเลื่อน (Scrollbar)
+        scrollbar: {
+        vertical: 'auto', // แสดงแถบเลื่อนแนวตั้งเฉพาะตอนที่เนื้อหายาวเกินหน้าจอเท่านั้น
+        horizontal: 'auto', // แสดงแถบเลื่อนแนวนอนเฉพาะตอนเนื้อหายาวเกินหน้าจอ
+        verticalScrollbarSize: 10, // ปรับขนาดความกว้างแถบแนวตั้ง (เล็กลงและสะอาดตาขึ้น)
+        horizontalScrollbarSize: 10, // ปรับขนาดความกว้างแถบแนวนอน
+        alwaysConsumeOnMouseWheel: true // ล็อกล้อหมุนเมาส์ให้อยู่ในพื้นที่ Editor เสมอ
+        },
+
+        // === เปิดใช้งานเครื่องมือช่วยพิมพ์ (Typing Tools) ===
+        autoClosingBrackets: 'always',       // ปิดเครื่องหมายวงเล็บต่าง ๆ อัตโนมัติ
+        autoClosingTags: true,               // ปิดแท็ก HTML อัตโนมัติ (เช่น พิมพ์ <div> จะได้ </div> ทันที)
+
+        autoClosingQuotes: 'always',         // ปิดเครื่องหมายคำพูด (Quotes) อัตโนมัติ
+        autoSurround: 'languageDefined',     // คลุมดำข้อความแล้วพิมพ์เครื่องหมายเพื่อคร่อมข้อความให้อัตโนมัติ
+        formatOnType: true,                 // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติขณะพิมพ์
+        formatOnPaste: true,                // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติเมื่อกดวาง (Paste)
+        suggestOnTriggerCharacters: true,   // แสดงคำแนะนำโค้ดทันทีเมื่อพิมพ์ตัวอักษรกระตุ้น (เช่น พิมพ์ < หรือ .)
+        acceptSuggestionOnEnter: 'on',      // กด Enter เพื่อเลือกโค้ดที่ระบบแนะนำได้เลย
+        tabCompletion: 'on',                // กด Tab เพื่อเลือกคำแนะนำด่วน
+        snippetSuggestions: 'inline',       // แสดงโครงสร้างโค้ดตัวอย่างแบบด่วน
+        parameterHints: { enabled: true }   // แสดงคำอธิบายโครงสร้างคำสั่งในฟังก์ชัน
+    });
 
             // ทำการรันโค้ดครั้งแรก
             runCode();
