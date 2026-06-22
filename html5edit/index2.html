@@ -6,12 +6,23 @@
     <title>HTML Editor - Ultimate</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
     
-    <!-- [เปลี่ยนใหม่] โหลด Monaco Editor (VS Code) แทน Ace Editor -->
+    <!-- 1. โหลด Monaco Editor Loader เป็นตัวแรก -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
     
-    <!-- โหลด Libraries สำหรับ Export PPTX -->
+    <!-- 2. [สำคัญ] ซ่อนตัวแปร define ของ Monaco ชั่วคราวเพื่อป้องกันสิทธิ์ไลบรารีอื่นถูกทับซ้อน -->
+    <script>
+        var monacoDefine = window.define;
+        window.define = undefined;
+    </script>
+    
+    <!-- 3. โหลด Libraries สำหรับ Export PPTX ตามปกติ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    
+    <!-- 4. [สำคัญ] คืนค่า define กลับคืนมาให้ระบบของ Monaco Editor ทำงานต่อได้ -->
+    <script>
+        window.define = monacoDefine;
+    </script>
     
     <style>
         * { box-sizing: border-box; }
@@ -146,32 +157,32 @@
         var editor; // ตัวแปรเก็บออบเจกต์ Monaco Editor
         var currentFontSize = 16;
 
-        // [กำหนดค่า] เรียกใช้ Monaco Editor ผ่าน CDN
+        // เรียกใช้ Monaco Editor ผ่าน CDN
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
-        editor = monaco.editor.create(document.getElementById('editor'), {
-        value: '<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n</head>\n<body>\n    \n</body>\n</html>',
-        language: 'html',
-        theme: 'vs-dark',
-        fontSize: currentFontSize,
-        fontFamily: "Consolas, 'Courier New', monospace",
-        automaticLayout: true,
-        minimap: { enabled: false },
-        wordWrap: "on",
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: '<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n</head>\n<body>\n    \n</body>\n</html>',
+                language: 'html',
+                theme: 'vs-dark',
+                fontSize: currentFontSize,
+                fontFamily: "Consolas, 'Courier New', monospace",
+                automaticLayout: true, // ปรับขนาดตัวเองอัตโนมัติตาม Resizer
+                minimap: { enabled: false },
+                wordWrap: "on",
 
-        // === เปิดใช้งานเครื่องมือช่วยพิมพ์ (Typing Tools) ===
-        autoClosingBrackets: 'always',       // ปิดเครื่องหมายวงเล็บต่าง ๆ อัตโนมัติ
-        autoClosingTags: true,               // ปิดแท็ก HTML อัตโนมัติ (เช่น พิมพ์ <div> จะได้ </div> ทันที)
-        autoClosingQuotes: 'always',         // ปิดเครื่องหมายคำพูด (Quotes) อัตโนมัติ
-        autoSurround: 'languageDefined',     // คลุมดำข้อความแล้วพิมพ์เครื่องหมายเพื่อคร่อมข้อความให้อัตโนมัติ
-        formatOnType: true,                 // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติขณะพิมพ์
-        formatOnPaste: true,                // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติเมื่อกดวาง (Paste)
-        suggestOnTriggerCharacters: true,   // แสดงคำแนะนำโค้ดทันทีเมื่อพิมพ์ตัวอักษรกระตุ้น (เช่น พิมพ์ < หรือ .)
-        acceptSuggestionOnEnter: 'on',      // กด Enter เพื่อเลือกโค้ดที่ระบบแนะนำได้เลย
-        tabCompletion: 'on',                // กด Tab เพื่อเลือกคำแนะนำด่วน
-        snippetSuggestions: 'inline',       // แสดงโครงสร้างโค้ดตัวอย่างแบบด่วน
-        parameterHints: { enabled: true }   // แสดงคำอธิบายโครงสร้างคำสั่งในฟังก์ชัน
-    });
+                // เครื่องมือช่วยพิมพ์ (Typing Tools)
+                autoClosingBrackets: 'always',
+                autoClosingTags: true,
+                autoClosingQuotes: 'always',
+                autoSurround: 'languageDefined',
+                formatOnType: true,
+                formatOnPaste: true,
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnEnter: 'on',
+                tabCompletion: 'on',
+                snippetSuggestions: 'inline',
+                parameterHints: { enabled: true }
+            });
 
             // ทำการรันโค้ดครั้งแรก
             runCode();
