@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Editor - Ultimate</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
+    
+    <!-- [เปลี่ยนใหม่] โหลด Monaco Editor (VS Code) แทน Ace Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    
+    <!-- โหลด Libraries สำหรับ Export PPTX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0; display: flex; flex-direction: column;
+            height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; background-color: #202020;
+        }
+        header {
+            background-color: #333; color: #fff; padding: 0 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 50px; border-bottom: 1px solid #444;
+        }
+        h1 { font-size: 1.1rem; margin: 0; flex-shrink: 0; }
+        .btn-group { display: flex; align-items: center; }
+        .btn-group button {
+            color: white; border: none; padding: 6px 12px; border-radius: 4px;
+            cursor: pointer; margin-left: 6px; font-size: 0.85rem; font-weight: 600;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-group button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-group button:active { transform: translateY(0); }
+        button.run { background-color: #27ae60; }
+        button.save { background-color: #8e44ad; }
+        button.clear { background-color: #c0392b; }
+        button.popup { background-color: #e67e22; }
+        button.font-btn { background-color: #555; border: 1px solid #666; min-width: 35px; }
+        button.font-btn:hover { background-color: #666; }
+        
+        /* สไตล์สำหรับปุ่มที่เกี่ยวกับการจัดการบรรทัด */
+        button.single-break { background-color: #1abc9c; }
+        
+        .auto-run-label { font-size: 0.8rem; margin-left: 15px; cursor: pointer; user-select: none; white-space: nowrap; }
+        .container { display: flex; flex: 1; width: 100%; height: calc(100vh - 50px); position: relative; }
+        #editor-container { width: 50%; height: 100%; position: relative; }
+        
+        /* สไตล์ Container สำหรับ Monaco */
+        #editor { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+        
+        .resizer {
+            width: 10px; background-color: #444; cursor: col-resize;
+            display: flex; justify-content: center; align-items: center; z-index: 10;
+        }
+        .resizer:hover { background-color: #007acc; }
+        .resizer::after { content: "⋮"; color: #888; font-weight: bold; }
+        #preview-container { flex: 1; background-color: white; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; z-index: 20; }
+
+        /* สไตล์สำหรับ Modal แสดงสถานะ */
+        #progressModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff; color: #333;
+            padding: 30px 40px; border-radius: 8px; text-align: center;
+            width: 90%; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-top: 0; }
+        .progress-wrapper {
+            width: 100%; background-color: #e2e8f0; border-radius: 8px;
+            margin-top: 15px; height: 10px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background-color: #3b82f6; width: 0%;
+            transition: width 0.3s ease;
+        }
+        #statusText { margin-top: 15px; font-weight: 500; }
+        
+        /* สีปุ่ม Export PPTX */
+        button.export-pptx { background-color: #d35400; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>HTML Editor Pro</h1>
+        <div class="btn-group">
+            <button class="font-btn" onclick="changeFontSize(-2)" title="ลดขนาด">A-</button>
+            <button class="font-btn" onclick="changeFontSize(2)" title="เพิ่มขนาด">A+</button>
+            <span style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></span>
+            
+            <!-- ปุ่มจัดการเว้นบรรทัด -->
+            <button class="single-break" onclick="keepSingleLineBreak()" title="ยุบแถวว่างหลายบรรทัดให้เหลือบรรทัดเดียว">🚫 Keep Single Break</button>
+            
+            <button class="clear" onclick="clearCode()">Clear</button>
+            <button class="run" onclick="runCode()">Run ▶</button>
+            <button class="popup" onclick="openPopup()">↗ Popup</button>
+            <button class="save" onclick="saveCode()">💾 Save</button>
+
+            <!-- ปุ่ม Export PPTX -->
+            <button class="export-pptx" onclick="exportToPptx()">📊 Export PPTX</button>
+
+            <label class="auto-run-label">
+                <input type="checkbox" id="autoRun" checked> Auto Run
+            </label>
+        </div>
+    </header>
+
+    <div class="container" id="mainContainer">
+        <div id="editor-container">
+            <div id="editor"></div>
+        </div>
+        <div class="resizer" id="dragMe"></div>
+        <div id="preview-container">
+            <div class="overlay" id="iframeOverlay"></div>
+            <iframe id="previewFrame"></iframe>
+        </div>
+    </div>
+
+    <!-- เพิ่ม Modal สำหรับแสดงสถานะ -->
+    <div id="progressModal">
+        <div class="modal-content">
+            <h3>กำลังสร้างไฟล์ PowerPoint...</h3>
+            <p>กรุณาอย่าปิดหน้านี้ ระบบกำลังทำงาน</p>
+            <div class="progress-wrapper">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="statusText">กำลังเตรียมข้อมูล...</div>
+        </div>
+    </div>
+
+    <!-- เพิ่มพื้นที่ซ่อนสำหรับ iframe ที่ใช้แคปภาพ -->
+   <div id="captureContainer" style="position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; opacity: 0; pointer-events: none; z-index: -9999; overflow: hidden;"></div>
+
+
+    <script>
+        var editor; // ตัวแปรเก็บออบเจกต์ Monaco Editor
+        var currentFontSize = 16;
+
+        // [กำหนดค่า] เรียกใช้ Monaco Editor ผ่าน CDN
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+        editor = monaco.editor.create(document.getElementById('editor'), {
+        value: '<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n</head>\n<body>\n    \n</body>\n</html>',
+        language: 'html',
+        theme: 'vs-dark',
+        fontSize: currentFontSize,
+        fontFamily: "Consolas, 'Courier New', monospace",
+        automaticLayout: true,
+        minimap: { enabled: false },
+        wordWrap: "on",
+
+        // === เปิดใช้งานเครื่องมือช่วยพิมพ์ (Typing Tools) ===
+        autoClosingBrackets: 'always',       // ปิดเครื่องหมายวงเล็บต่าง ๆ อัตโนมัติ
+        autoClosingTags: true,               // ปิดแท็ก HTML อัตโนมัติ (เช่น พิมพ์ <div> จะได้ </div> ทันที)
+        autoClosingQuotes: 'always',         // ปิดเครื่องหมายคำพูด (Quotes) อัตโนมัติ
+        autoSurround: 'languageDefined',     // คลุมดำข้อความแล้วพิมพ์เครื่องหมายเพื่อคร่อมข้อความให้อัตโนมัติ
+        formatOnType: true,                 // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติขณะพิมพ์
+        formatOnPaste: true,                // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติเมื่อกดวาง (Paste)
+        suggestOnTriggerCharacters: true,   // แสดงคำแนะนำโค้ดทันทีเมื่อพิมพ์ตัวอักษรกระตุ้น (เช่น พิมพ์ < หรือ .)
+        acceptSuggestionOnEnter: 'on',      // กด Enter เพื่อเลือกโค้ดที่ระบบแนะนำได้เลย
+        tabCompletion: 'on',                // กด Tab เพื่อเลือกคำแนะนำด่วน
+        snippetSuggestions: 'inline',       // แสดงโครงสร้างโค้ดตัวอย่างแบบด่วน
+        parameterHints: { enabled: true }   // แสดงคำอธิบายโครงสร้างคำสั่งในฟังก์ชัน
+    });
+
+            // ทำการรันโค้ดครั้งแรก
+            runCode();
+
+            // ดักจับเหตุการณ์แก้ไขข้อความเพื่อทำงานกับ Auto Run
+            editor.onDidChangeModelContent(function() {
+                if(document.getElementById('autoRun').checked){ runCode(); }
+            });
+        });
+
+        function changeFontSize(amount) {
+            currentFontSize += amount;
+            if(currentFontSize < 10) currentFontSize = 10;
+            if(currentFontSize > 50) currentFontSize = 50;
+            if (editor) {
+                editor.updateOptions({ fontSize: currentFontSize });
+            }
+        }
+        
+        function runCode() {
+            if (!editor) return;
+            var code = editor.getValue();
+            var frame = document.getElementById("previewFrame");
+            frame.srcdoc = code;
+        }
+        
+        function clearCode() {
+            if(confirm("ต้องการล้างโค้ดทั้งหมด?")) { 
+                if(editor) editor.setValue(""); 
+            }
+        }
+        
+        function saveCode() {
+            if (!editor) return;
+            var codeContent = editor.getValue();
+            var blob = new Blob([codeContent], { type: "text/html;charset=utf-8" });
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "index.html"; 
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function openPopup() {
+            if (!editor) return;
+            var code = editor.getValue();
+            var win = window.open("", "_blank");
+            if (win) {
+                win.document.open();
+                win.document.write(code);
+                win.document.close();
+            } else {
+                alert("โปรดอนุญาตให้ Pop-up ทำงาน (Allow Pop-ups) สำหรับหน้านี้");
+            }
+        }
+        
+        // ฟังก์ชันช่วยเหลือสำหรับ Monaco ในการรับข้อความที่เลือก
+        function getSelectedText() {
+            if (!editor) return "";
+            var selection = editor.getSelection();
+            return editor.getModel().getValueInRange(selection);
+        }
+
+        // ฟังก์ชันช่วยเหลือสำหรับ Monaco ในการแทนที่ข้อความที่เลือก
+        function replaceSelection(text) {
+            if (!editor) return;
+            var selection = editor.getSelection();
+            var range = new monaco.Range(
+                selection.startLineNumber, 
+                selection.startColumn, 
+                selection.endLineNumber, 
+                selection.endColumn
+            );
+            var id = { major: 1, minor: 1 };
+            var op = { identifier: id, range: range, text: text, forceMoveMarkers: true };
+            editor.executeEdits("my-source", [op]);
+            editor.pushUndoStop();
+        }
+
+        // ฟังก์ชันยุบบรรทัดว่างหลายบรรทัดให้เหลือบรรทัดเดียว
+        function keepSingleLineBreak() {
+            if (!editor) return;
+            var selectedText = getSelectedText();
+            if (selectedText) {
+                var cleanedText = selectedText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                cleanedText = cleanedText.replace(/\n{2,}/g, '\n');
+                replaceSelection(cleanedText);
+            } else {
+                var code = editor.getValue();
+                if (!code.trim()) {
+                    alert("ไม่มีข้อความในช่องแก้ไข");
+                    return;
+                }
+                if (confirm("คุณต้องการยุบการเว้นวรรคบรรทัดที่ซ้ำกันให้เหลือเพียง 1 บรรทัดใช่หรือไม่?")) {
+                    var cleanedCode = code.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                    cleanedCode = cleanedCode.replace(/\n{2,}/g, '\n');
+                    editor.setValue(cleanedCode);
+                }
+            }
+        }
+
+        // การจัดการลากส่วนปรับขนาดขอบจอ
+        const resizer = document.getElementById('dragMe');
+        const leftSide = document.getElementById('editor-container');
+        const container = document.getElementById('mainContainer');
+        const iframeOverlay = document.getElementById('iframeOverlay');
+        let x = 0, leftWidth = 0;
+        
+        const mouseDownHandler = function(e) {
+            x = e.clientX; leftWidth = leftSide.getBoundingClientRect().width;
+            iframeOverlay.style.display = 'block';
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+            document.body.style.cursor = 'col-resize';
+            leftSide.style.userSelect = 'none';
+        };
+        const mouseMoveHandler = function(e) {
+            const dx = e.clientX - x;
+            const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+            if(newLeftWidth > 10 && newLeftWidth < 90) { leftSide.style.width = `${newLeftWidth}%`; }
+        };
+        const mouseUpHandler = function() {
+            iframeOverlay.style.display = 'none'; document.body.style.cursor = 'default';
+            leftSide.style.removeProperty('user-select');
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+        };
+        resizer.addEventListener('mousedown', mouseDownHandler);
+
+       
+        // ==========================================
+        //  ฟังก์ชัน Export to PPTX
+        // ==========================================
+        async function exportToPptx() {
+            if (!editor) return;
+            const htmlContent = editor.getValue();
+            if (!htmlContent.trim()) {
+                alert('ยังไม่มีโค้ดสำหรับแปลงไฟล์ครับ!');
+                return;
+            }
+
+            const modal = document.getElementById('progressModal');
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.getElementById('statusText');
+            modal.style.display = 'flex';
+            progressFill.style.width = '0%';
+            statusText.innerText = "⏳ กำลังสร้างพื้นที่และโหลดโค้ด...";
+
+            const captureContainer = document.getElementById('captureContainer');
+            captureContainer.style.cssText = "position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; opacity: 0.01; pointer-events: none; z-index: -1;";
+            captureContainer.innerHTML = '';
+            
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '1920px';
+            iframe.style.height = '1080px';
+            iframe.style.border = 'none';
+            captureContainer.appendChild(iframe);
+
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(htmlContent);
+            doc.close();
+
+            statusText.innerText = "⏳ กำลังดาวน์โหลดฟอนต์ Kanit (Google Fonts)...";
+
+            const kanitLink = doc.createElement('link');
+            kanitLink.href = 'https://fonts.googleapis.com/css2?family=Kanit:wght@100;200;300;400;500;600;700;800;900&display=swap';
+            kanitLink.rel = 'stylesheet';
+            doc.head.appendChild(kanitLink);
+
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            try {
+                if (doc.fonts) {
+                    await doc.fonts.load('400 16px "Kanit"');
+                    await doc.fonts.load('700 16px "Kanit"');
+                    await doc.fonts.ready;
+                }
+            } catch (e) {
+                console.warn("Font API loading issue", e);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const fixStyle = doc.createElement('style');
+            fixStyle.innerHTML = `
+                .slide { transition: none !important; opacity: 0 !important; visibility: hidden !important; transform: none !important; animation: none !important; }
+                .slide.active { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+                #presentation { transform: scale(1) !important; margin: 0 !important; top: 0 !important; left: 0 !important; }
+                .controls, .progress-bar-container, .slide-counter { display: none !important; }
+                
+                * {
+                    font-kerning: none !important;
+                    text-rendering: geometricPrecision !important;
+                    -webkit-font-smoothing: antialiased !important;
+                    letter-spacing: 0px !important;
+                    line-height: 1.5 !important;
+                }
+            `;
+            doc.head.appendChild(fixStyle);
+
+            const presentation = doc.getElementById('presentation');
+            const slides = doc.querySelectorAll('.slide');
+
+            if (!presentation || !slides || slides.length === 0) {
+                statusText.innerText = "❌ ไม่พบ #presentation หรือ .slide ในโค้ดครับ";
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                modal.style.display = 'none';
+                return;
+            }
+            
+            let pptx = new PptxGenJS();
+            pptx.layout = 'LAYOUT_16x9';
+
+            for (let i = 0; i < slides.length; i++) {
+                statusText.innerText = `📸 กำลังเรนเดอร์สไลด์... (${i + 1}/${slides.length})`;
+                
+                slides.forEach(s => s.classList.remove('active'));
+                slides[i].classList.add('active');
+                
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                try {
+                    const canvas = await html2canvas(presentation, { 
+                        scale: 2,               
+                        useCORS: true,
+                        allowTaint: true,       
+                        logging: false,
+                        backgroundColor: window.getComputedStyle(presentation).backgroundColor || '#ffffff',
+                    });
+                    
+                    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+                    let pptSlide = pptx.addSlide();
+                    pptSlide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
+
+                } catch (err) {
+                    console.error("Error capturing slide", i, err);
+                }
+
+                let progressPercent = ((i + 1) / slides.length) * 100;
+                progressFill.style.width = progressPercent + '%';
+            }
+
+            statusText.innerText = "💾 กำลังแพ็คไฟล์ PowerPoint...";
+            try {
+                await pptx.writeFile({ fileName: "Presentation_Export.pptx" });
+                statusText.innerText = "✅ สำเร็จ! ไฟล์กำลังถูกดาวน์โหลด";
+                setTimeout(() => { modal.style.display = 'none'; captureContainer.innerHTML = ''; }, 2000);
+            } catch (err) {
+                statusText.innerText = "❌ เกิดข้อผิดพลาดตอนเซฟ: " + err.message;
+                console.error(err);
+                setTimeout(() => { modal.style.display = 'none'; captureContainer.innerHTML = ''; }, 5000);
+            }
+        }
+
+    </script>
+</body>
+</html>
