@@ -6,12 +6,23 @@
     <title>HTML Editor - Ultimate</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1049/1049443.png">
     
-    <!-- [เปลี่ยนใหม่] โหลด Monaco Editor (VS Code) แทน Ace Editor -->
+    <!-- 1. โหลด Monaco Editor Loader เป็นตัวแรก -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
     
-    <!-- โหลด Libraries สำหรับ Export PPTX -->
+    <!-- 2. ซ่อนตัวแปร define ของ Monaco ชั่วคราวเพื่อป้องกันสิทธิ์ไลบรารีอื่นถูกทับซ้อน -->
+    <script>
+        var monacoDefine = window.define;
+        window.define = undefined;
+    </script>
+    
+    <!-- 3. โหลด Libraries สำหรับ Export PPTX ตามปกติ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    
+    <!-- 4. คืนค่า define กลับคืนมาให้ระบบของ Monaco Editor ทำงานต่อได้ -->
+    <script>
+        window.define = monacoDefine;
+    </script>
     
     <style>
         * { box-sizing: border-box; }
@@ -146,52 +157,115 @@
         var editor; // ตัวแปรเก็บออบเจกต์ Monaco Editor
         var currentFontSize = 16;
 
-        // [กำหนดค่า] เรียกใช้ Monaco Editor ผ่าน CDN
+        // เรียกใช้ Monaco Editor ผ่าน CDN
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
-        editor = monaco.editor.create(document.getElementById('editor'), {
-        value: '',
-        language: 'html',
-        theme: 'vs-dark',
-        fontSize: currentFontSize,
-        fontFamily: "Consolas, 'Courier New', monospace",
-        automaticLayout: true,
-        minimap: { enabled: false },
-        wordWrap: "on",
+            
+            // บังคับการจับคู่ < > สำหรับภาษา HTML (Surrounding)
+            monaco.languages.setLanguageConfiguration('html', {
+                autoClosingPairs: [
+                    { open: '<', close: '>', notIn: ['string', 'comment'] },
+                    { open: '{', close: '}' },
+                    { open: '[', close: ']' },
+                    { open: '(', close: ')' },
+                    { open: '"', close: '"' },
+                    { open: "'", close: "'" }
+                ],
+                surroundingPairs: [
+                    { open: '<', close: '>' },
+                    { open: '{', close: '}' },
+                    { open: '[', close: ']' },
+                    { open: '(', close: ')' },
+                    { open: '"', close: '"' },
+                    { open: "'", close: "'" }
+                ]
+            });
 
-        // === [แก้ไขเพิ่มเติม] จำกัดขอบเขตของ Scrollbar ไม่ให้เลื่อนเกินเนื้อหา ===
-        scrollBeyondLastLine: false, // ปิดการเลื่อนลงไปในพื้นที่ว่างด้านล่างบรรทัดสุดท้าย
-        scrollBeyondLastColumn: 0, // ปิดการเลื่อนออกไปนอกคอลัมน์สุดท้ายขวาจัด
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: '<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n</head>\n<body>\n    \n</body>\n</html>',
+                language: 'html',
+                theme: 'vs-dark',
+                fontSize: currentFontSize,
+                fontFamily: "Consolas, 'Courier New', monospace",
+                automaticLayout: true,
+                minimap: { enabled: false },
+                wordWrap: "on",
 
-        // ตั้งค่าพฤติกรรมและการแสดงผลของแถบเลื่อน (Scrollbar)
-        scrollbar: {
-        vertical: 'auto', // แสดงแถบเลื่อนแนวตั้งเฉพาะตอนที่เนื้อหายาวเกินหน้าจอเท่านั้น
-        horizontal: 'auto', // แสดงแถบเลื่อนแนวนอนเฉพาะตอนเนื้อหายาวเกินหน้าจอ
-        verticalScrollbarSize: 10, // ปรับขนาดความกว้างแถบแนวตั้ง (เล็กลงและสะอาดตาขึ้น)
-        horizontalScrollbarSize: 10, // ปรับขนาดความกว้างแถบแนวนอน
-        alwaysConsumeOnMouseWheel: true // ล็อกล้อหมุนเมาส์ให้อยู่ในพื้นที่ Editor เสมอ
-        },
+                // สกอร์บาร์ จำกัดบริเวณไม่เกินเนื้อหา
+                scrollBeyondLastLine: false,
+                scrollBeyondLastColumn: 0,
+                scrollbar: {
+                    vertical: 'auto',
+                    horizontal: 'auto',
+                    verticalScrollbarSize: 10,
+                    horizontalScrollbarSize: 10,
+                    alwaysConsumeOnMouseWheel: true
+                },
 
-        // === เปิดใช้งานเครื่องมือช่วยพิมพ์ (Typing Tools) ===
-        autoClosingBrackets: 'always',       // ปิดเครื่องหมายวงเล็บต่าง ๆ อัตโนมัติ
-        autoClosingTags: true,               // ปิดแท็ก HTML อัตโนมัติ (เช่น พิมพ์ <div> จะได้ </div> ทันที)
+                // เครื่องมือช่วยพิมพ์ (Typing Tools)
+                autoClosingBrackets: 'always',
+                autoClosingTags: true,
+                autoClosingQuotes: 'always',
+                autoSurround: 'languageDefined',
+                formatOnType: true,
+                formatOnPaste: true,
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnEnter: 'on',
+                tabCompletion: 'on',
+                snippetSuggestions: 'inline',
+                parameterHints: { enabled: true }
+            });
 
-        autoClosingQuotes: 'always',         // ปิดเครื่องหมายคำพูด (Quotes) อัตโนมัติ
-        autoSurround: 'languageDefined',     // คลุมดำข้อความแล้วพิมพ์เครื่องหมายเพื่อคร่อมข้อความให้อัตโนมัติ
-        formatOnType: true,                 // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติขณะพิมพ์
-        formatOnPaste: true,                // จัดระเบียบย่อหน้าโค้ดให้อัตโนมัติเมื่อกดวาง (Paste)
-        suggestOnTriggerCharacters: true,   // แสดงคำแนะนำโค้ดทันทีเมื่อพิมพ์ตัวอักษรกระตุ้น (เช่น พิมพ์ < หรือ .)
-        acceptSuggestionOnEnter: 'on',      // กด Enter เพื่อเลือกโค้ดที่ระบบแนะนำได้เลย
-        tabCompletion: 'on',                // กด Tab เพื่อเลือกคำแนะนำด่วน
-        snippetSuggestions: 'inline',       // แสดงโครงสร้างโค้ดตัวอย่างแบบด่วน
-        parameterHints: { enabled: true }   // แสดงคำอธิบายโครงสร้างคำสั่งในฟังก์ชัน
-    });
-
-            // ทำการรันโค้ดครั้งแรก
             runCode();
 
-            // ดักจับเหตุการณ์แก้ไขข้อความเพื่อทำงานกับ Auto Run
-            editor.onDidChangeModelContent(function() {
+            // [ปรับปรุง] ระบบ Auto Close Tag แบบ Emmet และดักจับเหตุการณ์ Auto Run
+            editor.onDidChangeModelContent(function(event) {
+                
+                // ตรวจสอบโครงสร้างการพิมพ์ตัวอักษรเดียวล่าสุด
+                if (event && event.changes && event.changes.length === 1) {
+                    var change = event.changes[0];
+                    
+                    // หากผู้ใช้พิมพ์เครื่องหมายปิดแท็กเปิด ">"
+                    if (change.text === '>') {
+                        var model = editor.getModel();
+                        var position = editor.getPosition();
+                        var lineContent = model.getLineContent(position.lineNumber);
+                        
+                        // อ่านค่าข้อความในบรรทัดปัจจุบันก่อนหน้าเคอร์เซอร์
+                        var textBeforeCursor = lineContent.substring(0, position.column - 1);
+                        
+                        // ยกเว้นกรณีที่เป็นรูปแบบแท็ก XHTML ที่ปิดในตัวอยู่แล้ว เช่น <input /> หรือ <br />
+                        if (!textBeforeCursor.trim().endsWith('/')) {
+                            var lastLessThan = textBeforeCursor.lastIndexOf('<');
+                            
+                            if (lastLessThan !== -1) {
+                                var tagContent = textBeforeCursor.substring(lastLessThan + 1);
+                                var match = tagContent.match(/^([\w\-]+)/); // ค้นหาชื่อแท็กตัวแรก เช่น div, p, span
+                                
+                                if (match) {
+                                    var tagName = match[1];
+                                    
+                                    // ตรวจสอบว่าต้องไม่ใช่แท็กปิด (</...) และไม่ใช่กลุ่ม Self-closing HTML แท็ก
+                                    if (tagContent.indexOf('/') !== 0) {
+                                        var selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+                                        
+                                        if (selfClosingTags.indexOf(tagName.toLowerCase()) === -1) {
+                                            var closeTag = '</' + tagName + '>';
+                                            var range = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+                                            var op = { identifier: { major: 1, minor: 1 }, range: range, text: closeTag, forceMoveMarkers: true };
+                                            
+                                            // ทำการเพิ่มแท็กปิดต่อท้ายเคอร์เซอร์ และดึงเคอร์เซอร์ให้อยู่ตรงกลาง
+                                            editor.executeEdits("auto-close-tag", [op]);
+                                            editor.setPosition(position);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // สั่งการให้จำลองการทำงานจำพวก Auto Run
                 if(document.getElementById('autoRun').checked){ runCode(); }
             });
         });
@@ -243,14 +317,12 @@
             }
         }
         
-        // ฟังก์ชันช่วยเหลือสำหรับ Monaco ในการรับข้อความที่เลือก
         function getSelectedText() {
             if (!editor) return "";
             var selection = editor.getSelection();
             return editor.getModel().getValueInRange(selection);
         }
 
-        // ฟังก์ชันช่วยเหลือสำหรับ Monaco ในการแทนที่ข้อความที่เลือก
         function replaceSelection(text) {
             if (!editor) return;
             var selection = editor.getSelection();
@@ -266,7 +338,6 @@
             editor.pushUndoStop();
         }
 
-        // ฟังก์ชันยุบบรรทัดว่างหลายบรรทัดให้เหลือบรรทัดเดียว
         function keepSingleLineBreak() {
             if (!editor) return;
             var selectedText = getSelectedText();
@@ -288,7 +359,6 @@
             }
         }
 
-        // การจัดการลากส่วนปรับขนาดขอบจอ
         const resizer = document.getElementById('dragMe');
         const leftSide = document.getElementById('editor-container');
         const container = document.getElementById('mainContainer');
