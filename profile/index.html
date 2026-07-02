@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <!-- นำเข้าฟอนต์จาก Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- นำเข้าไอคอน (Font Awesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* CSS Reset & Basic Setup */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #fee440;
+            overflow-x: hidden;
+            overflow-y: auto;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* พื้นหลัง SVG (ตรึงไว้ด้านหลัง) */
+        svg.bg-svg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            object-fit: cover;
+        }
+
+        /* Container หลักแยกซ้ายขวา */
+        .portfolio-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+            animation: fadeIn 1.2s ease;
+        }
+
+        /* สไตล์ Glassmorphic Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.60);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            padding: 30px;
+        }
+
+        /* Sidebar ซ้าย */
+        .sidebar {
+            text-align: center;
+            height: fit-content;
+            position: sticky;
+            top: 40px;
+        }
+
+        /* รูปโปรไฟล์ */
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #fff;
+            margin: 0 auto 20px;
+            border: 4px solid rgba(255, 255, 255, 0.6);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        h1 {
+            color: #222;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .tagline {
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(0, 0, 0, 0.08);
+            margin: 20px 0;
+        }
+
+        /* ปุ่มโซเชียล */
+        .social-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-link {
+            background: rgba(255, 255, 255, 0.6);
+            color: #333;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-link:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            color: #9b5de5;
+        }
+
+        /* เนื้อหาหลักด้านขวา */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            color: #222;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid rgba(155, 93, 229, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .section-title i {
+            color: #9b5de5;
+        }
+
+        /* สไตล์กรุ๊ปประสบการณ์ย่อย */
+        .exp-group {
+            margin-bottom: 25px;
+        }
+
+        .exp-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .exp-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #2b2d42;
+            margin-bottom: 12px;
+        }
+
+        .exp-header i {
+            color: #f15bb5;
+            font-size: 14px;
+        }
+
+        .exp-list {
+            list-style: none;
+            padding-left: 24px;
+        }
+
+        .exp-list li {
+            position: relative;
+            font-size: 14px;
+            color: #4a4a4a;
+            margin-bottom: 8px;
+        }
+
+        .exp-list li::before {
+            content: "•";
+            color: #00bbf9;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+            position: absolute;
+        }
+
+        /* จัดหน้าตาหมวดหมู่ทักษะ (Skills Block) */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .skill-category {
+            background: rgba(255, 255, 255, 0.35);
+            border-radius: 16px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .skill-category h4 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .skill-category h4 i {
+            color: #00bbf9;
+        }
+
+        .skill-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            color: #333;
+            font-weight: 500;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .footer {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .out-top {
+            animation: rotate 20s linear infinite;
+            transform-origin: 13px 25px;
+        }
+
+        .in-top {
+            animation: rotate 10s linear infinite;
+            transform-origin: 13px 25px;
+        }
+
+        .out-bottom {
+            animation: rotate 25s linear infinite;
+            transform-origin: 84px 93px;
+        }
+
+        .in-bottom {
+            animation: rotate 15s linear infinite;
+            transform-origin: 84px 93px;
+        }
+
+        /* ปรับปรุงการแสดงผลในหน้าจอมือถือ */
+        @media (max-width: 900px) {
+            .portfolio-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- พื้นหลัง Animation SVG -->
+    <svg class="bg-svg" preserveAspectRatio="xMidYMid slice" viewBox="10 10 80 80">
+        <path fill="#9b5de5" class="out-top"
+            d="M37-5C25.1-14.7,5.7-19.1-9.2-10-28.5,1.8-32.7,31.1-19.8,49c15.5,21.5,52.6,22,67.2,2.3C59.4,35,53.7,8.5,37-5Z" />
+        <path fill="#f15bb5" class="in-top"
+            d="M20.6,4.1C11.6,1.5-1.9,2.5-8,11.2-16.3,23.1-8.2,45.6,7.4,50S42.1,38.9,41,24.5C40.2,14.1,29.4,6.6,20.6,4.1Z" />
+        <path fill="#00bbf9" class="out-bottom"
+            d="M105.9,48.6c-12.4-8.2-29.3-4.8-39.4.8-23.4,12.8-37.7,51.9-19.1,74.1s63.9,15.3,76-5.6c7.6-13.3,1.8-31.1-2.3-43.8C117.6,63.3,114.7,54.3,105.9,48.6Z" />
+        <path fill="#00f5d4" class="in-bottom"
+            d="M102,67.1c-9.6-6.1-22-3.1-29.5,2-15.4,10.7-19.6,37.5-7.6,47.8s35.9,3.9,44.5-12.5C115.5,92.6,113.9,74.6,102,67.1Z" />
+    </svg>
+
+    <div class="portfolio-container">
+
+        <!-- ฝั่งซ้าย: ข้อมูลส่วนตัวและปุ่มติดต่อ -->
+        <aside class="glass-card sidebar">
+            <div class="avatar">
+                <img src="https://patawee-erc.github.io/profile/pf.jpg" alt="Profile">
+            </div>
+            <h1>Patawee Sabour</h1>
+            <p class="tagline">
+                <strong>IT Specialist / System & Web Developer</strong><br>
+                Energy Regulatory Commission (ERC)
+            </p>
+
+            <div class="divider"></div>
+
+            <div class="social-links">
+                <a href="https://www.instagram.com/milkoomilk" target="_blank" class="btn-link">
+                    <i class="fa-brands fa-instagram"></i> Instagram
+                </a>
+                <a href="https://facebook.com/milk.sabour" target="_blank" class="btn-link">
+                    <i class="fa-brands fa-facebook"></i> Facebook
+                </a>
+            </div>
+
+            <div class="divider"></div>
+            <div class="footer">
+                © 2024 milkomilk
+            </div>
+        </aside>
+
+        <!-- ฝั่งขวา: ประวัติการทำงานและทักษะความสามารถ -->
+        <main class="main-content">
+
+            <!-- การ์ดประวัติการทำงาน -->
+            <section class="glass-card">
+                <h2 class="section-title"><i class="fa-solid fa-briefcase"></i> Professional Experience</h2>
+
+                <!-- Group 1 -->
+                <div class="exp-group">
+                    <div class="exp-header">
+                        <i class="fa-solid fa-circle-chevron-right"></i> IT Infrastructure & Support
+                    </div>
+                    <ul class="exp-list">
+                        <li>Managed and maintained complete IT infrastructure across the office, including hardware
+                            (PCs, Laptops, Printers, VoIP) and networking equipment (LAN, Wi-Fi, Routers/Switches) to
+                            ensure maximum uptime.</li>
+                        <li>Provided end-to-end Helpdesk and technical support to all staff members, effectively
+                            diagnosing and resolving software, hardware, and OS-related issues.</li>
+                        <li>Administered corporate cloud services and user access, including Google Workspace /
+                            Microsoft 365 administration and account management.</li>
+                        <li>Managed and secured diverse operating environments, including corporate networks,
+                            Windows/macOS endpoints, and mobile fleets (iOS & Android devices).</li>
+                    </ul>
+                </div>
+
+                <!-- Group 2 -->
+                <div class="exp-group">
+                    <div class="exp-header">
+                        <i class="fa-solid fa-circle-chevron-right"></i> Network & Security Management
+                    </div>
+                    <ul class="exp-list">
+                        <li>Executed hands-on network infrastructure deployment, including structured cabling (LAN),
+                            hardware mounting, and configuration of Switches, Access Points, and Firewalls (e.g.,
+                            Fortinet, Cisco).</li>
+                        <li>Ensured data security and system reliability by managing endpoint antivirus solutions,
+                            implementing a regular backup routine, and maintaining office security systems (CCTV) and
+                            facial scanning systems.</li>
+                    </ul>
+                </div>
+
+                <!-- Group 3 -->
+                <div class="exp-group">
+                    <div class="exp-header">
+                        <i class="fa-solid fa-circle-chevron-right"></i> Development, Automation & Asset Management
+                    </div>
+                    <ul class="exp-list">
+                        <li>Developed and deployed lightweight web applications using HTML, CSS, and JavaScript to
+                            streamline internal workflows, data filtering, and office administrative tasks.</li>
+                        <li>Built and integrated cloud-based backend solutions using Google Firebase for database
+                            management, user authentication, and secure data storage in web apps.</li>
+                        <li>Developed automation workflows and custom internal tools using Google Apps Script to extend
+                            Google Workspace capabilities and enhance productivity.</li>
+                        <li>Leveraged Generative AI workflows using Stable Diffusion and ComfyUI to automate and
+                            accelerate custom image generation, asset creation, and design prototyping.</li>
+                        <li>Integrated AI technologies and automation solutions (such as OCR capabilities and smart data
+                            processing) to improve operational efficiency and reduce manual tasks.</li>
+                        <li>Handled IT Asset Management & Procurement, including inventory tracking, evaluating
+                            hardware/software upgrades, and coordinating with external vendors for maintenance and
+                            repairs.</li>
+                    </ul>
+                </div>
+
+                <!-- Group 4 -->
+                <div class="exp-group">
+                    <div class="exp-header">
+                        <i class="fa-solid fa-circle-chevron-right"></i> Multimedia, Live Streaming & Video Production
+                    </div>
+                    <ul class="exp-list">
+                        <li>Manage and conduct live streaming for official webinars, public hearings, and corporate
+                            events on multiple platforms (e.g., YouTube Live, Facebook Live) using software such as OBS
+                            Studio.</li>
+                        <li>Supervised and optimized online meeting infrastructure (Zoom, Microsoft Teams, Webex),
+                            including hybrid meeting setups, audio/video routing, and troubleshooting connection issues
+                            to ensure seamless virtual events.</li>
+                        <li>Produced and edited high-quality video content, including training materials, event
+                            highlights, and promotional media using industry-standard software (e.g., Premiere Pro,
+                            After Effects).</li>
+                        <li>Designed professional graphic assets and infographics for internal communications and
+                            digital media, transforming complex regulatory data into clear, engaging visuals.</li>
+                        <li>Utilized node-based AI tools (ComfyUI) and Stable Diffusion models to generate high-quality
+                            visual assets, custom textures, and creative graphics for corporate media and presentation
+                            templates.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- การ์ดทักษะและความสามารถ -->
+            <section class="glass-card">
+                <h2 class="section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Technical Skills & Tools</h2>
+
+                <div class="skills-grid">
+
+                    <!-- หมวดหมู่ 1 -->
+                    <div class="skill-category">
+                        <h4><i class="fa-solid fa-code"></i> Dev & AI Integration</h4>
+                        <div class="skill-badges">
+                            <span class="badge">JavaScript</span>
+                            <span class="badge">HTML / CSS</span>
+                            <span class="badge">Frontend UI Design</span>
+                            <span class="badge">Google Apps Script</span>
+                            <span class="badge">Google Firebase</span>
+                            <span class="badge">Stable Diffusion</span>
+                            <span class="badge">ComfyUI</span>
+                            <span class="badge">ControlNet</span>
+                            <span class="badge">LoRA Training</span>
+                            <span class="badge">Prompt Engineering</span>
+                            <span class="badge">OCR Tech</span>
+                        </div>
+                    </div>
+
+                    <!-- หมวดหมู่ 2 -->
+                    <div class="skill-category">
+                        <h4><i class="fa-solid fa-network-wired"></i> Infra & Security</h4>
+                        <div class="skill-badges">
+                            <span class="badge">Router & Switch Config</span>
+                            <span class="badge">Wi-Fi Management</span>
+                            <span class="badge">VPN Setup</span>
+                            <span class="badge">Structured Cabling</span>
+                            <span class="badge">Firewall Setup</span>
+                            <span class="badge">Windows Server</span>
+                            <span class="badge">CCTV Systems</span>
+                            <span class="badge">Windows & macOS</span>
+                            <span class="badge">iOS & Android OS</span>
+                        </div>
+                    </div>
+
+                    <!-- หมวดหมู่ 3 -->
+                    <div class="skill-category">
+                        <h4><i class="fa-solid fa-cloud"></i> Ops & Admin</h4>
+                        <div class="skill-badges">
+                            <span class="badge">Google Workspace</span>
+                            <span class="badge">Microsoft 365 Admin</span>
+                            <span class="badge">IT Helpdesk Support</span>
+                            <span class="badge">IT Asset Management</span>
+                            <span class="badge">Vendor Management</span>
+                            <span class="badge">Procurement</span>
+                        </div>
+                    </div>
+
+                    <!-- หมวดหมู่ 4 -->
+                    <div class="skill-category">
+                        <h4><i class="fa-solid fa-photo-film"></i> Media & Design</h4>
+                        <div class="skill-badges">
+                            <span class="badge">OBS Studio</span>
+                            <span class="badge">Zoom & Teams Admin</span>
+                            <span class="badge">Audio Mixers</span>
+                            <span class="badge">Premiere Pro</span>
+                            <span class="badge">After Effects</span>
+                            <span class="badge">Photoshop</span>
+                            <span class="badge">Illustrator</span>
+                            <span class="badge">Canva</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+</body>
+
+</html>
