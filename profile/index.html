@@ -1,531 +1,1151 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio</title>
-    <!-- นำเข้าฟอนต์จาก Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <title>Patawee Sabour — Portfolio</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
         rel="stylesheet">
-    <!-- นำเข้าไอคอน (Font Awesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
     <style>
-        /* CSS Reset & Basic Setup */
-        * {
+        /* ── CSS Variables ── */
+        :root {
+            --bg: #08080E;
+            --bg-elevated: #0E0E18;
+            --card: rgba(255, 255, 255, 0.025);
+            --card-hover: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(212, 168, 83, 0.3);
+            --fg: #E4E4EC;
+            --fg-muted: #7A7A94;
+            --accent: #D4A853;
+            --accent-glow: rgba(212, 168, 83, 0.12);
+            --teal: #5CE0D0;
+            --teal-glow: rgba(92, 224, 208, 0.1);
+        }
+        /* ── Reset & Base ── */
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-
-        body {
-            background-color: #fee440;
-            overflow-x: hidden;
-            overflow-y: auto;
-            font-family: 'Poppins', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 40px 20px;
-            color: #333;
-            line-height: 1.6;
+        html {
+            scroll-behavior: smooth;
         }
-
-        /* พื้นหลัง SVG (ตรึงไว้ด้านหลัง) */
-        svg.bg-svg {
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'DM Sans', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+        }
+        /* ── Canvas Background ── */
+        #particleCanvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100vh;
-            z-index: -1;
-            object-fit: cover;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
         }
-
-        /* Container หลักแยกซ้ายขวา */
-        .portfolio-container {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 30px;
-            width: 100%;
-            max-width: 1200px;
-            animation: fadeIn 1.2s ease;
-        }
-
-        /* สไตล์ Glassmorphic Card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.60);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            padding: 30px;
-        }
-
-        /* Sidebar ซ้าย */
-        .sidebar {
-            text-align: center;
-            height: fit-content;
-            position: sticky;
-            top: 40px;
-        }
-
-        /* รูปโปรไฟล์ */
-        .avatar {
-            width: 120px;
-            height: 120px;
+        /* ── Floating Blobs ── */
+        .blob {
+            position: fixed;
             border-radius: 50%;
-            background-color: #fff;
-            margin: 0 auto 20px;
-            border: 4px solid rgba(255, 255, 255, 0.6);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            filter: blur(100px);
+            pointer-events: none;
+            z-index: 0;
         }
-
-        .avatar img {
+        .blob-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--accent);
+            opacity: 0.07;
+            top: -150px;
+            right: -120px;
+            animation: blobFloat1 22s ease-in-out infinite;
+        }
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--teal);
+            opacity: 0.06;
+            bottom: -100px;
+            left: -80px;
+            animation: blobFloat2 28s ease-in-out infinite;
+        }
+        .blob-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            opacity: 0.04;
+            top: 55%;
+            left: 35%;
+            animation: blobFloat3 18s ease-in-out infinite;
+        }
+        @keyframes blobFloat1 {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            33% {
+                transform: translate(-60px, 80px) scale(1.1);
+            }
+            66% {
+                transform: translate(40px, -40px) scale(0.95);
+            }
+        }
+        @keyframes blobFloat2 {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            50% {
+                transform: translate(80px, -60px) scale(1.08);
+            }
+        }
+        @keyframes blobFloat3 {
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+            33% {
+                transform: translate(50px, 30px);
+            }
+            66% {
+                transform: translate(-30px, -50px);
+            }
+        }
+        /* ── Scroll Progress ── */
+        #scrollProgress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--teal));
+            z-index: 200;
+            width: 0%;
+            transition: width 0.05s linear;
+        }
+        /* ── Navigation ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 150;
+            padding: 20px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.4s ease;
+        }
+        nav.scrolled {
+            background: rgba(8, 8, 14, 0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 48px;
+        }
+        .nav-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 22px;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 36px;
+            list-style: none;
+        }
+        .nav-links a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--fg-muted);
+            transition: color 0.3s ease;
+            position: relative;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1.5px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover {
+            color: var(--fg);
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        /* ปุ่มเมนูมือถือ */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            z-index: 160;
+        }
+        .nav-toggle span {
+            width: 24px;
+            height: 2px;
+            background: var(--fg);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+        .nav-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .nav-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .nav-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+        /* ── Hero Section ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 48px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 60px;
+        }
+        .hero-text {
+            flex: 1;
+        }
+        .hero-label {
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(48px, 7.5vw, 88px);
+            font-weight: 700;
+            line-height: 1.02;
+            color: var(--fg);
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+        }
+        .hero-role {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--fg);
+            margin-bottom: 6px;
+        }
+        .hero-org {
+            font-size: 15px;
+            color: var(--fg-muted);
+            margin-bottom: 36px;
+        }
+        .hero-socials {
+            display: flex;
+            gap: 14px;
+        }
+        .social-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--fg-muted);
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+        .social-icon:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(212, 168, 83, 0.15);
+        }
+        .hero-image {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .image-frame {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            border-radius: 28px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            background: linear-gradient(var(--bg), var(--bg)) padding-box,
+                linear-gradient(135deg, var(--accent), var(--teal)) border-box;
+            box-shadow: 0 0 80px rgba(212, 168, 83, 0.1), 0 0 160px rgba(92, 224, 208, 0.04);
+        }
+        .image-frame img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
-        h1 {
-            color: #222;
-            font-size: 26px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .tagline {
-            color: #555;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
-
-        .divider {
-            height: 1px;
-            background: rgba(0, 0, 0, 0.08);
-            margin: 20px 0;
-        }
-
-        /* ปุ่มโซเชียล */
-        .social-links {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .btn-link {
-            background: rgba(255, 255, 255, 0.6);
-            color: #333;
-            padding: 12px 20px;
-            border-radius: 50px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            font-size: 14px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-link:hover {
-            background: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            color: #9b5de5;
-        }
-
-        /* เนื้อหาหลักด้านขวา */
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        .section-title {
-            font-size: 22px;
-            color: #222;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 2px solid rgba(155, 93, 229, 0.3);
-            padding-bottom: 8px;
-        }
-
-        .section-title i {
-            color: #9b5de5;
-        }
-
-        /* สไตล์กรุ๊ปประสบการณ์ย่อย */
-        .exp-group {
-            margin-bottom: 25px;
-        }
-
-        .exp-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .exp-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 16px;
-            color: #2b2d42;
-            margin-bottom: 12px;
-        }
-
-        .exp-header i {
-            color: #f15bb5;
-            font-size: 14px;
-        }
-
-        .exp-list {
-            list-style: none;
-            padding-left: 24px;
-        }
-
-        .exp-list li {
-            position: relative;
-            font-size: 14px;
-            color: #4a4a4a;
-            margin-bottom: 8px;
-        }
-
-        .exp-list li::before {
-            content: "•";
-            color: #00bbf9;
-            font-weight: bold;
-            display: inline-block;
-            width: 1em;
-            margin-left: -1em;
+        /* วงแหวนหมุนรอบรูป */
+        .image-ring {
             position: absolute;
+            top: -16px;
+            left: -16px;
+            width: calc(100% + 32px);
+            height: calc(100% + 32px);
+            border-radius: 32px;
+            border: 1px dashed rgba(212, 168, 83, 0.2);
+            animation: ringRotate 30s linear infinite;
+            pointer-events: none;
         }
-
-        /* จัดหน้าตาหมวดหมู่ทักษะ (Skills Block) */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 20px;
-        }
-
-        .skill-category {
-            background: rgba(255, 255, 255, 0.35);
-            border-radius: 16px;
-            padding: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .skill-category h4 {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #555;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .skill-category h4 i {
-            color: #00bbf9;
-        }
-
-        .skill-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .badge {
-            background: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-            padding: 4px 10px;
-            border-radius: 8px;
-            color: #333;
-            font-weight: 500;
-            border: 1px solid rgba(0, 0, 0, 0.03);
-        }
-
-        .footer {
-            margin-top: 10px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            opacity: 0.8;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(15px);
-            }
-
+        @keyframes ringRotate {
             to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes rotate {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
                 transform: rotate(360deg);
             }
         }
-
-        .out-top {
-            animation: rotate 20s linear infinite;
-            transform-origin: 13px 25px;
+        /* ลูกศรเลื่อนลง */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 36px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--fg-muted);
+            font-size: 11px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            animation: scrollBounce 2.4s ease-in-out infinite;
         }
-
-        .in-top {
-            animation: rotate 10s linear infinite;
-            transform-origin: 13px 25px;
+        .scroll-indicator i {
+            font-size: 14px;
         }
-
-        .out-bottom {
-            animation: rotate 25s linear infinite;
-            transform-origin: 84px 93px;
+        @keyframes scrollBounce {
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translateX(-50%) translateY(8px);
+                opacity: 1;
+            }
         }
-
-        .in-bottom {
-            animation: rotate 15s linear infinite;
-            transform-origin: 84px 93px;
+        /* ── Content Sections ── */
+        .content-section {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 48px 80px;
         }
-
-        /* ปรับปรุงการแสดงผลในหน้าจอมือถือ */
+        .section-header {
+            margin-bottom: 52px;
+        }
+        .section-number {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .section-heading {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(28px, 4vw, 40px);
+            font-weight: 700;
+            color: var(--fg);
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+        }
+        /* ── Timeline ── */
+        .timeline {
+            position: relative;
+            padding-left: 48px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 20px;
+            bottom: 20px;
+            width: 1px;
+            background: linear-gradient(to bottom, var(--border), transparent);
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 36px;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: -42px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            background: var(--bg);
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        .timeline-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            transition: all 0.3s ease;
+        }
+        .timeline-item:hover .timeline-dot {
+            box-shadow: 0 0 16px rgba(212, 168, 83, 0.4);
+        }
+        .timeline-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.4s ease;
+        }
+        .timeline-card:hover {
+            background: var(--card-hover);
+            border-color: var(--border-hover);
+            transform: translateX(6px);
+            box-shadow: 0 8px 40px rgba(212, 168, 83, 0.06);
+        }
+        .timeline-date {
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .timeline-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .timeline-card h3 i {
+            color: var(--teal);
+            font-size: 13px;
+        }
+        .timeline-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .timeline-card li {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.75;
+            color: var(--fg-muted);
+        }
+        .timeline-card li:last-child {
+            margin-bottom: 0;
+        }
+        .timeline-card li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 11px;
+            width: 6px;
+            height: 1px;
+            background: var(--accent);
+        }
+        /* ── Skills Grid ── */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .skill-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.4s ease;
+        }
+        .skill-card:hover {
+            background: var(--card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(212, 168, 83, 0.06);
+        }
+        .skill-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .skill-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        .skill-icon.amber {
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+        .skill-icon.teal {
+            background: var(--teal-glow);
+            color: var(--teal);
+        }
+        .skill-card:hover .skill-icon {
+            transform: scale(1.1);
+        }
+        .skill-card-header h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+        .skill-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .skill-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--fg-muted);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.25s ease;
+        }
+        .skill-badge:hover {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border-color: rgba(212, 168, 83, 0.2);
+            transform: translateY(-1px);
+        }
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 48px;
+            border-top: 1px solid var(--border);
+        }
+        .footer-brand {
+            display: inline-block;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 22px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        footer p {
+            font-size: 13px;
+            color: var(--fg-muted);
+        }
+        /* ── Back to Top ── */
+        #backToTop {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: all 0.35s ease;
+            z-index: 100;
+            box-shadow: 0 4px 24px rgba(212, 168, 83, 0.3);
+        }
+        #backToTop.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #backToTop:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(212, 168, 83, 0.4);
+        }
+        /* ── Scroll Reveal ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-d1 {
+            transition-delay: 0.1s;
+        }
+        .reveal-d2 {
+            transition-delay: 0.2s;
+        }
+        .reveal-d3 {
+            transition-delay: 0.3s;
+        }
+        .reveal-d4 {
+            transition-delay: 0.4s;
+        }
+        /* ── Responsive ── */
         @media (max-width: 900px) {
-            .portfolio-container {
+            nav {
+                padding: 16px 24px;
+            }
+            nav.scrolled {
+                padding: 12px 24px;
+            }
+            .nav-toggle {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 260px;
+                height: 100vh;
+                background: rgba(8, 8, 14, 0.96);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                flex-direction: column;
+                padding: 90px 32px;
+                gap: 28px;
+                transition: right 0.35s ease;
+                border-left: 1px solid var(--border);
+            }
+            .nav-links.open {
+                right: 0;
+            }
+            .nav-links a {
+                font-size: 16px;
+            }
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding: 110px 24px 80px;
+                gap: 40px;
+            }
+            .hero h1 {
+                letter-spacing: -1px;
+            }
+            .hero-socials {
+                justify-content: center;
+            }
+            .image-frame {
+                width: 180px;
+                height: 180px;
+                border-radius: 22px;
+            }
+            .image-ring {
+                border-radius: 26px;
+            }
+            .content-section {
+                padding: 40px 24px 60px;
+            }
+            .skills-grid {
                 grid-template-columns: 1fr;
             }
-
-            .sidebar {
-                position: relative;
-                top: 0;
+            .timeline {
+                padding-left: 36px;
+            }
+            .timeline::before {
+                left: 7px;
+            }
+            .timeline-dot {
+                left: -34px;
+                width: 14px;
+                height: 14px;
+            }
+            .timeline-card {
+                padding: 20px;
+            }
+            .scroll-indicator {
+                display: none;
+            }
+        }
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 40px;
+            }
+            .hero-role {
+                font-size: 16px;
+            }
+            .skill-badge {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+        }
+        /* ── Reduced Motion ── */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+            .blob {
+                display: none;
             }
         }
     </style>
 </head>
-
 <body>
-
-    <!-- พื้นหลัง Animation SVG -->
-    <svg class="bg-svg" preserveAspectRatio="xMidYMid slice" viewBox="10 10 80 80">
-        <path fill="#9b5de5" class="out-top"
-            d="M37-5C25.1-14.7,5.7-19.1-9.2-10-28.5,1.8-32.7,31.1-19.8,49c15.5,21.5,52.6,22,67.2,2.3C59.4,35,53.7,8.5,37-5Z" />
-        <path fill="#f15bb5" class="in-top"
-            d="M20.6,4.1C11.6,1.5-1.9,2.5-8,11.2-16.3,23.1-8.2,45.6,7.4,50S42.1,38.9,41,24.5C40.2,14.1,29.4,6.6,20.6,4.1Z" />
-        <path fill="#00bbf9" class="out-bottom"
-            d="M105.9,48.6c-12.4-8.2-29.3-4.8-39.4.8-23.4,12.8-37.7,51.9-19.1,74.1s63.9,15.3,76-5.6c7.6-13.3,1.8-31.1-2.3-43.8C117.6,63.3,114.7,54.3,105.9,48.6Z" />
-        <path fill="#00f5d4" class="in-bottom"
-            d="M102,67.1c-9.6-6.1-22-3.1-29.5,2-15.4,10.7-19.6,37.5-7.6,47.8s35.9,3.9,44.5-12.5C115.5,92.6,113.9,74.6,102,67.1Z" />
-    </svg>
-
-    <div class="portfolio-container">
-
-        <!-- ฝั่งซ้าย: ข้อมูลส่วนตัวและปุ่มติดต่อ -->
-        <aside class="glass-card sidebar">
-            <div class="avatar">
-                <img src="https://patawee-erc.github.io/profile/pf.jpg" alt="Profile">
+    <!-- พื้นหลัง Particle Canvas -->
+    <canvas id="particleCanvas"></canvas>
+    <!-- บล็อบสีลอย背景 -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <!-- Scroll Progress Bar -->
+    <div id="scrollProgress" role="progressbar" aria-label="Scroll progress"></div>
+    <!-- Navigation -->
+    <nav id="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand">PS</div>
+        <ul class="nav-links" id="navLinks">
+        </ul>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+    <main>
+        <!-- ── Hero Section ── -->
+        <section class="hero" id="hero">
+            <div class="hero-text">
+                <p class="hero-label reveal">Portfolio — 2026</p>
+                <h1 class="reveal reveal-d1">Patawee<br>Sabour</h1>
+                <p class="hero-role reveal reveal-d2">IT Specialist / System & Web Developer</p>
+                <p class="hero-org reveal reveal-d3">Energy Regulatory Commission (ERC)</p>
+                <div class="hero-socials reveal reveal-d4">
+                    <a href="https://github.com/patawee-erc" target="_blank" rel="noopener" class="social-icon"
+                        aria-label="GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                    <a href="https://www.instagram.com/milkoomilk" target="_blank" rel="noopener" class="social-icon"
+                        aria-label="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://facebook.com/milk.sabour" target="_blank" rel="noopener" class="social-icon"
+                        aria-label="Facebook">
+                        <i class="fa-brands fa-facebook-f"></i>
+                    </a>
+                </div>
             </div>
-            <h1>Patawee Sabour</h1>
-            <p class="tagline">
-                <strong>IT Specialist / System & Web Developer</strong><br>
-                Energy Regulatory Commission (ERC)
-            </p>
-
-            <div class="divider"></div>
-
-            <div class="social-links">
-                <a href="https://www.instagram.com/milkoomilk" target="_blank" class="btn-link">
-                    <i class="fa-brands fa-instagram"></i> Instagram
-                </a>
-                <a href="https://facebook.com/milk.sabour" target="_blank" class="btn-link">
-                    <i class="fa-brands fa-facebook"></i> Facebook
-                </a>
+            <div class="hero-image reveal reveal-d2">
+                <div class="image-frame">
+                    <div class="image-ring"></div>
+                    <img src="https://patawee-erc.github.io/profile/pf.jpg" alt="Patawee Sabour profile photo">
+                </div>
             </div>
-
-            <div class="divider"></div>
-            <div class="footer">
-                © 2024 milkomilk
+            <div class="scroll-indicator" aria-hidden="true">
+                <span>Scroll</span>
+                <i class="fa-solid fa-chevron-down"></i>
             </div>
-        </aside>
-
-        <!-- ฝั่งขวา: ประวัติการทำงานและทักษะความสามารถ -->
-        <main class="main-content">
-
-            <!-- การ์ดประวัติการทำงาน -->
-            <section class="glass-card">
-                <h2 class="section-title"><i class="fa-solid fa-briefcase"></i> Professional Experience</h2>
-
+        </section>
+        <!-- ── Experience Section ── -->
+        <section class="content-section" id="experience">
+            <div class="section-header reveal">
+                <span class="section-number">01 — Experience</span>
+                <h2 class="section-heading">Professional Experience</h2>
+            </div>
+            <div class="timeline">
                 <!-- Group 1 -->
-                <div class="exp-group">
-                    <div class="exp-header">
-                        <i class="fa-solid fa-circle-chevron-right"></i> IT Infrastructure & Support
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <span class="timeline-date">2022 - PRESENT</span>
+                        <h3><i class="fa-solid fa-circle-chevron-right"></i> IT Infrastructure & Support</h3>
+                        <ul>
+                            <li>Managed and maintained complete IT infrastructure across the office, including hardware
+                                (PCs, Laptops, Printers, VoIP) and networking equipment (LAN, Wi-Fi, Routers/Switches)
+                                to
+                                ensure maximum uptime.</li>
+                            <li>Provided end-to-end Helpdesk and technical support to all staff members, effectively
+                                diagnosing and resolving software, hardware, and OS-related issues.</li>
+                            <li>Administered corporate cloud services and user access, including Google Workspace /
+                                Microsoft 365 administration and account management.</li>
+                            <li>Managed and secured diverse operating environments, including corporate networks,
+                                Windows/macOS endpoints, and mobile fleets (iOS & Android devices).</li>
+                        </ul>
                     </div>
-                    <ul class="exp-list">
-                        <li>Managed and maintained complete IT infrastructure across the office, including hardware
-                            (PCs, Laptops, Printers, VoIP) and networking equipment (LAN, Wi-Fi, Routers/Switches) to
-                            ensure maximum uptime.</li>
-                        <li>Provided end-to-end Helpdesk and technical support to all staff members, effectively
-                            diagnosing and resolving software, hardware, and OS-related issues.</li>
-                        <li>Administered corporate cloud services and user access, including Google Workspace /
-                            Microsoft 365 administration and account management.</li>
-                        <li>Managed and secured diverse operating environments, including corporate networks,
-                            Windows/macOS endpoints, and mobile fleets (iOS & Android devices).</li>
-                    </ul>
                 </div>
-
                 <!-- Group 2 -->
-                <div class="exp-group">
-                    <div class="exp-header">
-                        <i class="fa-solid fa-circle-chevron-right"></i> Network & Security Management
+                <div class="timeline-item reveal reveal-d1">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <span class="timeline-date">2022 - PRESENT</span>
+                        <h3><i class="fa-solid fa-circle-chevron-right"></i> Network & Security Management</h3>
+                        <ul>
+                            <li>Executed hands-on network infrastructure deployment, including structured cabling (LAN),
+                                hardware mounting, and configuration of Switches, Access Points, and Firewalls (e.g.,
+                                Fortinet, Cisco).</li>
+                            <li>Ensured data security and system reliability by managing endpoint antivirus solutions,
+                                implementing a regular backup routine, and maintaining office security systems (CCTV)
+                                and
+                                facial scanning systems.</li>
+                        </ul>
                     </div>
-                    <ul class="exp-list">
-                        <li>Executed hands-on network infrastructure deployment, including structured cabling (LAN),
-                            hardware mounting, and configuration of Switches, Access Points, and Firewalls (e.g.,
-                            Fortinet, Cisco).</li>
-                        <li>Ensured data security and system reliability by managing endpoint antivirus solutions,
-                            implementing a regular backup routine, and maintaining office security systems (CCTV) and
-                            facial scanning systems.</li>
-                    </ul>
                 </div>
-
                 <!-- Group 3 -->
-                <div class="exp-group">
-                    <div class="exp-header">
-                        <i class="fa-solid fa-circle-chevron-right"></i> Development, Automation & Asset Management
+                <div class="timeline-item reveal reveal-d2">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <span class="timeline-date">2022 - PRESENT</span>
+                        <h3><i class="fa-solid fa-circle-chevron-right"></i> Development, Automation & Asset Management
+                        </h3>
+                        <ul>
+                            <li>Developed and deployed lightweight web applications using HTML, CSS, and JavaScript to
+                                streamline internal workflows, data filtering, and office administrative tasks.</li>
+                            <li>Built and integrated cloud-based backend solutions using Google Firebase for database
+                                management, user authentication, and secure data storage in web apps.</li>
+                            <li>Developed automation workflows and custom internal tools using Google Apps Script to
+                                extend
+                                Google Workspace capabilities and enhance productivity.</li>
+                            <li>Leveraged Generative AI workflows using Stable Diffusion and ComfyUI to automate and
+                                accelerate custom image generation, asset creation, and design prototyping.</li>
+                            <li>Integrated AI technologies and automation solutions (such as OCR capabilities and smart
+                                data
+                                processing) to improve operational efficiency and reduce manual tasks.</li>
+                            <li>Handled IT Asset Management & Procurement, including inventory tracking, evaluating
+                                hardware/software upgrades, and coordinating with external vendors for maintenance and
+                                repairs.</li>
+                        </ul>
                     </div>
-                    <ul class="exp-list">
-                        <li>Developed and deployed lightweight web applications using HTML, CSS, and JavaScript to
-                            streamline internal workflows, data filtering, and office administrative tasks.</li>
-                        <li>Built and integrated cloud-based backend solutions using Google Firebase for database
-                            management, user authentication, and secure data storage in web apps.</li>
-                        <li>Developed automation workflows and custom internal tools using Google Apps Script to extend
-                            Google Workspace capabilities and enhance productivity.</li>
-                        <li>Leveraged Generative AI workflows using Stable Diffusion and ComfyUI to automate and
-                            accelerate custom image generation, asset creation, and design prototyping.</li>
-                        <li>Integrated AI technologies and automation solutions (such as OCR capabilities and smart data
-                            processing) to improve operational efficiency and reduce manual tasks.</li>
-                        <li>Handled IT Asset Management & Procurement, including inventory tracking, evaluating
-                            hardware/software upgrades, and coordinating with external vendors for maintenance and
-                            repairs.</li>
-                    </ul>
                 </div>
-
                 <!-- Group 4 -->
-                <div class="exp-group">
-                    <div class="exp-header">
-                        <i class="fa-solid fa-circle-chevron-right"></i> Multimedia, Live Streaming & Video Production
+                <div class="timeline-item reveal reveal-d3">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <span class="timeline-date">2022 - PRESENT</span>
+                        <h3><i class="fa-solid fa-circle-chevron-right"></i> Multimedia, Live Streaming & Video
+                            Production</h3>
+                        <ul>
+                            <li>Manage and conduct live streaming for official webinars, public hearings, and corporate
+                                events on multiple platforms (e.g., YouTube Live, Facebook Live) using software such as
+                                OBS
+                                Studio.</li>
+                            <li>Supervised and optimized online meeting infrastructure (Zoom, Microsoft Teams, Webex),
+                                including hybrid meeting setups, audio/video routing, and troubleshooting connection
+                                issues
+                                to ensure seamless virtual events.</li>
+                            <li>Produced and edited high-quality video content, including training materials, event
+                                highlights, and promotional media using industry-standard software (e.g., Premiere Pro,
+                                After Effects).</li>
+                            <li>Designed professional graphic assets and infographics for internal communications and
+                                digital media, transforming complex regulatory data into clear, engaging visuals.</li>
+                            <li>Utilized node-based AI tools (ComfyUI) and Stable Diffusion models to generate
+                                high-quality
+                                visual assets, custom textures, and creative graphics for corporate media and
+                                presentation
+                                templates.</li>
+                        </ul>
                     </div>
-                    <ul class="exp-list">
-                        <li>Manage and conduct live streaming for official webinars, public hearings, and corporate
-                            events on multiple platforms (e.g., YouTube Live, Facebook Live) using software such as OBS
-                            Studio.</li>
-                        <li>Supervised and optimized online meeting infrastructure (Zoom, Microsoft Teams, Webex),
-                            including hybrid meeting setups, audio/video routing, and troubleshooting connection issues
-                            to ensure seamless virtual events.</li>
-                        <li>Produced and edited high-quality video content, including training materials, event
-                            highlights, and promotional media using industry-standard software (e.g., Premiere Pro,
-                            After Effects).</li>
-                        <li>Designed professional graphic assets and infographics for internal communications and
-                            digital media, transforming complex regulatory data into clear, engaging visuals.</li>
-                        <li>Utilized node-based AI tools (ComfyUI) and Stable Diffusion models to generate high-quality
-                            visual assets, custom textures, and creative graphics for corporate media and presentation
-                            templates.</li>
-                    </ul>
                 </div>
-            </section>
-
-            <!-- การ์ดทักษะและความสามารถ -->
-            <section class="glass-card">
-                <h2 class="section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Technical Skills & Tools</h2>
-
-                <div class="skills-grid">
-
-                    <!-- หมวดหมู่ 1 -->
-                    <div class="skill-category">
-                        <h4><i class="fa-solid fa-code"></i> Dev & AI Integration</h4>
-                        <div class="skill-badges">
-                            <span class="badge">JavaScript</span>
-                            <span class="badge">HTML / CSS</span>
-                            <span class="badge">Frontend UI Design</span>
-                            <span class="badge">Google Apps Script</span>
-                            <span class="badge">Google Firebase</span>
-                            <span class="badge">Stable Diffusion</span>
-                            <span class="badge">ComfyUI</span>
-                            <span class="badge">ControlNet</span>
-                            <span class="badge">LoRA Training</span>
-                            <span class="badge">Prompt Engineering</span>
-                            <span class="badge">OCR Tech</span>
-                        </div>
+            </div>
+        </section>
+        <!-- ── Skills Section ── -->
+        <section class="content-section" id="skills">
+            <div class="section-header reveal">
+                <span class="section-number">02 — Skills</span>
+                <h2 class="section-heading">Technical Skills & Tools</h2>
+            </div>
+            <div class="skills-grid">
+                <!-- หมวด 1 -->
+                <div class="skill-card reveal">
+                    <div class="skill-card-header">
+                        <div class="skill-icon amber"><i class="fa-solid fa-code"></i></div>
+                        <h4>Dev & AI Integration</h4>
                     </div>
-
-                    <!-- หมวดหมู่ 2 -->
-                    <div class="skill-category">
-                        <h4><i class="fa-solid fa-network-wired"></i> Infra & Security</h4>
-                        <div class="skill-badges">
-                            <span class="badge">Router & Switch Config</span>
-                            <span class="badge">Wi-Fi Management</span>
-                            <span class="badge">VPN Setup</span>
-                            <span class="badge">Structured Cabling</span>
-                            <span class="badge">Firewall Setup</span>
-                            <span class="badge">Windows Server</span>
-                            <span class="badge">CCTV Systems</span>
-                            <span class="badge">Windows & macOS</span>
-                            <span class="badge">iOS & Android OS</span>
-                        </div>
+                    <div class="skill-badges">
+                        <span class="skill-badge">JavaScript</span>
+                        <span class="skill-badge">HTML / CSS</span>
+                        <span class="skill-badge">Frontend UI Design</span>
+                        <span class="skill-badge">Google Apps Script</span>
+                        <span class="skill-badge">Google Firebase</span>
+                        <span class="skill-badge">Stable Diffusion</span>
+                        <span class="skill-badge">ComfyUI</span>
+                        <span class="skill-badge">ControlNet</span>
+                        <span class="skill-badge">LoRA Training</span>
+                        <span class="skill-badge">Prompt Engineering</span>
+                        <span class="skill-badge">OCR Tech</span>
                     </div>
-
-                    <!-- หมวดหมู่ 3 -->
-                    <div class="skill-category">
-                        <h4><i class="fa-solid fa-cloud"></i> Ops & Admin</h4>
-                        <div class="skill-badges">
-                            <span class="badge">Google Workspace</span>
-                            <span class="badge">Microsoft 365 Admin</span>
-                            <span class="badge">IT Helpdesk Support</span>
-                            <span class="badge">IT Asset Management</span>
-                            <span class="badge">Vendor Management</span>
-                            <span class="badge">Procurement</span>
-                        </div>
-                    </div>
-
-                    <!-- หมวดหมู่ 4 -->
-                    <div class="skill-category">
-                        <h4><i class="fa-solid fa-photo-film"></i> Media & Design</h4>
-                        <div class="skill-badges">
-                            <span class="badge">OBS Studio</span>
-                            <span class="badge">Zoom & Teams Admin</span>
-                            <span class="badge">Audio Mixers</span>
-                            <span class="badge">Premiere Pro</span>
-                            <span class="badge">After Effects</span>
-                            <span class="badge">Photoshop</span>
-                            <span class="badge">Illustrator</span>
-                            <span class="badge">Canva</span>
-                        </div>
-                    </div>
-
                 </div>
-            </section>
-
-        </main>
-    </div>
-
+                <!-- หมวด 2 -->
+                <div class="skill-card reveal reveal-d1">
+                    <div class="skill-card-header">
+                        <div class="skill-icon teal"><i class="fa-solid fa-network-wired"></i></div>
+                        <h4>Infra & Security</h4>
+                    </div>
+                    <div class="skill-badges">
+                        <span class="skill-badge">Router & Switch Config</span>
+                        <span class="skill-badge">Wi-Fi Management</span>
+                        <span class="skill-badge">VPN Setup</span>
+                        <span class="skill-badge">Structured Cabling</span>
+                        <span class="skill-badge">Firewall Setup</span>
+                        <span class="skill-badge">Windows Server</span>
+                        <span class="skill-badge">CCTV Systems</span>
+                        <span class="skill-badge">Windows & macOS</span>
+                        <span class="skill-badge">iOS & Android OS</span>
+                    </div>
+                </div>
+                <!-- หมวด 3 -->
+                <div class="skill-card reveal reveal-d2">
+                    <div class="skill-card-header">
+                        <div class="skill-icon amber"><i class="fa-solid fa-cloud"></i></div>
+                        <h4>Ops & Admin</h4>
+                    </div>
+                    <div class="skill-badges">
+                        <span class="skill-badge">Google Workspace</span>
+                        <span class="skill-badge">Microsoft 365 Admin</span>
+                        <span class="skill-badge">IT Helpdesk Support</span>
+                        <span class="skill-badge">IT Asset Management</span>
+                        <span class="skill-badge">Vendor Management</span>
+                        <span class="skill-badge">Procurement</span>
+                    </div>
+                </div>
+                <!-- หมวด 4 -->
+                <div class="skill-card reveal reveal-d3">
+                    <div class="skill-card-header">
+                        <div class="skill-icon teal"><i class="fa-solid fa-photo-film"></i></div>
+                        <h4>Media & Design</h4>
+                    </div>
+                    <div class="skill-badges">
+                        <span class="skill-badge">OBS Studio</span>
+                        <span class="skill-badge">Zoom & Teams Admin</span>
+                        <span class="skill-badge">Audio Mixers</span>
+                        <span class="skill-badge">Premiere Pro</span>
+                        <span class="skill-badge">After Effects</span>
+                        <span class="skill-badge">Photoshop</span>
+                        <span class="skill-badge">Illustrator</span>
+                        <span class="skill-badge">Canva</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- Footer -->
+    <footer>
+        <div class="footer-brand">PS</div>
+        <p>&copy; <span id="currentYear"></span> milkomilk</p>
+    </footer>
+    <!-- Back to Top -->
+    <button id="backToTop" aria-label="Back to top">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+    <script>
+        /* ══════════════════════════════════════════
+           Particle Network Background
+           ══════════════════════════════════════════ */
+        (function () {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let width, height, particles = [], mouse = { x: -9999, y: -9999 };
+            const PARTICLE_COUNT = 65;
+            const CONNECT_DIST = 130;
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+            // ติดตามตำแหน่งเมาส์
+            document.addEventListener('mousemove', function (e) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            document.addEventListener('mouseleave', function () {
+                mouse.x = -9999;
+                mouse.y = -9999;
+            });
+            // สร้างอนุภาค
+            function createParticle() {
+                return {
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.35,
+                    vy: (Math.random() - 0.5) * 0.35,
+                    radius: Math.random() * 1.4 + 0.6,
+                    // สุ่มสีระหว่างทองและเทียล
+                    color: Math.random() > 0.65 ? '#D4A853' : '#5CE0D0'
+                };
+            }
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push(createParticle());
+            }
+            function animate() {
+                if (prefersReduced) return;
+                ctx.clearRect(0, 0, width, height);
+                // อัปเดตและวาดอนุภาค
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    // สะท้อนเมื่อชนขอบ
+                    if (p.x < 0 || p.x > width) p.vx *= -1;
+                    if (p.y < 0 || p.y > height) p.vy *= -1;
+                    // ผลักอนุภาคเมื่อเมาส์ใกล้
+                    const dxM = p.x - mouse.x;
+                    const dyM = p.y - mouse.y;
+                    const distM = Math.sqrt(dxM * dxM + dyM * dyM);
+                    if (distM < 120) {
+                        const force = (120 - distM) / 120 * 0.015;
+                        p.vx += dxM * force;
+                        p.vy += dyM * force;
+                    }
+                    // จำกัดความเร็ว
+                    const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                    if (speed > 1) {
+                        p.vx *= 0.98;
+                        p.vy *= 0.98;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, Math.max(0.1, p.radius), 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                }
+                // วาดเส้นเชื่อมระหว่างอนุภาคที่ใกล้กัน
+                ctx.globalAlpha = 1;
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < CONNECT_DIST) {
+                            const alpha = 0.06 * (1 - dist / CONNECT_DIST);
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = 'rgba(212, 168, 83, ' + alpha + ')';
+                            ctx.lineWidth = 0.6;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+        /* ══════════════════════════════════════════
+           Navigation: Scroll Effect & Mobile Toggle
+           ══════════════════════════════════════════ */
+        (function () {
+            const nav = document.getElementById('navbar');
+            const progress = document.getElementById('scrollProgress');
+            const backToTop = document.getElementById('backToTop');
+            const toggle = document.getElementById('navToggle');
+            const links = document.getElementById('navLinks');
+            window.addEventListener('scroll', function () {
+                const scrollY = window.scrollY;
+                const docHeight = document.body.scrollHeight - window.innerHeight;
+                // Nav พื้นหลังเมื่อเลื่อน
+                nav.classList.toggle('scrolled', scrollY > 60);
+                // Progress bar
+                const pct = docHeight > 0 ? (scrollY / docHeight) * 100 : 0;
+                progress.style.width = pct + '%';
+                // ปุ่มกลับด้านบน
+                backToTop.classList.toggle('visible', scrollY > 500);
+            });
+            // ปุ่มเมนูมือถือ
+            toggle.addEventListener('click', function () {
+                toggle.classList.toggle('active');
+                links.classList.toggle('open');
+            });
+            // ปิดเมนูเมื่อคลิกลิงก์
+            links.querySelectorAll('a').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    toggle.classList.remove('active');
+                    links.classList.remove('open');
+                });
+            });
+            // กลับด้านบน
+            backToTop.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+        /* ══════════════════════════════════════════
+           Scroll Reveal (IntersectionObserver)
+           ══════════════════════════════════════════ */
+        (function () {
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                    }
+                });
+            }, {
+                threshold: 0.08,
+                rootMargin: '0px 0px -40px 0px'
+            });
+            document.querySelectorAll('.reveal').forEach(function (el) {
+                observer.observe(el);
+            });
+        })();
+        /* ══════════════════════════════════════════
+           Dynamic Current Year for Footer
+           ══════════════════════════════════════════ */
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
 </body>
-
 </html>
