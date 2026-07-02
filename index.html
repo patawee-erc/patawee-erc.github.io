@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +29,7 @@
             min-height: 100vh;
         }
 
-       
+
         .bg-shape {
             position: fixed;
             z-index: -1;
@@ -36,8 +37,22 @@
             filter: blur(80px);
             opacity: 0.3;
         }
-        .shadow-1 { width: 400px; height: 400px; background: #4cc9f0; top: -100px; right: -100px; }
-        .shadow-2 { width: 300px; height: 300px; background: #f72585; bottom: -50px; left: -50px; }
+
+        .shadow-1 {
+            width: 400px;
+            height: 400px;
+            background: #4cc9f0;
+            top: -100px;
+            right: -100px;
+        }
+
+        .shadow-2 {
+            width: 300px;
+            height: 300px;
+            background: #f72585;
+            bottom: -50px;
+            left: -50px;
+        }
 
         header {
             text-align: center;
@@ -52,15 +67,25 @@
             margin-bottom: 20px;
         }
 
-        h1 { font-size: 2.2rem; margin: 10px 0; font-weight: 600; }
-        .subtitle { color: var(--text-sub); font-size: 1.1rem; margin-bottom: 30px; }
+        h1 {
+            font-size: 2.2rem;
+            margin: 10px 0;
+            font-weight: 600;
+        }
 
-        
+        .subtitle {
+            color: var(--text-sub);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+
         .search-container {
             position: relative;
             max-width: 500px;
             margin: 0 auto;
         }
+
         .search-container i {
             position: absolute;
             left: 20px;
@@ -68,17 +93,19 @@
             transform: translateY(-50%);
             color: var(--text-sub);
         }
+
         .search-container input {
             width: 100%;
             padding: 15px 15px 15px 50px;
             border-radius: 30px;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             box-shadow: var(--card-shadow);
             outline: none;
             font-family: 'Kanit';
             transition: var(--transition);
             box-sizing: border-box;
         }
+
         .search-container input:focus {
             border-color: var(--primary);
             box-shadow: 0 10px 20px rgba(67, 97, 238, 0.1);
@@ -90,13 +117,14 @@
             margin: 0 auto;
             padding: 20px;
         }
+
         .app-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
         }
 
-     
+
         .card {
             background: var(--white);
             border-radius: 20px;
@@ -107,7 +135,7 @@
             color: inherit;
             box-shadow: var(--card-shadow);
             transition: var(--transition);
-            border: 1px solid rgba(255,255,255,0.8);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             position: relative;
             opacity: 0;
             transform: translateY(20px);
@@ -115,7 +143,7 @@
 
         .card:hover {
             transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
             border-color: var(--primary);
         }
 
@@ -132,24 +160,70 @@
         }
 
 
-        .blue { background: #e7f0ff; color: #4361ee; }
-        .green { background: #e8f7f0; color: #2ecc71; }
-        .purple { background: #f3efff; color: #7209b7; }
-        .orange { background: #fff5eb; color: #f39c12; }
-        .pink { background: #ffeef8; color: #f72585; }
-        .teal { background: #e6fffa; color: #1abc9c; }
-        .red { background: #fff0f0; color: #e74c3c; }
-        .dark { background: #f1f1f1; color: #333; }
+        .blue {
+            background: #e7f0ff;
+            color: #4361ee;
+        }
 
-        .card-content { flex-grow: 1; }
-        .card-content h3 { margin: 0; font-size: 1.2rem; color: var(--text-main); font-weight: 500; }
-        .card-content p { margin: 5px 0 0; font-size: 0.9rem; color: var(--text-sub); line-height: 1.4; }
+        .green {
+            background: #e8f7f0;
+            color: #2ecc71;
+        }
+
+        .purple {
+            background: #f3efff;
+            color: #7209b7;
+        }
+
+        .orange {
+            background: #fff5eb;
+            color: #f39c12;
+        }
+
+        .pink {
+            background: #ffeef8;
+            color: #f72585;
+        }
+
+        .teal {
+            background: #e6fffa;
+            color: #1abc9c;
+        }
+
+        .red {
+            background: #fff0f0;
+            color: #e74c3c;
+        }
+
+        .dark {
+            background: #f1f1f1;
+            color: #333;
+        }
+
+        .card-content {
+            flex-grow: 1;
+        }
+
+        .card-content h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .card-content p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
 
         .card-arrow {
             color: #f0f0f0;
             transition: var(--transition);
             margin-left: 10px;
         }
+
         .card:hover .card-arrow {
             color: var(--primary);
             transform: translateX(5px);
@@ -162,14 +236,23 @@
             font-size: 0.9rem;
         }
 
-  
+
         @media (max-width: 600px) {
-            .app-grid { grid-template-columns: 1fr; }
-            header h1 { font-size: 1.8rem; }
-            .card { padding: 18px; }
+            .app-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 18px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="bg-shape shadow-1"></div>
@@ -181,7 +264,7 @@
         </div>
         <h1>My App Portal</h1>
         <p class="subtitle">ศูนย์รวมลิงก์แอปพลิเคชันและเครื่องมือดิจิทัล</p>
-        
+
         <div class="search-container">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="appSearch" placeholder="ค้นหาชื่อระบบ..." onkeyup="filterApps()">
@@ -190,7 +273,7 @@
 
     <main class="container">
         <div class="app-grid" id="appGrid">
-            
+
             <a href="https://patawee-erc.github.io/shoturl" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-share-nodes"></i></div>
                 <div class="card-content">
@@ -209,7 +292,7 @@
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
 
-         
+
 
             <a href="https://patawee-erc.github.io/PTT/login" class="card" target="_blank">
                 <div class="card-icon orange"><i class="fa-solid fa-chart-column"></i></div>
@@ -302,7 +385,7 @@
             </a>
 
             <a href="https://patawee-erc.github.io/GeminiExportHtml/v2.html" class="card" target="_blank">
-                <div class="card-icon orange"><i class="fa-solid fa-person-chalkboard"></i></div>
+                <div class="card-icon red"><i class="fa-solid fa-person-chalkboard"></i></div>
                 <div class="card-content">
                     <h3>MultipleHTML to PPTX</h3>
                     <p>เครื่องมือแปลง HTML เป็นไฟล์นำเสนอ Powerpoint (สามารถแก้ไขข้อความได้เลย)</p>
@@ -329,7 +412,7 @@
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
 
-             <a href="https://patawee-erc.github.io/New_Face_Scan/" class="card" target="_blank">
+            <a href="https://patawee-erc.github.io/New_Face_Scan/" class="card" target="_blank">
                 <div class="card-icon purple"><i class="fa-solid fa-id-badge"></i></div>
                 <div class="card-content">
                     <h3>Face Recognition</h3>
@@ -337,7 +420,7 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-            
+
             <a href="https://patawee-erc.github.io/html_text_edit/" class="card" target="_blank">
                 <div class="card-icon dark"><i class="fa-solid fa-hashtag"></i></div>
                 <div class="card-content">
@@ -346,8 +429,8 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-            
-             <a href="https://patawee-erc.github.io/mappin/" class="card" target="_blank">
+
+            <a href="https://patawee-erc.github.io/mappin/" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-map-location-dot"></i></div>
                 <div class="card-content">
                     <h3>Map pin</h3>
@@ -355,8 +438,8 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-            
-             <a href="https://patawee-erc.github.io/chrord/" class="card" target="_blank">
+
+            <a href="https://patawee-erc.github.io/chrord/" class="card" target="_blank">
                 <div class="card-icon green"><i class="fa-solid fa-guitar"></i></div>
                 <div class="card-content">
                     <h3>Guitar Chrord</h3>
@@ -364,7 +447,7 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-            
+
             <a href="https://patawee-erc.github.io/HandTracking/" class="card" target="_blank">
                 <div class="card-icon pink"><i class="fa-regular fa-hand-spock"></i></div>
                 <div class="card-content">
@@ -373,7 +456,7 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-            
+
             <a href="https://patawee-erc.github.io/WatermarkPDF/" class="card" target="_blank">
                 <div class="card-icon orange"><i class="fa-solid fa-file-pdf"></i></div>
                 <div class="card-content">
@@ -391,7 +474,7 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-            
+
             <a href="https://patawee-erc.github.io/ocr/ocr2.html" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-text-slash"></i></div>
                 <div class="card-content">
@@ -409,7 +492,7 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-    
+
         </div>
     </main>
 
@@ -417,7 +500,7 @@
         <p>&copy; 2026 milkomilk </p>
     </footer>
 
-    <script> 
+    <script>
         // ฟังก์ชันค้นหาแอป
         function filterApps() {
             const input = document.getElementById('appSearch');
@@ -449,4 +532,5 @@
         });
     </script>
 </body>
+
 </html>
