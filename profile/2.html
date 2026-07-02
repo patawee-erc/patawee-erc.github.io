@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patawee Sabour — Player Status & Arcade</title>
+    <!-- 8-Bit Web Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── CSS Variables (8-Bit NES Palette) ── */
+        :root {
+            --bg: #05050a;
+            --window-bg: #0c0c16;
+            --border-color: #ffffff;
+            --primary: #39ff14;
+            /* Neon Green */
+            --secondary: #ffff00;
+            /* Retro Yellow */
+            --accent: #ff0055;
+            /* Health Red */
+            --blue: #00ccff;
+            /* Mana Blue */
+            --fg: #ffffff;
+            --fg-muted: #a0a0b0;
+        }
+        /* ── Reset & Base ── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            line-height: 1.4;
+            overflow-x: hidden;
+            -webkit-font-smoothing: none;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        /* ── CRT Scanline Overlay ── */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            z-index: 999;
+            background-size: 100% 4px;
+            pointer-events: none;
+            opacity: 0.65;
+        }
+        /* ── Starfield Canvas ── */
+        #starfieldCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        /* ── Scroll Progress ── */
+        #scrollProgress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--primary);
+            z-index: 200;
+            width: 0%;
+        }
+        /* ── Custom Pixel Box Helper ── */
+        .pixel-box {
+            border: 4px solid var(--border-color);
+            background: var(--window-bg);
+            box-shadow: 4px 4px 0px #000;
+            position: relative;
+        }
+        /* ── Navigation ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 150;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg);
+            border-bottom: 4px solid var(--border-color);
+        }
+        .nav-brand {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: var(--secondary);
+        }
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+        .nav-links a {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--fg);
+            transition: color 0.15s steps(2);
+        }
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        .nav-links a::before {
+            content: "> ";
+            opacity: 0;
+            color: var(--primary);
+            margin-right: 4px;
+        }
+        .nav-links a:hover::before {
+            opacity: 1;
+        }
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .nav-toggle span {
+            width: 20px;
+            height: 4px;
+            background: var(--fg);
+        }
+        /* ── Hero / Character Screen ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 40px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 40px;
+        }
+        .status-screen {
+            flex: 1.2;
+            padding: 24px;
+        }
+        .status-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: var(--secondary);
+            margin-bottom: 24px;
+            border-bottom: 4px double var(--border-color);
+            padding-bottom: 12px;
+        }
+        .hero h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(24px, 4vw, 42px);
+            color: var(--primary);
+            line-height: 1.2;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+        }
+        .hero-role {
+            font-size: 24px;
+            color: var(--fg);
+            margin-bottom: 20px;
+        }
+        /* Stat Bars */
+        .stat-group {
+            margin-bottom: 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+        }
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .stat-bar-outer {
+            width: 100%;
+            height: 16px;
+            background: #222;
+            border: 2px solid var(--border-color);
+            padding: 2px;
+        }
+        .stat-bar-inner {
+            height: 100%;
+            background: var(--accent);
+        }
+        .stat-bar-inner.mp {
+            background: var(--blue);
+        }
+        .hero-socials {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .social-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 10px 16px;
+            border: 2px solid var(--border-color);
+            background: #111;
+            color: var(--fg);
+            cursor: pointer;
+            transition: all 0.15s steps(2);
+        }
+        .social-btn:hover {
+            background: var(--primary);
+            color: #000;
+            transform: translate(-2px, -2px);
+            box-shadow: 2px 2px 0px var(--border-color);
+        }
+        /* Hero Image Frame */
+        .hero-image {
+            flex: 0.8;
+            display: flex;
+            justify-content: center;
+        }
+        .character-frame {
+            padding: 12px;
+            width: 260px;
+            background: #000;
+        }
+        .character-frame img {
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            border: 4px solid var(--border-color);
+        }
+        .character-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            text-align: center;
+            margin-top: 12px;
+            color: var(--secondary);
+        }
+        /* ── Content Sections ── */
+        .content-section {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+        .section-header {
+            margin-bottom: 40px;
+        }
+        .section-number {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--secondary);
+            display: block;
+            margin-bottom: 12px;
+        }
+        .section-heading {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(18px, 3vw, 28px);
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+        /* ── Quest Log (Timeline) ── */
+        .quest-log {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .quest-card {
+            padding: 24px;
+        }
+        .quest-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px dashed var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .quest-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .quest-status {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            color: var(--primary);
+            background: rgba(57, 255, 20, 0.1);
+            border: 2px solid var(--primary);
+            padding: 4px 8px;
+        }
+        .quest-date {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--blue);
+            margin-bottom: 12px;
+            display: block;
+        }
+        .quest-card ul {
+            list-style: none;
+            padding-left: 8px;
+        }
+        .quest-card li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            color: var(--fg);
+            font-size: 20px;
+        }
+        .quest-card li::before {
+            content: "■";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-size: 12px;
+            top: 4px;
+        }
+        /* ── Arcade Cabinet Section ── */
+        .arcade-cabinet {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #11111d;
+            border: 6px solid var(--border-color);
+        }
+        .arcade-header {
+            text-align: center;
+            border-bottom: 4px double var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .arcade-header h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: var(--secondary);
+        }
+        .arcade-header p {
+            font-size: 16px;
+            color: var(--fg-muted);
+            margin-top: 4px;
+        }
+        .game-canvas-container {
+            position: relative;
+            background: #000;
+            border: 4px solid var(--border-color);
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* D-Pad Buttons for Mobile */
+        .arcade-controls {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-width: 180px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .d-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            padding: 12px;
+            background: #222;
+            color: var(--fg);
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+        }
+        .d-btn:active {
+            background: var(--primary);
+            color: #000;
+        }
+        .d-btn.empty {
+            visibility: hidden;
+        }
+        /* ── Skill Inventory (Grid) ── */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .inventory-card {
+            padding: 24px;
+        }
+        .inventory-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 2px dashed var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .inventory-icon {
+            font-size: 24px;
+            color: var(--primary);
+        }
+        .inventory-card h4 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: var(--secondary);
+        }
+        .item-slots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .item-badge {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            background: #111;
+            color: var(--fg);
+            transition: all 0.1s steps(2);
+        }
+        .item-badge:hover {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+        /* ── Footer ── */
+        footer {
+            text-align: center;
+            padding: 40px;
+            border-top: 4px solid var(--border-color);
+            background: var(--bg);
+            position: relative;
+            z-index: 1;
+        }
+        .footer-brand {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--secondary);
+            margin-bottom: 12px;
+        }
+        /* ── Back to Top ── */
+        #backToTop {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 48px;
+            height: 48px;
+            background: var(--secondary);
+            border: 4px solid #000;
+            box-shadow: 2px 2px 0px var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            opacity: 0;
+            transition: opacity 0.2s steps(2);
+            z-index: 100;
+        }
+        #backToTop.visible {
+            opacity: 1;
+        }
+        #backToTop:hover {
+            background: var(--primary);
+        }
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            nav {
+                padding: 16px 20px;
+            }
+            .nav-toggle {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 50px;
+                right: -100%;
+                width: 240px;
+                height: calc(100vh - 50px);
+                background: var(--window-bg);
+                border-left: 4px solid var(--border-color);
+                flex-direction: column;
+                padding: 40px 24px;
+                gap: 24px;
+                transition: right 0.2s steps(4);
+            }
+            .nav-links.open {
+                right: 0;
+            }
+            .hero {
+                flex-direction: column-reverse;
+                text-align: center;
+                padding: 100px 20px 40px;
+            }
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+            .stat-label {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ดาวพื้นหลัง 8-Bit Scrolling Starfield -->
+    <canvas id="starfieldCanvas"></canvas>
+    <!-- Scroll Progress -->
+    <div id="scrollProgress" role="progressbar" aria-label="Progress"></div>
+    <!-- Navigation -->
+    <nav id="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand">PS</div>
+        <ul class="nav-links" id="navLinks">
+            
+        </ul>
+        <button class="nav-toggle" id="navToggle" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+    <main>
+        <!-- ── Hero / Character Status Screen ── -->
+        <section class="hero" id="hero">
+            <div class="status-screen pixel-box">
+                <div class="status-title">CHARACTER STATUS [LVL 99]</div>
+                <h1>Patawee Sabour</h1>
+                <p class="hero-role">&gt; IT Specialist / System & Web Developer</p>
+                <p class="hero-role" style="font-size: 18px; color: var(--fg-muted); margin-top: -10px;">
+                    Energy Regulatory Commission (ERC)
+                </p>
+                <!-- Status HP Bar -->
+                <div class="stat-group">
+                    <div class="stat-label">
+                        <span>HP (INFRASTRUCTURE)</span>
+                        <span>999 / 999</span>
+                    </div>
+                    <div class="stat-bar-outer">
+                        <div class="stat-bar-inner" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Status MP Bar -->
+                <div class="stat-group">
+                    <div class="stat-label">
+                        <span>MP (DEV & AI INT)</span>
+                        <span>840 / 999</span>
+                    </div>
+                    <div class="stat-bar-outer">
+                        <div class="stat-bar-inner mp" style="width: 84%;"></div>
+                    </div>
+                </div>
+                <div class="hero-socials">
+                    <a href="https://github.com/patawee-erc" target="_blank" rel="noopener" class="social-btn">
+                        <i class="fa-brands fa-github"></i> GITHUB
+                    </a>
+                    <a href="https://www.instagram.com/milkoomilk" target="_blank" rel="noopener" class="social-btn">
+                        <i class="fa-brands fa-instagram"></i> INSTAGRAM
+                    </a>
+                    <a href="https://facebook.com/milk.sabour" target="_blank" rel="noopener" class="social-btn">
+                        <i class="fa-brands fa-facebook-f"></i> FB
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="character-frame pixel-box">
+                    <img src="https://patawee-erc.github.io/profile/pf.jpg" alt="Patawee Sabour">
+                    <div class="character-label">PLAYER 1</div>
+                </div>
+            </div>
+        </section>
+        <!-- ── Experience / Quest Section ── -->
+        <section class="content-section" id="experience">
+            <div class="section-header">
+                <span class="section-number">MISSION LOG</span>
+                <h2 class="section-heading">Completed Quests</h2>
+            </div>
+            <div class="quest-log">
+                <!-- Quest 1 -->
+                <div class="quest-card pixel-box">
+                    <div class="quest-header">
+                        <div class="quest-title"><i class="fa-solid fa-gamepad"></i> QUEST 01: IT Infrastructure &
+                            Support</div>
+                        <span class="quest-status">COMPLETED</span>
+                    </div>
+                    <span class="quest-date">[ 2022 - PRESENT ]</span>
+                    <ul>
+                        <li>Managed and maintained complete IT infrastructure across the office, including hardware
+                            (PCs, Laptops, Printers, VoIP) and networking equipment (LAN, Wi-Fi, Routers/Switches) to
+                            ensure maximum uptime.</li>
+                        <li>Provided end-to-end Helpdesk and technical support to all staff members, effectively
+                            diagnosing and resolving software, hardware, and OS-related issues.</li>
+                        <li>Administered corporate cloud services and user access, including Google Workspace /
+                            Microsoft 365 administration and account management.</li>
+                        <li>Managed and secured diverse operating environments, including corporate networks,
+                            Windows/macOS endpoints, and mobile fleets (iOS & Android devices).</li>
+                    </ul>
+                </div>
+                <!-- Quest 2 -->
+                <div class="quest-card pixel-box">
+                    <div class="quest-header">
+                        <div class="quest-title"><i class="fa-solid fa-shield"></i> QUEST 02: Network & Security
+                            Management</div>
+                        <span class="quest-status">COMPLETED</span>
+                    </div>
+                    <span class="quest-date">[ 2022 - PRESENT ]</span>
+                    <ul>
+                        <li>Executed hands-on network infrastructure deployment, including structured cabling (LAN),
+                            hardware mounting, and configuration of Switches, Access Points, and Firewalls (e.g.,
+                            Fortinet, Cisco).</li>
+                        <li>Ensured data security and system reliability by managing endpoint antivirus solutions,
+                            implementing a regular backup routine, and maintaining office security systems (CCTV) and
+                            facial scanning systems.</li>
+                    </ul>
+                </div>
+                <!-- Quest 3 -->
+                <div class="quest-card pixel-box">
+                    <div class="quest-header">
+                        <div class="quest-title"><i class="fa-solid fa-wand-magic-sparkles"></i> QUEST 03: Dev,
+                            Automation & Asset</div>
+                        <span class="quest-status">COMPLETED</span>
+                    </div>
+                    <span class="quest-date">[ 2022 - PRESENT ]</span>
+                    <ul>
+                        <li>Developed and deployed lightweight web applications using HTML, CSS, and JavaScript to
+                            streamline internal workflows, data filtering, and office administrative tasks.</li>
+                        <li>Built and integrated cloud-based backend solutions using Google Firebase for database
+                            management, user authentication, and secure data storage in web apps.</li>
+                        <li>Developed automation workflows and custom internal tools using Google Apps Script to extend
+                            Google Workspace capabilities and enhance productivity.</li>
+                        <li>Leveraged Generative AI workflows using Stable Diffusion and ComfyUI to automate and
+                            accelerate custom image generation, asset creation, and design prototyping.</li>
+                        <li>Integrated AI technologies and automation solutions (such as OCR capabilities and smart data
+                            processing) to improve operational efficiency and reduce manual tasks.</li>
+                        <li>Handled IT Asset Management & Procurement, including inventory tracking, evaluating
+                            hardware/software upgrades, and coordinating with external vendors for maintenance and
+                            repairs.</li>
+                    </ul>
+                </div>
+                <!-- Quest 4 -->
+                <div class="quest-card pixel-box">
+                    <div class="quest-header">
+                        <div class="quest-title"><i class="fa-solid fa-video"></i> QUEST 04: Media, Live Streaming &
+                            Production</div>
+                        <span class="quest-status">COMPLETED</span>
+                    </div>
+                    <span class="quest-date">[ 2022 - PRESENT ]</span>
+                    <ul>
+                        <li>Manage and conduct live streaming for official webinars, public hearings, and corporate
+                            events on multiple platforms (e.g., YouTube Live, Facebook Live) using software such as OBS
+                            Studio.</li>
+                        <li>Supervised and optimized online meeting infrastructure (Zoom, Microsoft Teams, Webex),
+                            including hybrid meeting setups, audio/video routing, and troubleshooting connection issues
+                            to ensure seamless virtual events.</li>
+                        <li>Produced and edited high-quality video content, including training materials, event
+                            highlights, and promotional media using industry-standard software (e.g., Premiere Pro,
+                            After Effects).</li>
+                        <li>Designed professional graphic assets and infographics for internal communications and
+                            digital media, transforming complex regulatory data into clear, engaging visuals.</li>
+                        <li>Utilized node-based AI tools (ComfyUI) and Stable Diffusion models to generate high-quality
+                            visual assets, custom textures, and creative graphics for corporate media and presentation
+                            templates.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <!-- ── Skills Section ── -->
+        <section class="content-section" id="skills">
+            <div class="section-header">
+                <span class="section-number">EQUIPPED GEAR</span>
+                <h2 class="section-heading">Skills & Inventory</h2>
+            </div>
+            <div class="skills-grid">
+                <!-- Box 1 -->
+                <div class="inventory-card pixel-box">
+                    <div class="inventory-header">
+                        <i class="fa-solid fa-code inventory-icon"></i>
+                        <h4>DEV & AI GEAR</h4>
+                    </div>
+                    <div class="item-slots">
+                        <span class="item-badge">JavaScript</span>
+                        <span class="item-badge">HTML / CSS</span>
+                        <span class="item-badge">Frontend UI</span>
+                        <span class="item-badge">Apps Script</span>
+                        <span class="item-badge">Firebase</span>
+                        <span class="item-badge">ComfyUI</span>
+                        <span class="item-badge">Stable Diffusion</span>
+                        <span class="item-badge">LoRA Training</span>
+                        <span class="item-badge">OCR Tech</span>
+                    </div>
+                </div>
+                <!-- Box 2 -->
+                <div class="inventory-card pixel-box">
+                    <div class="inventory-header">
+                        <i class="fa-solid fa-server inventory-icon"></i>
+                        <h4>SEC & INFRA GEAR</h4>
+                    </div>
+                    <div class="item-slots">
+                        <span class="item-badge">Router Config</span>
+                        <span class="item-badge">Wi-Fi Admin</span>
+                        <span class="item-badge">VPN Setup</span>
+                        <span class="item-badge">Cabling</span>
+                        <span class="item-badge">Firewall</span>
+                        <span class="item-badge">Win Server</span>
+                        <span class="item-badge">CCTV Sys</span>
+                        <span class="item-badge">Windows / macOS</span>
+                    </div>
+                </div>
+                <!-- Box 3 -->
+                <div class="inventory-card pixel-box">
+                    <div class="inventory-header">
+                        <i class="fa-solid fa-toolbox inventory-icon"></i>
+                        <h4>OPS & ADMIN GEAR</h4>
+                    </div>
+                    <div class="item-slots">
+                        <span class="item-badge">Google Workspace</span>
+                        <span class="item-badge">M365 Admin</span>
+                        <span class="item-badge">IT Helpdesk</span>
+                        <span class="item-badge">Asset Mgmt</span>
+                        <span class="item-badge">Vendor Coordinate</span>
+                        <span class="item-badge">Procurement</span>
+                    </div>
+                </div>
+                <!-- Box 4 -->
+                <div class="inventory-card pixel-box">
+                    <div class="inventory-header">
+                        <i class="fa-solid fa-wand-magic inventory-icon"></i>
+                        <h4>MULTIMEDIA GEAR</h4>
+                    </div>
+                    <div class="item-slots">
+                        <span class="item-badge">OBS Studio</span>
+                        <span class="item-badge">Zoom & Teams Admin</span>
+                        <span class="item-badge">Audio Mixers</span>
+                        <span class="item-badge">Premiere Pro</span>
+                        <span class="item-badge">After Effects</span>
+                        <span class="item-badge">Photoshop</span>
+                        <span class="item-badge">Illustrator</span>
+                    </div>
+                </div>
+            </div>
+            <!-- ── Mini Game Section (Arcade) ── -->
+            <section class="content-section" id="arcade">
+                <div class="section-header">
+                    <span class="section-number">ENTERTAINMENT</span>
+                    <h2 class="section-heading">Arcade cabinet</h2>
+                </div>
+            
+                <!-- Arcade Cabinet Box -->
+                <div class="arcade-cabinet pixel-box">
+                    <div class="arcade-header">
+                        <h3>BUG HUNTER v1.0</h3>
+                        <p>Collect Bugs to Patch the System!</p>
+                    </div>
+            
+                    <!-- Game Screen Area -->
+                    <div class="game-canvas-container">
+                        <canvas id="gameCanvas" width="400" height="400"></canvas>
+                    </div>
+            
+                    <!-- Mobile Controllers D-Pad -->
+                    <div class="arcade-controls">
+                        <button class="d-btn empty"></button>
+                        <button class="d-btn" id="ctrlUp">▲</button>
+                        <button class="d-btn empty"></button>
+            
+                        <button class="d-btn" id="ctrlLeft">◀</button>
+                        <button class="d-btn empty"></button>
+                        <button class="d-btn" id="ctrlRight">▶</button>
+            
+                        <button class="d-btn empty"></button>
+                        <button class="d-btn" id="ctrlDown">▼</button>
+                        <button class="d-btn empty"></button>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </main>
+    <!-- Footer -->
+    <footer>
+        <div class="footer-brand">PATAWEE SABOUR</div>
+        <p>&copy; <span id="currentYear"></span> milkoomilk. All Quests Complete.</p>
+    </footer>
+    <!-- Back to Top -->
+    <button id="backToTop" aria-label="Back to top">
+        ▲
+    </button>
+    <script>
+        /* ══════════════════════════════════════════
+           8-Bit Twinkling/Scrolling Starfield
+           ══════════════════════════════════════════ */
+        (function () {
+            const canvas = document.getElementById('starfieldCanvas');
+            const ctx = canvas.getContext('2d');
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let width, height, stars = [];
+            const STAR_COUNT = 80;
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+            function createStar() {
+                return {
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() > 0.8 ? 3 : 1.5,
+                    speed: (Math.random() * 0.4) + 0.1,
+                    alpha: Math.random()
+                };
+            }
+            for (let i = 0; i < STAR_COUNT; i++) {
+                stars.push(createStar());
+            }
+            function animate() {
+                if (prefersReduced) return;
+                ctx.clearRect(0, 0, width, height);
+                for (let i = 0; i < stars.length; i++) {
+                    const s = stars[i];
+                    s.y += s.speed;
+                    if (s.y > height) {
+                        s.y = 0;
+                        s.x = Math.random() * width;
+                    }
+                    s.alpha += (Math.random() - 0.5) * 0.05;
+                    if (s.alpha < 0) s.alpha = 0;
+                    if (s.alpha > 1) s.alpha = 1;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+                    ctx.fillRect(s.x, s.y, s.size, s.size);
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+        /* ══════════════════════════════════════════
+           Bug Hunter Mini Game (Arcade Snake Game)
+           ══════════════════════════════════════════ */
+        (function () {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const gridSize = 20;
+            const tileCount = 20; // 400x400 / 20 = 20 tiles
+            let snake = [{ x: 10, y: 10 }];
+            let bug = { x: 5, y: 5 };
+            let dx = 0;
+            let dy = 0;
+            let score = 0;
+            let gameInterval = null;
+            let gameState = "START"; // START, PLAYING, GAME_OVER
+            function drawGame() {
+                // Clear Canvas
+                ctx.fillStyle = "#000000";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (gameState === "START") {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "20px 'Press Start 2P'";
+                    ctx.textAlign = "center";
+                    ctx.fillText("BUG HUNTER", canvas.width / 2, canvas.height / 2 - 40);
+                    
+                    ctx.fillStyle = "#39ff14";
+                    ctx.font = "11px 'Press Start 2P'";
+                    ctx.fillText("PRESS ANY CONTROL TO START", canvas.width / 2, canvas.height / 2 + 20);
+                    ctx.fillStyle = "#ffff00";
+                    ctx.font = "10px 'Press Start 2P'";
+                    ctx.fillText("USE KEYBOARD ARROWS OR D-PAD", canvas.width / 2, canvas.height / 2 + 60);
+                    return;
+                }
+                if (gameState === "GAME_OVER") {
+                    ctx.fillStyle = "#ff0055";
+                    ctx.font = "24px 'Press Start 2P'";
+                    ctx.textAlign = "center";
+                    ctx.fillText("SYSTEM CRASH", canvas.width / 2, canvas.height / 2 - 30);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "14px 'Press Start 2P'";
+                    ctx.fillText(`SCORE: ${score} BUGS`, canvas.width / 2, canvas.height / 2 + 15);
+                    ctx.fillStyle = "#39ff14";
+                    ctx.font = "10px 'Press Start 2P'";
+                    ctx.fillText("CLICK / TAP D-PAD TO RETRY", canvas.width / 2, canvas.height / 2 + 60);
+                    return;
+                }
+                // Move Snake
+                const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+                snake.unshift(head);
+                // Check bug capture
+                if (head.x === bug.x && head.y === bug.y) {
+                    score += 10;
+                    spawnBug();
+                } else {
+                    snake.pop();
+                }
+                // Collision Detection (Wall / Self)
+                if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || checkSelfCollision(head)) {
+                    gameState = "GAME_OVER";
+                    clearInterval(gameInterval);
+                    gameInterval = null;
+                }
+                // Draw Bug (Target)
+                ctx.fillStyle = "#ff0055";
+                ctx.fillRect(bug.x * gridSize + 2, bug.y * gridSize + 2, gridSize - 4, gridSize - 4);
+                // Draw Snake (Player)
+                for (let i = 0; i < snake.length; i++) {
+                    ctx.fillStyle = i === 0 ? "#39ff14" : "#1db50a";
+                    ctx.fillRect(snake[i].x * gridSize + 1, snake[i].y * gridSize + 1, gridSize - 2, gridSize - 2);
+                }
+                // Draw Scores
+                ctx.fillStyle = "#ffff00";
+                ctx.font = "11px 'Press Start 2P'";
+                ctx.textAlign = "left";
+                ctx.fillText(`SCORE:${score}`, 10, 25);
+            }
+            function checkSelfCollision(head) {
+                for (let i = 1; i < snake.length; i++) {
+                    if (snake[i].x === head.x && snake[i].y === head.y) return true;
+                }
+                return false;
+            }
+            function spawnBug() {
+                bug.x = Math.floor(Math.random() * tileCount);
+                bug.y = Math.floor(Math.random() * tileCount);
+                // Ensure bug doesn't spawn on snake body
+                for (let part of snake) {
+                    if (part.x === bug.x && part.y === bug.y) {
+                        spawnBug();
+                        break;
+                    }
+                }
+            }
+            function resetGame() {
+                snake = [{ x: 10, y: 10 }];
+                dx = 0;
+                dy = -1; // Start moving UP
+                score = 0;
+                spawnBug();
+                gameState = "PLAYING";
+                if (gameInterval) clearInterval(gameInterval);
+                gameInterval = setInterval(drawGame, 110); // Game Speed
+            }
+            function changeDirection(newDx, newDy) {
+                if (gameState !== "PLAYING") {
+                    resetGame();
+                    return;
+                }
+                // Prevent turning directly backwards onto self
+                if ((newDx === -dx && newDx !== 0) || (newDy === -dy && newDy !== 0)) return;
+                dx = newDx;
+                dy = newDy;
+            }
+            // Keyboard input listeners
+            document.addEventListener("keydown", function (e) {
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                    e.preventDefault(); // ป้องกันการสกรอลล์หน้าจอเมื่อเล่มเกม
+                }
+                switch (e.key) {
+                    case "ArrowUp": changeDirection(0, -1); break;
+                    case "ArrowDown": changeDirection(0, 1); break;
+                    case "ArrowLeft": changeDirection(-1, 0); break;
+                    case "ArrowRight": changeDirection(1, 0); break;
+                }
+            });
+            // Virtual D-Pad Click Listeners
+            document.getElementById("ctrlUp").addEventListener("click", () => changeDirection(0, -1));
+            document.getElementById("ctrlDown").addEventListener("click", () => changeDirection(0, 1));
+            document.getElementById("ctrlLeft").addEventListener("click", () => changeDirection(-1, 0));
+            document.getElementById("ctrlRight").addEventListener("click", () => changeDirection(1, 0));
+            // Draw initial start screen
+            drawGame();
+        })();
+        /* ══════════════════════════════════════════
+           Navigation: Scroll Effect & Mobile Toggle
+           ══════════════════════════════════════════ */
+        (function () {
+            const nav = document.getElementById('navbar');
+            const progress = document.getElementById('scrollProgress');
+            const backToTop = document.getElementById('backToTop');
+            const toggle = document.getElementById('navToggle');
+            const links = document.getElementById('navLinks');
+            window.addEventListener('scroll', function () {
+                const scrollY = window.scrollY;
+                const docHeight = document.body.scrollHeight - window.innerHeight;
+                const pct = docHeight > 0 ? (scrollY / docHeight) * 100 : 0;
+                progress.style.width = pct + '%';
+                backToTop.classList.toggle('visible', scrollY > 400);
+            });
+            toggle.addEventListener('click', function () {
+                links.classList.toggle('open');
+            });
+            links.querySelectorAll('a').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    links.classList.remove('open');
+                });
+            });
+            backToTop.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+        /* ══════════════════════════════════════════
+           Dynamic Current Year
+           ══════════════════════════════════════════ */
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
