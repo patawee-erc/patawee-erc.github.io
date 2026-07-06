@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Guitar Chord Finder</title>
-    
+
     <!-- Library สำหรับวาดรูปคอร์ด -->
     <script src="https://omnibrain.github.io/svguitar/js/svguitar.umd.js"></script>
-    
+
     <style>
+        /* จัดการ box-sizing เพื่อป้องกันการล้นจากการบวก padding */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
         :root {
             --primary: #2c3e50;
             --accent: #27ae60;
@@ -23,17 +31,33 @@
             color: var(--primary);
         }
 
-        .container { max-width: 1200px; margin: 0 auto; text-align: center; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            width: 100%;
+        }
 
-        .header { margin-bottom: 30px; }
-        .header h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
-        .status { color: #666; font-size: 0.9rem; }
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .status {
+            color: #666;
+            font-size: 0.9rem;
+        }
 
         .controls {
             background: white;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             margin-bottom: 40px;
             display: flex;
             justify-content: center;
@@ -51,26 +75,60 @@
             transition: all 0.3s;
         }
 
-        select:focus { border-color: var(--accent); outline: none; }
+        select:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
 
         #chord-display {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 30px;
+            width: 100%;
         }
 
         .chord-card {
             background: white;
             padding: 20px;
             border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             border: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            /* ป้องกันข้อมูลภายในล้นการ์ด */
         }
 
-        .chord-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; color: var(--accent); }
-        .chord-pos { font-size: 1rem; color: #7f8c8d; margin-bottom: 15px; }
-        
-        .chart-container { width: 100%; height: 320px; }
+        .chord-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--accent);
+        }
+
+        .chord-pos {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        /* จำกัดขนาดและจัดตำแหน่งกล่องแสดง SVG */
+        .chart-container {
+            width: 100%;
+            height: 320px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* บังคับให้ SVG ย่อขยายตามสัดส่วนกล่อง ไม่ให้ล้น */
+        .chart-container svg {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
 
         /* Loading Spinner */
         .loader {
@@ -83,10 +141,23 @@
             display: inline-block;
             margin-top: 20px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hidden { display: none; }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -125,7 +196,7 @@
     <script>
         let fullChordDb = null;
 
-        // 1. ดึงข้อมูลคอร์ดทั้งหมดจาก GitHub ของ tombatossals (มาตรฐานโลก)
+        // 1. ดึงข้อมูลคอร์ดทั้งหมดจาก GitHub
         async function fetchChordDb() {
             try {
                 const response = await fetch('https://raw.githubusercontent.com/tombatossals/chords-db/master/lib/guitar.json');
@@ -144,7 +215,6 @@
             document.getElementById('loading-status').innerText = 'ฐานข้อมูลพร้อมใช้งาน!';
             document.getElementById('main-controls').classList.remove('hidden');
 
-            // สร้างรายการ Suffix (major, minor, 7, etc.) จากข้อมูลที่มีจริง
             const suffixes = new Set();
             Object.values(fullChordDb).forEach(chordVariations => {
                 chordVariations.forEach(v => suffixes.add(v.suffix));
@@ -158,10 +228,8 @@
                 suffixSelect.appendChild(opt);
             });
 
-            // ตั้งค่าเริ่มต้น
             suffixSelect.value = 'major';
             
-            // ผูก Event
             document.getElementById('root-note').addEventListener('change', renderChords);
             suffixSelect.addEventListener('change', renderChords);
 
@@ -174,7 +242,6 @@
             const display = document.getElementById('chord-display');
             display.innerHTML = '';
 
-            // ค้นหาคอร์ดที่เลือก
             const chordData = fullChordDb[root].find(c => c.suffix === suffix);
 
             if (!chordData) {
@@ -182,7 +249,6 @@
                 return;
             }
 
-            // วนลูปแสดงทุก Position (เฟรตต่างๆ)
             chordData.positions.forEach((pos, index) => {
                 const cardId = `chord-art-${index}`;
                 const card = document.createElement('div');
@@ -194,10 +260,8 @@
                 `;
                 display.appendChild(card);
 
-                // แปลงข้อมูลจาก DB เข้าสู่ SVGuitar Format
                 const chart = new svguitar.SVGuitarChord(`#${cardId}`);
                 
-                // คำนวณนิ้วกด
                 const fingers = [];
                 pos.frets.forEach((fret, i) => {
                     if (fret > 0) {
@@ -207,7 +271,6 @@
                     }
                 });
 
-                // ตั้งค่าการวาด
                 chart.configure({
                     strings: 6,
                     frets: 5,
@@ -219,7 +282,7 @@
                 })
                 .chord({
                     fingers: fingers,
-                    barres: pos.barres ? pos.barres.map(b => ({ fret: b, fromString: 6, toString: 1 })) : [], // โดยประมาณ
+                    barres: pos.barres ? pos.barres.map(b => ({ fret: b, fromString: 6, toString: 1 })) : [],
                     silent: pos.frets.map((f, i) => f === -1 ? 6 - i : null).filter(n => n),
                     open: pos.frets.map((f, i) => f === 0 ? 6 - i : null).filter(n => n)
                 })
@@ -227,8 +290,8 @@
             });
         }
 
-        // เริ่มโหลดข้อมูลเมื่อเปิดหน้าเว็บ
         fetchChordDb();
     </script>
 </body>
+
 </html>
