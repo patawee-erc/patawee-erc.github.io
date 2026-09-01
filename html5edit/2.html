@@ -52,8 +52,9 @@
         button.font-btn { background-color: #555; border: 1px solid #666; min-width: 35px; }
         button.font-btn:hover { background-color: #666; }
         
-        /* สไตล์สำหรับปุ่มที่เกี่ยวกับการจัดการบรรทัด */
+        /* สไตล์สำหรับปุ่มที่เกี่ยวกับการจัดการบรรทัดและ Comment */
         button.single-break { background-color: #1abc9c; }
+        button.remove-comment { background-color: #e74c3c; }
         
         .auto-run-label { font-size: 0.8rem; margin-left: 15px; cursor: pointer; user-select: none; white-space: nowrap; }
         .container { display: flex; flex: 1; width: 100%; height: calc(100vh - 50px); position: relative; }
@@ -109,7 +110,8 @@
             <button class="font-btn" onclick="changeFontSize(2)" title="เพิ่มขนาด">A+</button>
             <span style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></span>
             
-            <!-- ปุ่มจัดการเว้นบรรทัด -->
+            <!-- ปุ่มจัดการ Comment และเว้นบรรทัด -->
+            <button class="remove-comment" onclick="removeComments()" title="ลบ Comment ทั้งหมด (//, /* */, <!-- -->)">🧹 Remove Comments</button>
             <button class="single-break" onclick="keepSingleLineBreak()" title="ยุบแถวว่างหลายบรรทัดให้เหลือบรรทัดเดียว">🚫 Keep Single Break</button>
             
             <button class="clear" onclick="clearCode()">Clear</button>
@@ -336,6 +338,35 @@
             var op = { identifier: id, range: range, text: text, forceMoveMarkers: true };
             editor.executeEdits("my-source", [op]);
             editor.pushUndoStop();
+        }
+
+        // ฟังก์ชันลบ Comment ทุกประเภท (//, /* */, <!-- -->)
+        function removeComments() {
+            if (!editor) return;
+
+            function stripComments(text) {
+                // 1. ลบ HTML Comments: <!-- ... -->
+                let res = text.replace(/<!--[\s\S]*?-->/g, '');
+                // 2. ลบ Multi-line Comments: /* ... */
+                res = res.replace(/\/\*[\s\S]*?\*\//g, '');
+                // 3. ลบ Single-line Comments: // ... (เว้นกรณี http:// หรือ https://)
+                res = res.replace(/(?<!:)\/\/.*$/gm, '');
+                return res;
+            }
+
+            var selectedText = getSelectedText();
+            if (selectedText) {
+                replaceSelection(stripComments(selectedText));
+            } else {
+                var code = editor.getValue();
+                if (!code.trim()) {
+                    alert("ไม่มีข้อความในช่องแก้ไข");
+                    return;
+                }
+                if (confirm("คุณต้องการลบ Comment ทั้งหมดในโค้ดหรือไม่?")) {
+                    editor.setValue(stripComments(code));
+                }
+            }
         }
 
         function keepSingleLineBreak() {
