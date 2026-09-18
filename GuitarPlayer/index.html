@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9347/9347284.png">
+    <title>🎸 Guitar Chord Player Studio</title>
+    
+    <!-- Library สำหรับวาดรูปคอร์ด -->
+    <script src="https://omnibrain.github.io/svguitar/js/svguitar.umd.js"></script>
+    
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --playing: #10b981;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: var(--primary);
+            user-select: none;
+        }
+
+        .container { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            text-align: center; 
+        }
+
+        header h1 { 
+            margin: 0 0 5px 0; 
+            font-size: 2.2rem;
+            color: #0f172a;
+        }
+
+        .status { 
+            color: #64748b; 
+            font-size: 0.95rem; 
+            margin-bottom: 20px; 
+        }
+
+        /* แผงควบคุมระบบเสียง */
+        .player-panel {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 18px 25px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .control-group input[type="range"] {
+            cursor: pointer;
+            width: 130px;
+        }
+
+        .toggle-btn-group {
+            display: flex;
+            background: #e2e8f0;
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .toggle-btn {
+            border: none;
+            padding: 7px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            background: transparent;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: white;
+            color: var(--accent);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-loop-play {
+            background: var(--playing);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-loop-play.stopped {
+            background: #ef4444;
+        }
+
+        /* บอร์ดแป้นคอร์ด */
+        .deck-container {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+        }
+
+        .deck-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chord-board {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            min-height: 90px;
+            padding: 12px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        /* ปุ่มคอร์ด */
+        .chord-btn {
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            min-width: 90px;
+            height: 80px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #1e293b;
+            cursor: pointer;
+            transition: transform 0.05s ease, background 0.08s ease, border-color 0.08s ease;
+            position: relative;
+            box-shadow: 0 3px 6px -1px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .chord-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        /* สถานะกำลังเล่นวนลูป (Looping) */
+        .chord-btn.is-looping {
+            border-color: var(--playing) !important;
+            background: #f0fdf4 !important;
+            color: #047857 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .chord-btn.is-looping::after {
+            content: '🔁';
+            position: absolute;
+            bottom: 3px;
+            right: 4px;
+            font-size: 10px;
+        }
+
+        /* แอนิเมชันจังหวะดีดสาย */
+        .chord-btn.active-strum {
+            background: #bbf7d0 !important;
+            border-color: #059669 !important;
+            color: #064e3b !important;
+            transform: scale(0.94);
+        }
+
+        .chord-btn .btn-del {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+
+        .chord-btn .btn-del:hover {
+            color: #ef4444;
+        }
+
+        /* แผงพิมพ์ชื่อคอร์ด */
+        .input-panel-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .type-add-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .type-input {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            font-size: 1rem;
+            width: 320px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .type-input:focus {
+            border-color: var(--accent);
+        }
+
+        select, .btn-secondary {
+            padding: 9px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.95rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .btn-action {
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-action:hover { background: var(--accent-hover); }
+
+        /* แสดงภาพตารางคอร์ด */
+        .viewer-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .chord-chart-card {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 16px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            display: inline-block;
+        }
+
+        #chart-svg {
+            width: 180px;
+            height: 220px;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🎸 Guitar Chord Player Studio</h1>
+            <div id="loading-status" class="status">กำลังโหลดฐานข้อมูลคอร์ด...</div>
+        </header>
+
+        <!-- กล่องปรับแต่งเสียงและการเล่น -->
+        <div class="player-panel">
+            <div class="control-group">
+                <span>โหมดการเล่น</span>
+                <div class="toggle-btn-group">
+                    <button class="toggle-btn active" id="mode-single" onclick="setPlayMode('single')">ครั้งเดียว</button>
+                    <button class="toggle-btn" id="mode-loop" onclick="setPlayMode('loop')">เล่นลูป (วนคอร์ดเดิม)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span>ความเร็วลูป: <span id="bpm-val">85</span> BPM</span>
+                <input type="range" id="bpm-slider" min="40" max="180" value="85" oninput="updateBPM(this.value)">
+            </div>
+
+            <div class="control-group">
+                <span>สปีดดีดสาย: <span id="strum-val">เร็วทันใจ</span></span>
+                <input type="range" id="strum-slider" min="5" max="60" value="18" oninput="updateStrumSpeed(this.value)">
+            </div>
+
+            <!-- ปุ่มเปิด/ปิดลูป -->
+            <button class="btn-loop-play hidden" id="btn-loop-toggle" onclick="toggleLoopPlay()">
+                <span id="loop-icon">▶</span> <span id="loop-text">เริ่มลูป</span>
+            </button>
+        </div>
+
+        <!-- แป้นคอร์ด (Chord Soundboard) -->
+        <div class="deck-container">
+            <div class="deck-header">
+                <span style="font-weight: bold; font-size: 1.1rem;">แป้นคอร์ด (คลิกเพื่อดีด):</span>
+                <div>
+                    <span style="font-size: 0.9rem; color: #64748b;">ชุดยอดฮิต: </span>
+                    <button class="btn-secondary" onclick="loadPreset('C-Am-F-G')">C - Am - F - G</button>
+                    <button class="btn-secondary" onclick="loadPreset('G-Em-C-D')">G - Em - C - D</button>
+                    <button class="btn-secondary" onclick="clearDeck()">ล้างบอร์ด</button>
+                </div>
+            </div>
+
+            <div class="chord-board" id="chord-board"></div>
+
+            <div class="input-panel-wrapper">
+                <!-- 1. พิมพ์ชื่อคอร์ด เช่น A,Em,C -->
+                <div class="type-add-row">
+                    <input type="text" id="type-input" class="type-input" placeholder="พิมพ์ชื่อคอร์ด เช่น A, Em, C, G7" onkeypress="handleInputKey(event)">
+                    <button class="btn-secondary btn-action" onclick="addChordsFromInput()">+ เพิ่มจากข้อความ</button>
+                </div>
+
+                <!-- 2. เลือกจาก Dropdown -->
+                <div style="font-size: 0.9rem; color: #64748b;">หรือเลือกคอร์ดทีละตัว:</div>
+                <div>
+                    <select id="root-note">
+                        <option value="C">C</option>
+                        <option value="C#">C#</option>
+                        <option value="D">D</option>
+                        <option value="Eb">D#</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="F#">F#</option>
+                        <option value="G">G</option>
+                        <option value="Ab">G#</option>
+                        <option value="A">A</option>
+                        <option value="Bb">A#</option>
+                        <option value="B">B</option>
+                    </select>
+
+                    <select id="chord-suffix"></select>
+                    <button class="btn-secondary btn-action" onclick="addDropdownChord()">+ เพิ่มคอร์ด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- แสดงภาพตารางคอร์ดปัจจุบัน -->
+        <div class="viewer-container">
+            <div class="chord-chart-card">
+                <div style="font-weight: bold; margin-bottom: 5px; font-size: 1.2rem;" id="chart-chord-name">-</div>
+                <div id="chart-svg"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. Audio Engine (Web Audio API)
+        // ==========================================
+        let audioCtx = null;
+        let strumSpreadMs = 18;
+        const OPEN_STRINGS_MIDI = [40, 45, 50, 55, 59, 64];
+
+        function ensureAudioReady() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function midiToFreq(midi) {
+            return 440 * Math.pow(2, (midi - 69) / 12);
+        }
+
+        function playPluckedString(midiNote, startTime) {
+            const freq = midiToFreq(midiNote);
+            const now = startTime;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(freq * 5.5, now);
+            filter.frequency.exponentialRampToValueAtTime(freq * 0.8, now + 1.2);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.35, now + 0.002);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + 1.9);
+        }
+
+        function strumGuitar(frets, baseFret = 1) {
+            ensureAudioReady();
+            const now = audioCtx.currentTime;
+            let playedCount = 0;
+
+            frets.forEach((fret, stringIdx) => {
+                if (fret === -1) return;
+
+                const actualFret = fret === 0 ? 0 : (baseFret - 1) + fret;
+                const midiNote = OPEN_STRINGS_MIDI[stringIdx] + actualFret;
+                const stringTime = now + (playedCount * (strumSpreadMs / 1000));
+                
+                playPluckedString(midiNote, stringTime);
+                playedCount++;
+            });
+        }
+
+        // ==========================================
+        // 2. ข้อมูลและการจัดการคอร์ด
+        // ==========================================
+        let fullChordDb = null;
+        let myDeck = [];
+        let playMode = 'single'; // 'single' หรือ 'loop'
+        let bpm = 85;
+        let loopIntervalId = null;
+        let activeLoopIndex = -1; // เก็บ index ของคอร์ดที่กำลังลูปอยู่
+
+        async function fetchChordDb() {
+            try {
+                const res = await fetch('https://raw.githubusercontent.com/tombatossals/chords-db/master/lib/guitar.json');
+                const data = await res.json();
+                fullChordDb = data.chords;
+                initApp();
+            } catch (e) {
+                document.getElementById('loading-status').innerText = 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
+            }
+        }
+
+        function initApp() {
+            document.getElementById('loading-status').innerText = 'พร้อมใช้งาน! พิมพ์ชื่อคอร์ดหรือคลิกเพื่อดีดได้ทันที';
+            
+            const suffixes = new Set();
+            Object.values(fullChordDb).forEach(variations => {
+                variations.forEach(v => suffixes.add(v.suffix));
+            });
+
+            const suffixSelect = document.getElementById('chord-suffix');
+            Array.from(suffixes).sort().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.innerText = s === 'major' ? 'Major' : s;
+                suffixSelect.appendChild(opt);
+            });
+            suffixSelect.value = 'major';
+
+            loadPreset('C-Am-F-G');
+        }
+
+        function toSharpDisplay(root) {
+            const map = { 'Eb': 'D#', 'Ab': 'G#', 'Bb': 'A#' };
+            return map[root] || root;
+        }
+
+        function parseChordToken(token) {
+            token = token.trim();
+            if (!token) return null;
+
+            const match = token.match(/^([A-Ga-g][#b]?)(.*)$/);
+            if (!match) return null;
+
+            let root = match[1].charAt(0).toUpperCase() + (match[1].slice(1) || '');
+            let rawSuffix = match[2].trim();
+
+            const mapToDbRoot = { 'Db': 'C#', 'D#': 'Eb', 'Gb': 'F#', 'G#': 'Ab', 'A#': 'Bb' };
+            if (mapToDbRoot[root]) root = mapToDbRoot[root];
+
+            let suffix = rawSuffix;
+            if (suffix === '' || suffix.toLowerCase() === 'maj') suffix = 'major';
+            else if (suffix === 'm' || suffix.toLowerCase() === 'min') suffix = 'minor';
+
+            if (fullChordDb && fullChordDb[root]) {
+                const found = fullChordDb[root].find(c => c.suffix.toLowerCase() === suffix.toLowerCase());
+                if (found) return { root, suffix: found.suffix };
+            }
+            return null;
+        }
+
+        function addChordsFromInput() {
+            const input = document.getElementById('type-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const tokens = text.split(/[,]+/).map(t => t.trim()).filter(Boolean);
+            let notFound = [];
+
+            tokens.forEach(token => {
+                const parsed = parseChordToken(token);
+                if (parsed) {
+                    addChordToDeck(parsed.root, parsed.suffix);
+                } else {
+                    notFound.push(token);
+                }
+            });
+
+            if (notFound.length > 0) {
+                alert(`ไม่พบคอร์ดดังต่อไปนี้: ${notFound.join(', ')}`);
+            }
+            input.value = '';
+        }
+
+        function handleInputKey(e) {
+            if (e.key === 'Enter') addChordsFromInput();
+        }
+
+        function addChordToDeck(root, suffix) {
+            const chordData = fullChordDb[root]?.find(c => c.suffix === suffix);
+            if (!chordData || !chordData.positions || chordData.positions.length === 0) return;
+
+            const item = {
+                id: Date.now() + Math.random(),
+                root,
+                suffix,
+                displayName: `${toSharpDisplay(root)}${suffix === 'major' ? '' : (suffix === 'minor' ? 'm' : suffix)}`,
+                position: chordData.positions[0]
+            };
+
+            myDeck.push(item);
+            renderDeck();
+        }
+
+        function addDropdownChord() {
+            const root = document.getElementById('root-note').value;
+            const suffix = document.getElementById('chord-suffix').value;
+            addChordToDeck(root, suffix);
+        }
+
+        function removeChord(id, e) {
+            e.stopPropagation();
+            const index = myDeck.findIndex(item => item.id === id);
+            if (activeLoopIndex === index) {
+                stopLoop();
+            }
+            myDeck = myDeck.filter(item => item.id !== id);
+            renderDeck();
+        }
+
+        function renderDeck() {
+            const board = document.getElementById('chord-board');
+            board.innerHTML = '';
+
+            if (myDeck.length === 0) {
+                board.innerHTML = `<span style="color:#94a3b8; align-self:center;">ยังไม่มีคอร์ด พิมพ์คอร์ดด้านล่าง เช่น A, Em, C เพื่อเพิ่มได้เลย</span>`;
+                return;
+            }
+
+            myDeck.forEach((chord, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `chord-btn ${activeLoopIndex === idx ? 'is-looping' : ''}`;
+                btn.id = `chord-btn-${idx}`;
+                btn.innerHTML = `
+                    <button class="btn-del" title="ลบ" onclick="removeChord(${chord.id}, event)">✕</button>
+                    <span>${chord.displayName}</span>
+                `;
+
+                // แตะปุ๊บ ทำงานทันที
+                btn.addEventListener('pointerdown', (e) => {
+                    if (e.target.classList.contains('btn-del')) return;
+                    handleChordClick(idx);
+                });
+
+                board.appendChild(btn);
+            });
+
+            if (myDeck.length > 0 && activeLoopIndex === -1) {
+                drawChordDiagram(myDeck[0]);
+            }
+        }
+
+        // เมื่อคลิกที่ปุ่มคอร์ด
+        function handleChordClick(index) {
+            const chord = myDeck[index];
+            if (!chord) return;
+
+            if (playMode === 'single') {
+                playSingleChord(chord, index);
+            } else {
+                // ในโหมด Loop:
+                // ถ้าคลิกคอร์ดเดิมที่กำลังลูปอยู่ -> หยุดลูป
+                if (activeLoopIndex === index && loopIntervalId) {
+                    stopLoop();
+                } else {
+                    // ถ้าคลิกคอร์ดใหม่ หรือเริ่มใหม่ -> วนลูปเฉพาะคอร์ดนี้
+                    startLoopForChord(index);
+                }
+            }
+        }
+
+        function playSingleChord(chord, index) {
+            strumGuitar(chord.position.frets, chord.position.baseFret);
+            drawChordDiagram(chord);
+
+            const btn = document.getElementById(`chord-btn-${index}`);
+            if (btn) {
+                btn.classList.add('active-strum');
+                setTimeout(() => btn.classList.remove('active-strum'), 150);
+            }
+        }
+
+        function drawChordDiagram(chord) {
+            document.getElementById('chart-chord-name').innerText = chord.displayName;
+            const container = document.getElementById('chart-svg');
+            container.innerHTML = '';
+
+            const chart = new svguitar.SVGuitarChord('#chart-svg');
+            const pos = chord.position;
+
+            const fingers = [];
+            pos.frets.forEach((fret, i) => {
+                if (fret > 0) {
+                    fingers.push([6 - i, fret, pos.fingers[i] > 0 ? pos.fingers[i].toString() : '']);
+                }
+            });
+
+            chart.configure({
+                strings: 6,
+                frets: 5,
+                position: pos.baseFret,
+                fixedDiagramPosition: true,
+                fingerSize: 0.7,
+                title: ''
+            })
+            .chord({
+                fingers: fingers,
+                barres: pos.barres ? pos.barres.map(b => ({ fret: b, fromString: 6, toString: 1 })) : [],
+                silent: pos.frets.map((f, i) => f === -1 ? 6 - i : null).filter(n => n),
+                open: pos.frets.map((f, i) => f === 0 ? 6 - i : null).filter(n => n)
+            })
+            .draw();
+        }
+
+        function clearDeck() {
+            stopLoop();
+            myDeck = [];
+            renderDeck();
+        }
+
+        function loadPreset(name) {
+            stopLoop();
+            myDeck = [];
+            const presets = {
+                'C-Am-F-G': ['C', 'A minor', 'F', 'G'],
+                'G-Em-C-D': ['G', 'E minor', 'C', 'D']
+            };
+            presets[name].forEach(c => {
+                const p = parseChordToken(c);
+                if (p) addChordToDeck(p.root, p.suffix);
+            });
+        }
+
+        // ==========================================
+        // 3. ระบบ Loop (เล่นคอร์ดเดิมซ้ำๆ)
+        // ==========================================
+        function setPlayMode(mode) {
+            playMode = mode;
+            document.getElementById('mode-single').classList.toggle('active', mode === 'single');
+            document.getElementById('mode-loop').classList.toggle('active', mode === 'loop');
+            
+            const loopBtn = document.getElementById('btn-loop-toggle');
+            if (mode === 'loop') {
+                loopBtn.classList.remove('hidden');
+            } else {
+                loopBtn.classList.add('hidden');
+                stopLoop();
+            }
+        }
+
+        function updateBPM(val) {
+            bpm = parseInt(val);
+            document.getElementById('bpm-val').innerText = bpm;
+            if (loopIntervalId && activeLoopIndex !== -1) {
+                // อัปเดตความเร็วรอบทันทีขณะที่กำลังเล่น
+                const currentIndex = activeLoopIndex;
+                stopLoop();
+                startLoopForChord(currentIndex);
+            }
+        }
+
+        function updateStrumSpeed(val) {
+            strumSpreadMs = parseInt(val);
+            const label = document.getElementById('strum-val');
+            if (strumSpreadMs <= 10) label.innerText = 'ทันที (Slap)';
+            else if (strumSpreadMs <= 25) label.innerText = 'เร็วทันใจ';
+            else if (strumSpreadMs <= 40) label.innerText = 'ปานกลาง';
+            else label.innerText = 'เกาช้าๆ';
+        }
+
+        function toggleLoopPlay() {
+            if (loopIntervalId) {
+                stopLoop();
+            } else {
+                // ถ้ายังไม่มีคอร์ดที่เลือก ให้เริ่มจากคอร์ดแรก
+                const targetIdx = activeLoopIndex >= 0 ? activeLoopIndex : 0;
+                startLoopForChord(targetIdx);
+            }
+        }
+
+        // เริ่มเล่นลูปเฉพาะคอร์ดเดิมซ้ำๆ
+        function startLoopForChord(index) {
+            if (myDeck.length === 0 || !myDeck[index]) return;
+            ensureAudioReady();
+            stopLoop(); // เคลียร์ลูปเก่าก่อน
+
+            activeLoopIndex = index;
+            updateLoopVisuals(true);
+
+            // ความยาว 1 รอบ = 2 Beats (จังหวะมาตรฐานสตรัมคอร์ด)
+            const intervalMs = (60 / bpm) * 1000 * 2;
+
+            // ดีดครั้งแรกทันที
+            playSingleChord(myDeck[activeLoopIndex], activeLoopIndex);
+
+            // ตั้ง Loop เล่นซ้ำเฉพาะคอร์ดเดิม
+            loopIntervalId = setInterval(() => {
+                if (myDeck[activeLoopIndex]) {
+                    playSingleChord(myDeck[activeLoopIndex], activeLoopIndex);
+                } else {
+                    stopLoop();
+                }
+            }, intervalMs);
+        }
+
+        function stopLoop() {
+            if (loopIntervalId) {
+                clearInterval(loopIntervalId);
+                loopIntervalId = null;
+            }
+            activeLoopIndex = -1;
+            updateLoopVisuals(false);
+        }
+
+        function updateLoopVisuals(isPlaying) {
+            const loopBtn = document.getElementById('btn-loop-toggle');
+            if (isPlaying) {
+                document.getElementById('loop-icon').innerText = '⏹';
+                document.getElementById('loop-text').innerText = 'หยุดลูป';
+                loopBtn.classList.add('stopped');
+            } else {
+                document.getElementById('loop-icon').innerText = '▶';
+                document.getElementById('loop-text').innerText = 'เริ่มลูป';
+                loopBtn.classList.remove('stopped');
+            }
+
+            // เพิ่ม class แสดงสถานะที่ปุ่มคอร์ด
+            document.querySelectorAll('.chord-btn').forEach((btn, idx) => {
+                btn.classList.toggle('is-looping', isPlaying && idx === activeLoopIndex);
+            });
+        }
+
+        // ตื่นระบบเสียงเมื่อคลิกหน้าจอครั้งแรก
+        window.addEventListener('pointerdown', ensureAudioReady, { once: true });
+
+        fetchChordDb();
+    </script>
+</body>
+</html>
