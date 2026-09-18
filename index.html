@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +18,6 @@
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
             --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-
         body {
             font-family: 'Kanit', sans-serif;
             background-color: var(--bg);
@@ -28,8 +26,6 @@
             overflow-x: hidden;
             min-height: 100vh;
         }
-
-
         .bg-shape {
             position: fixed;
             z-index: -1;
@@ -37,7 +33,6 @@
             filter: blur(80px);
             opacity: 0.3;
         }
-
         .shadow-1 {
             width: 400px;
             height: 400px;
@@ -45,7 +40,6 @@
             top: -100px;
             right: -100px;
         }
-
         .shadow-2 {
             width: 300px;
             height: 300px;
@@ -53,12 +47,10 @@
             bottom: -50px;
             left: -50px;
         }
-
         header {
             text-align: center;
             padding: 60px 20px 40px;
         }
-
         .main-icon {
             font-size: 3.5rem;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -66,26 +58,21 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 20px;
         }
-
         h1 {
             font-size: 2.2rem;
             margin: 10px 0;
             font-weight: 600;
         }
-
         .subtitle {
             color: var(--text-sub);
             font-size: 1.1rem;
             margin-bottom: 30px;
         }
-
-
         .search-container {
             position: relative;
             max-width: 500px;
             margin: 0 auto;
         }
-
         .search-container i {
             position: absolute;
             left: 20px;
@@ -93,7 +80,6 @@
             transform: translateY(-50%);
             color: var(--text-sub);
         }
-
         .search-container input {
             width: 100%;
             padding: 15px 15px 15px 50px;
@@ -105,26 +91,21 @@
             transition: var(--transition);
             box-sizing: border-box;
         }
-
         .search-container input:focus {
             border-color: var(--primary);
             box-shadow: 0 10px 20px rgba(67, 97, 238, 0.1);
         }
-
-        /* Layout */
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-
         .app-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
         }
-
-
         .card {
             background: var(--white);
             border-radius: 20px;
@@ -140,13 +121,11 @@
             opacity: 0;
             transform: translateY(20px);
         }
-
         .card:hover {
             transform: translateY(-8px) scale(1.02);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
             border-color: var(--primary);
         }
-
         .card-icon {
             width: 65px;
             height: 65px;
@@ -158,122 +137,97 @@
             margin-right: 20px;
             flex-shrink: 0;
         }
-
-
         .blue {
             background: #e7f0ff;
             color: #4361ee;
         }
-
         .green {
             background: #e8f7f0;
             color: #2ecc71;
         }
-
         .purple {
             background: #f3efff;
             color: #7209b7;
         }
-
         .orange {
             background: #fff5eb;
             color: #f39c12;
         }
-
         .pink {
             background: #ffeef8;
             color: #f72585;
         }
-
         .teal {
             background: #e6fffa;
             color: #1abc9c;
         }
-
         .red {
             background: #fff0f0;
             color: #e74c3c;
         }
-
         .dark {
             background: #f1f1f1;
             color: #333;
         }
-
         .card-content {
             flex-grow: 1;
         }
-
         .card-content h3 {
             margin: 0;
             font-size: 1.2rem;
             color: var(--text-main);
             font-weight: 500;
         }
-
         .card-content p {
             margin: 5px 0 0;
             font-size: 0.9rem;
             color: var(--text-sub);
             line-height: 1.4;
         }
-
         .card-arrow {
             color: #f0f0f0;
             transition: var(--transition);
             margin-left: 10px;
         }
-
         .card:hover .card-arrow {
             color: var(--primary);
             transform: translateX(5px);
         }
-
         footer {
             text-align: center;
             padding: 60px 20px;
             color: var(--text-sub);
             font-size: 0.9rem;
         }
-
-
         @media (max-width: 600px) {
             .app-grid {
                 grid-template-columns: 1fr;
             }
-
             header h1 {
                 font-size: 1.8rem;
             }
-
             .card {
                 padding: 18px;
             }
         }
     </style>
 </head>
-
 <body>
-
     <div class="bg-shape shadow-1"></div>
     <div class="bg-shape shadow-2"></div>
-
     <header>
         <div class="logo-area">
             <i class="fa-solid fa-m main-icon"></i>
         </div>
         <h1>My App Portal</h1>
         <p class="subtitle">ศูนย์รวมลิงก์แอปพลิเคชันและเครื่องมือดิจิทัล</p>
-
         <div class="search-container">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="appSearch" placeholder="ค้นหาชื่อระบบ..." onkeyup="filterApps()">
         </div>
     </header>
-
     <main class="container">
         <div class="app-grid" id="appGrid">
-
             <a href="https://patawee-erc.github.io/profile/" class="card" target="_blank">
                 <div class="card-icon dark"><i class="fa-solid fa-circle-user"></i></div>
                 <div class="card-content">
@@ -282,7 +236,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/shoturl" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-share-nodes"></i></div>
                 <div class="card-content">
@@ -291,7 +244,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/qr" class="card" target="_blank">
                 <div class="card-icon teal"><i class="fa-solid fa-qrcode"></i></div>
                 <div class="card-content">
@@ -300,9 +252,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
-
-
             <a href="https://patawee-erc.github.io/PTT/login" class="card" target="_blank">
                 <div class="card-icon orange"><i class="fa-solid fa-chart-column"></i></div>
                 <div class="card-content">
@@ -311,7 +260,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/LuckyDraw" class="card" target="_blank">
                 <div class="card-icon pink"><i class="fa-solid fa-trophy"></i></div>
                 <div class="card-content">
@@ -320,7 +268,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/Gachapon" class="card" target="_blank">
                 <div class="card-icon red"><i class="fa-solid fa-circle-half-stroke"></i></div>
                 <div class="card-content">
@@ -329,7 +276,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/LiveChat/index" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-comments"></i></div>
                 <div class="card-content">
@@ -338,7 +284,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/PhotoGallery/" class="card" target="_blank">
                 <div class="card-icon green"><i class="fa-solid fa-photo-film"></i></div>
                 <div class="card-content">
@@ -347,7 +292,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/html5edit/" class="card" target="_blank">
                 <div class="card-icon dark"><i class="fa-solid fa-code"></i></div>
                 <div class="card-content">
@@ -356,7 +300,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/ocr/" class="card" target="_blank">
                 <div class="card-icon teal"><i class="fa-solid fa-text-slash"></i></div>
                 <div class="card-content">
@@ -365,7 +308,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/GeminiExportHtml/" class="card" target="_blank">
                 <div class="card-icon orange"><i class="fa-solid fa-file-powerpoint"></i></div>
                 <div class="card-content">
@@ -374,7 +316,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/resize/" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-image"></i></div>
                 <div class="card-content">
@@ -383,7 +324,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/dice/" class="card" target="_blank">
                 <div class="card-icon pink"><i class="fa-solid fa-dice"></i></div>
                 <div class="card-content">
@@ -392,7 +332,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/GeminiExportHtml/v2.html" class="card" target="_blank">
                 <div class="card-icon red"><i class="fa-solid fa-person-chalkboard"></i></div>
                 <div class="card-content">
@@ -401,8 +340,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
-
             <a href="https://patawee-erc.github.io/mypresent/" class="card" target="_blank">
                 <div class="card-icon green"><i class="fa-solid fa-person-chalkboard"></i></div>
                 <div class="card-content">
@@ -411,7 +348,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/pptx/" class="card" target="_blank">
                 <div class="card-icon red"><i class="fa-solid fa-chalkboard-user"></i></div>
                 <div class="card-content">
@@ -420,7 +356,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/New_Face_Scan/" class="card" target="_blank">
                 <div class="card-icon purple"><i class="fa-solid fa-id-badge"></i></div>
                 <div class="card-content">
@@ -429,7 +364,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/html_text_edit/" class="card" target="_blank">
                 <div class="card-icon dark"><i class="fa-solid fa-hashtag"></i></div>
                 <div class="card-content">
@@ -438,7 +372,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/mappin/" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-map-location-dot"></i></div>
                 <div class="card-content">
@@ -447,7 +380,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/chrord/" class="card" target="_blank">
                 <div class="card-icon green"><i class="fa-solid fa-guitar"></i></div>
                 <div class="card-content">
@@ -456,7 +388,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/HandTracking/" class="card" target="_blank">
                 <div class="card-icon pink"><i class="fa-regular fa-hand-spock"></i></div>
                 <div class="card-content">
@@ -465,7 +396,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/WatermarkPDF/" class="card" target="_blank">
                 <div class="card-icon orange"><i class="fa-solid fa-file-pdf"></i></div>
                 <div class="card-content">
@@ -474,7 +404,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/Network_Diagnostic_Tools/" class="card" target="_blank">
                 <div class="card-icon red"><i class="fa-solid fa-diagram-project"></i></div>
                 <div class="card-content">
@@ -483,7 +412,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/ocr/ocr2.html" class="card" target="_blank">
                 <div class="card-icon blue"><i class="fa-solid fa-text-slash"></i></div>
                 <div class="card-content">
@@ -492,7 +420,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/WatermarkPDF/v2.html" class="card" target="_blank">
                 <div class="card-icon purple"><i class="fa-solid fa-file-pdf"></i></div>
                 <div class="card-content">
@@ -501,7 +428,6 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
             <a href="https://patawee-erc.github.io/colorchecker/" class="card" target="_blank">
                 <div class="card-icon green"><i class="fa-solid fa-palette"></i></div>
                 <div class="card-content">
@@ -510,22 +436,26 @@
                 </div>
                 <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
+            <a href="https://patawee-erc.github.io/GuitarPlayer/" class="card" target="_blank">
+                <div class="card-icon dark"><i class="fa-solid fa-guitar"></i></div>
+                <div class="card-content">
+                    <h3>Guitar Chord Player Studio</h3>
+                    <p>simulation guitar chord player</p>
+                </div>
+                <div class="card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
         </div>
     </main>
-
     <footer>
         <p>&copy; 2026 milkomilk </p>
     </footer>
-
     <script>
-        // ฟังก์ชันค้นหาแอป
+        
         function filterApps() {
             const input = document.getElementById('appSearch');
             const filter = input.value.toLowerCase();
             const grid = document.getElementById('appGrid');
             const cards = grid.getElementsByClassName('card');
-
             for (let i = 0; i < cards.length; i++) {
                 const title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
                 const desc = cards[i].getElementsByTagName('p')[0].innerText.toLowerCase();
@@ -537,18 +467,16 @@
                 }
             }
         }
-
-        // Animation ตอนโหลดหน้าเว็บ (Staggered Fade-in)
+        
         document.addEventListener('DOMContentLoaded', () => {
             const cards = document.querySelectorAll('.card');
             cards.forEach((card, index) => {
                 setTimeout(() => {
                     card.style.opacity = '1';
                     card.style.transform = 'translateY(0)';
-                }, index * 80); // ดีเลย์แต่ละการ์ด 80ms
+                }, index * 80); 
             });
         });
     </script>
 </body>
-
 </html>
