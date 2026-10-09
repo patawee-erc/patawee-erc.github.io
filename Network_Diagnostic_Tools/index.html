@@ -194,7 +194,12 @@
         }
 
         .leaflet-container {
-            background: var(--bg0) !important
+            background: #040810 !important
+        }
+
+        /* ปรับสไตล์แผนที่ให้เข้ากับโทน Dark Neon */
+        .leaflet-tile-pane {
+            filter: brightness(0.85) contrast(1.15);
         }
 
         .sb {
@@ -537,11 +542,20 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function(){
-/* === แผนที่ === */
+/* === แผนที่ (แก้ไขใช้ Esri Dark Gray Base & Reference ปลอดภัย ไม่ต้องใช้ API Key) === */
 var map = L.map('map', {zoomControl: false}).setView([20, 105], 3);
 L.control.zoom({position: 'bottomleft'}).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+
+// เลเยอร์แผนที่หลัก: Esri World Dark Gray
+var esriDark = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '&copy; Esri, HERE, Garmin, USGS',
+    maxZoom: 16
+}).addTo(map);
+
+// เลเยอร์ชื่อเมืองและเขตแดน (Labels) เพื่อความชัดเจน
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '',
+    maxZoom: 16
 }).addTo(map);
 
 var allLayers = [], glowL = null, mainL = null, rCoords = [];
@@ -675,15 +689,14 @@ function pinNSLocations(dom, ips){
     });
 }
 
-/* === Traceroute หลักพร้อมระบบ ทะลุ CORS & ระบบสำรอง === */
+/* === Traceroute === */
 function startTrace(){
     var dom = cleanDom(); if(!dom) return;
     clearMap(); setBusy(true);
     $out.innerHTML = ''; $chart.innerHTML = ''; $stats.innerHTML = '';
     tPrint('> real traceroute to ' + dom, 'w');
-    tPrint('<span class="ld"></span> กำลังดึงข้อมูล Traceroute ผ่าน Secure Gateway...', 'm');
+    tPrint('<span class="ld"></span> กำลังดึงข้อมูล Traceroute ผ่าน Gateway...', 'm');
 
-    // ใช้ CORS Proxy เพื่อให้เบราว์เซอร์ส่งคำสั่งได้ไม่ติด CORS Block
     var targetUrl = 'https://api.hackertarget.com/traceroute/?q=' + encodeURIComponent(dom);
     var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
 
@@ -692,7 +705,6 @@ function startTrace(){
         .then(async text => {
             removeLoader();
             
-            // เช็คว่าติดข้อจำกัด API หรือไม่ ถ้าติดให้สลับไปใช้ระบบสำรองทันที
             if(!text || text.includes('API count exeeded') || text.includes('error')){
                 tPrint('ใช้เส้นทางสำรองวิเคราะห์โครงข่ายแบบเรียลไทม์ (Direct Edge Probing)...', 'a');
                 await fallbackTrace(dom);
@@ -735,7 +747,7 @@ function startTrace(){
         });
 }
 
-/* === ระบบสำรอง: ตรวจสอบตำแหน่งของคุณ + ตำแหน่งเซิร์ฟเวอร์ปลายทางจริงผ่าน DNS === */
+/* === ระบบสำรอง: ตำแหน่งเครื่อง + เซิร์ฟเวอร์ปลายทาง === */
 async function fallbackTrace(dom){
     tPrint('');
     tPrint('<span class="ld"></span> กำลังค้นหาตำแหน่งพิกัดของคุณ...', 'm');
@@ -762,7 +774,6 @@ async function fallbackTrace(dom){
     tPrint('พบเป้าหมาย: <span class="c">' + destGeo.city + ', ' + destGeo.country + '</span> (' + targetIP + ') - ' + (destGeo.connection?.isp || destGeo.isp), 'g');
     tPrint('');
 
-    // สุ่มวัด Ping จริงจากเครื่องผู้ใช้
     var startTime = performance.now();
     try { await fetch('https://cloudflare-dns.com/dns-query?name=' + dom, {mode:'cors'}); } catch(e){}
     var endTime = performance.now();
@@ -776,7 +787,7 @@ async function fallbackTrace(dom){
     await renderHopsDirect(hops);
 }
 
-/* === แสดงผลบนแผนที่และ Console === */
+/* === วาดลงแผนที่และคอนโซล === */
 async function processRealHops(rawHops){
     var bounds = L.latLngBounds();
     var delays = [];
