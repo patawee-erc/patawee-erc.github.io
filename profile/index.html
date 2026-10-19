@@ -293,7 +293,7 @@
             line-height: 1
         }
 
-        /* experience cards */
+        /* experience cards (ปรับปรุงตำแหน่งให้อ่านง่ายขึ้น) */
         .work {
             position: relative
         }
@@ -304,10 +304,10 @@
             height: 100vh;
             background: var(--black);
             color: #fff;
-            padding: 60px;
+            padding: 48px 60px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             overflow: hidden;
             border-radius: 28px 28px 0 0
         }
@@ -356,34 +356,39 @@
             display: flex;
             justify-content: space-between;
             font-size: 15px;
-            color: rgba(255, 255, 255, .7)
+            color: rgba(255, 255, 255, .7);
+            flex-shrink: 0
         }
 
-        .card h3 {
-            font-size: clamp(40px, 7vw, 112px);
-            font-weight: 600;
-            letter-spacing: -.05em;
-            line-height: .95;
-            max-width: 12ch
-        }
-
+        /* จัดเนื้อหาของ Card ให้อยู่กึ่งกลางหน้าจอ (Vertical Center) และเรียงจากบนลงล่าง */
         .card-body {
             display: grid;
             grid-template-columns: 1.1fr 1fr;
             gap: 48px;
-            align-items: end
+            align-items: start;
+            margin-top: auto;
+            margin-bottom: auto;
+            width: 100%
+        }
+
+        .card h3 {
+            font-size: clamp(36px, 5.5vw, 88px);
+            font-weight: 600;
+            letter-spacing: -.04em;
+            line-height: 1.05;
+            max-width: 14ch
         }
 
         .card ul {
             list-style: none;
             display: grid;
-            gap: 12px;
-            font-size: 15px;
-            color: rgba(255, 255, 255, .78)
+            gap: 16px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, .82)
         }
 
         .card li {
-            padding-left: 18px;
+            padding-left: 20px;
             position: relative;
             line-height: 1.6
         }
@@ -511,15 +516,21 @@
             }
 
             .card {
-                padding: 24px;
+                padding: 36px 20px;
                 height: auto;
                 min-height: 100vh;
-                gap: 32px
+                gap: 24px;
+                justify-content: flex-start
             }
 
             .card-body {
                 grid-template-columns: 1fr;
-                gap: 28px
+                gap: 24px;
+                margin: 20px 0 auto
+            }
+
+            .card h3 {
+                font-size: 32px
             }
 
             .skills {
@@ -587,7 +598,6 @@
             transform: translateY(-110%)
         }
 
-        /* [แก้ไขจุดนี้] นำ clip-path ซ่อนรูป 100% ออก เพื่อให้รูปแสดงได้ทันทีโดยไม่ถูกบัง */
         .pill {
             opacity: 0;
             transform: translateY(20px);
@@ -731,8 +741,7 @@
 
         <section class="about">
             <div class="pill">
-                <!-- ใส่ fallback onerror เผื่อลิงก์ต้นทาง 404 ให้ใช้ภาพ placeholder แทนได้ -->
-                <img src="https://patawee-erc.github.io/profile/pf.jpg"
+                <img src="https://patawee-erc.github.io/profile/pf.jpg" 
                      alt="Patawee Sabour profile photo"
                      onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';">
             </div>
@@ -793,8 +802,7 @@
                 </article>
                 <article class="card">
                     <div class="card-top">
-                        <span>Development, Automation &amp; Asset Management</span><span>2022 – Present</span>
-                    </div>
+                        <span>Development, Automation &amp; Asset Management</span><span>2022 – Present</span></div>
                     <div class="card-body">
                         <h3>Development, Automation &amp; Assets</h3>
                         <ul>
