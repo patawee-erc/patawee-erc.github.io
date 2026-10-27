@@ -1,1515 +1,1124 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9347/9347284.png">
-    <title>🎸 Guitar Chord Player Studio</title>
-    
-    <script src="https://omnibrain.github.io/svguitar/js/svguitar.umd.js"></script>
-    <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-        }
-        :root {
-            --primary: #1e293b;
-            --accent: #2563eb;
-            --accent-hover: #1d4ed8;
-            --playing: #10b981;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --border: #cbd5e1;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 20px;
-            color: var(--primary);
-            user-select: none;
-        }
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        header h1 {
-            margin: 0 0 5px 0;
-            font-size: 2.2rem;
-            color: #0f172a;
-        }
-        .status {
-            color: #64748b;
-            font-size: 0.95rem;
-            margin-bottom: 20px;
-        }
-        button {
-            font-family: inherit;
-        }
-        
-        .player-panel {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 16px 22px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px 26px;
-            justify-content: space-around;
-            align-items: center;
-        }
-        @media (min-width: 700px) {
-            .player-panel {
-                position: sticky;
-                top: 8px;
-                z-index: 20;
-            }
-        }
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.88rem;
-            font-weight: 600;
-        }
-        .control-group input[type="range"] {
-            cursor: pointer;
-            width: 130px;
-        }
-        .btn-play {
-            background: var(--playing);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-width: 130px;
-            justify-content: center;
-        }
-        .btn-play:active {
-            transform: scale(0.96);
-        }
-        .btn-play.stopped {
-            background: #ef4444;
-        }
-        .stepper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            padding: 4px;
-        }
-        .stepper button {
-            width: 34px;
-            height: 34px;
-            border: none;
-            border-radius: 8px;
-            background: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            color: var(--accent);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        }
-        .stepper button:active {
-            transform: scale(0.92);
-        }
-        .stepper b {
-            min-width: 28px;
-            font-size: 1.15rem;
-        }
-        .chips {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .chip {
-            position: relative;
-            cursor: pointer;
-        }
-        .chip input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .chip span {
-            display: inline-block;
-            padding: 7px 14px;
-            border-radius: 999px;
-            background: #e2e8f0;
-            color: #64748b;
-            font-weight: 600;
-            font-size: 0.88rem;
-            transition: background 0.15s, color 0.15s;
-        }
-        .chip input:checked+span {
-            background: var(--accent);
-            color: #fff;
-        }
-        .chip input:focus-visible+span {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-        
-        .stage {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: stretch;
-        }
-        .now-box {
-            flex: 1 1 320px;
-            background: var(--card);
-            border-radius: 16px;
-            padding: 18px 22px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 10px;
-        }
-        #now-playing {
-            font-size: 1.5rem;
-            font-weight: 800;
-        }
-        .legend {
-            font-size: 0.85rem;
-            color: #64748b;
-            line-height: 1.6;
-        }
-        .chord-chart-card {
-            background: white;
-            padding: 15px 25px;
-            border-radius: 16px;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-            flex: 0 0 auto;
-            margin: 0 auto;
-        }
-        #chart-svg {
-            width: 180px;
-            height: 220px;
-        }
-        
-        .deck-container,
-        .seq-container {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 22px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
-            margin-bottom: 20px;
-        }
-        .deck-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .chord-board {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-            align-items: center;
-            min-height: 90px;
-            padding: 12px;
-            border: 2px dashed #e2e8f0;
-            border-radius: 12px;
-            background: #f8fafc;
-        }
-        .chord-btn {
-            --h: 210;
-            background: hsl(var(--h), 85%, 96%);
-            border: 2px solid hsl(var(--h), 50%, 72%);
-            border-radius: 12px;
-            min-width: 90px;
-            height: 80px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #1e293b;
-            cursor: pointer;
-            transition: transform 0.05s ease, box-shadow 0.08s ease, border-color 0.08s ease;
-            position: relative;
-            box-shadow: 0 3px 6px -1px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-        }
-        .chord-btn:hover {
-            transform: translateY(-2px);
-        }
-        .chord-btn.selected {
-            border-color: hsl(var(--h), 65%, 42%);
-            box-shadow: 0 0 0 3px hsla(var(--h), 65%, 55%, 0.35);
-            transform: translateY(-2px);
-        }
-        .chord-btn.eraser {
-            background: white;
-            border-color: #cbd5e1;
-            font-size: 1rem;
-            color: #64748b;
-        }
-        .chord-btn.eraser.selected {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
-            color: #b91c1c;
-        }
-        .chord-btn .btn-del {
-            position: absolute;
-            top: 2px;
-            right: 4px;
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 2px 4px;
-        }
-        .chord-btn .btn-del:hover {
-            color: #ef4444;
-        }
-        .input-panel-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #f1f5f9;
-        }
-        .type-add-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .type-input {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: 2px solid var(--border);
-            font-size: 1rem;
-            width: 320px;
-            max-width: 100%;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .type-input:focus {
-            border-color: var(--accent);
-        }
-        select,
-        .btn-secondary {
-            padding: 9px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            font-size: 0.95rem;
-            background: white;
-            cursor: pointer;
-        }
-        .btn-action {
-            background: var(--accent);
-            color: white;
-            border: none;
-            font-weight: 600;
-        }
-        .btn-action:hover {
-            background: var(--accent-hover);
-        }
-        
-        .seq-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .seq-title {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-        #measures {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
-            gap: 14px;
-            text-align: left;
-        }
-        .measure {
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 10px 12px 12px;
-            background: #f8fafc;
-            transition: border-color 0.15s, background 0.15s;
-        }
-        .measure.playing {
-            border-color: var(--playing);
-            background: #f0fdf4;
-        }
-        .measure-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            gap: 8px;
-        }
-        .measure-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-        }
-        .measure-tools {
-            display: flex;
-            gap: 6px;
-        }
-        .mini {
-            border: 1px solid var(--border);
-            background: white;
-            border-radius: 8px;
-            padding: 4px 9px;
-            font-size: 0.78rem;
-            cursor: pointer;
-            color: #475569;
-        }
-        .mini:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-        .beats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-        .beat {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 5px;
-        }
-        .beat-num {
-            font-weight: 800;
-            font-size: 0.9rem;
-            color: #475569;
-            text-align: center;
-            margin-bottom: 4px;
-        }
-        .beat-slots {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
-        }
-        .slot {
-            --h: 210;
-            border: 2px solid #e2e8f0;
-            background: #fff;
-            border-radius: 10px;
-            min-height: 66px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            cursor: pointer;
-            padding: 4px 2px;
-            color: #1e293b;
-            transition: background 0.08s, transform 0.06s;
-            touch-action: manipulation;
-        }
-        .slot.up {
-            background: #f8fafc;
-            border-style: dashed;
-        }
-        .slot:hover {
-            border-color: var(--accent);
-        }
-        .slot-tag {
-            font-size: 0.68rem;
-            color: #94a3b8;
-            font-weight: 600;
-        }
-        .slot-chord {
-            font-size: 1.1rem;
-            font-weight: 800;
-            min-height: 1.4em;
-        }
-        .slot.filled {
-            background: hsl(var(--h), 85%, 92%);
-            border-color: hsl(var(--h), 60%, 55%);
-            border-style: solid;
-        }
-        .slot.filled .slot-tag {
-            color: hsl(var(--h), 40%, 35%);
-        }
-        
-        .slot.finger {
-            border-style: solid;
-            border-color: #a78bfa;
-        }
-        .slot.finger .slot-tag {
-            color: #7c3aed;
-            font-weight: 800;
-        }
-        .slot.filled.finger {
-            border-color: #7c3aed;
-        }
-        .slot.playing {
-            background: #bbf7d0;
-            outline: 3px solid var(--playing);
-            transform: scale(1.07);
-            position: relative;
-            z-index: 1;
-        }
-        .slot.filled.playing {
-            background: hsl(var(--h), 90%, 78%);
-        }
-        .empty-hint {
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        @media (max-width: 520px) {
-            body {
-                padding: 12px;
-            }
-            header h1 {
-                font-size: 1.7rem;
-            }
-            #measures {
-                grid-template-columns: 1fr;
-            }
-            .beats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                transition: none !important;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9347/9347284.png">
+<title>Guitar Chord Player Studio</title>
+<script src="https://omnibrain.github.io/svguitar/js/svguitar.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{--primary:#1e293b;--accent:#2563eb;--accent-hover:#1d4ed8;--playing:#10b981;--bg:#f8fafc;--card:#fff;--border:#cbd5e1}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);margin:0;color:var(--primary);user-select:none}
+button{font-family:inherit}
+.app{display:flex;align-items:flex-start;min-height:100vh}
+.container{flex:1 1 auto;min-width:0;max-width:1100px;margin:0 auto;padding:20px;text-align:center}
+header h1{margin:0 0 5px;font-size:2.2rem;color:#0f172a}
+.status{color:#64748b;font-size:.95rem;margin-bottom:20px}
+
+.player-panel{position:sticky;top:0;flex:0 0 290px;width:290px;height:100vh;overflow-y:auto;background:var(--card);padding:16px 18px 24px;box-shadow:4px 0 24px -6px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:16px;z-index:30;text-align:left}
+.app.panel-hidden .player-panel{display:none}
+.panel-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:1.05rem}
+.btn-hide{border:1px solid var(--border);background:#fff;border-radius:8px;padding:5px 10px;font-size:.82rem;cursor:pointer;color:#475569}
+.btn-hide:hover{border-color:var(--accent);color:var(--accent)}
+.control-group{display:flex;flex-direction:column;align-items:stretch;gap:6px;font-size:.88rem;font-weight:600}
+.control-group input[type=range]{cursor:pointer;width:100%}
+.control-group select{width:100%}
+.btn-play{background:var(--playing);color:#fff;border:none;padding:12px 24px;font-size:1.1rem;font-weight:bold;border-radius:12px;cursor:pointer;transition:transform .1s,background .2s;display:flex;align-items:center;gap:8px;justify-content:center}
+.btn-play:active{transform:scale(.96)}
+.btn-play.stopped{background:#ef4444}
+.player-panel .btn-play{width:100%}
+.stepper{display:flex;align-items:center;justify-content:center;gap:10px;background:#e2e8f0;border-radius:10px;padding:4px}
+.stepper button{width:34px;height:34px;border:none;border-radius:8px;background:#fff;font-size:1.2rem;font-weight:bold;cursor:pointer;color:var(--accent);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.stepper button:active{transform:scale(.92)}
+.stepper b{min-width:28px;font-size:1.15rem;text-align:center}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-block;padding:7px 14px;border-radius:999px;background:#e2e8f0;color:#64748b;font-weight:600;font-size:.88rem;transition:background .15s,color .15s}
+.chip input:checked+span{background:var(--accent);color:#fff}
+.chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+
+#panel-fab{display:none;position:fixed;top:10px;left:10px;z-index:40;gap:8px}
+.app.panel-hidden #panel-fab{display:flex}
+#panel-fab button{border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.18);font-weight:700}
+#fab-open{background:#fff;color:var(--primary);padding:10px 14px;font-size:.95rem}
+#fab-play{padding:10px 16px;font-size:1rem}
+
+.stage{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;align-items:stretch}
+.now-box{flex:1 1 320px;background:var(--card);border-radius:16px;padding:18px 22px;box-shadow:0 10px 25px -5px rgba(0,0,0,.06);display:flex;flex-direction:column;justify-content:center;gap:10px}
+#now-playing{font-size:1.5rem;font-weight:800}
+.legend{font-size:.85rem;color:#64748b;line-height:1.6}
+.chord-chart-card{background:#fff;padding:15px 25px;border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.06);flex:0 0 auto;margin:0 auto}
+#chart-svg{width:180px;height:220px}
+.deck-container,.seq-container{background:var(--card);border-radius:16px;padding:22px;box-shadow:0 10px 25px -5px rgba(0,0,0,.06);margin-bottom:20px}
+.deck-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px}
+.chord-board{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;min-height:90px;padding:12px;border:2px dashed #e2e8f0;border-radius:12px;background:#f8fafc}
+.chord-btn{--h:210;background:hsl(var(--h),85%,96%);border:2px solid hsl(var(--h),50%,72%);border-radius:12px;min-width:90px;height:80px;font-size:1.4rem;font-weight:bold;color:#1e293b;cursor:pointer;transition:transform .05s ease,box-shadow .08s ease,border-color .08s ease;position:relative;box-shadow:0 3px 6px -1px rgba(0,0,0,.05);display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+.chord-btn:hover{transform:translateY(-2px)}
+.chord-btn.selected{border-color:hsl(var(--h),65%,42%);box-shadow:0 0 0 3px hsla(var(--h),65%,55%,.35);transform:translateY(-2px)}
+.chord-btn.eraser{background:#fff;border-color:#cbd5e1;font-size:1rem;color:#64748b}
+.chord-btn.eraser.selected{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.25);color:#b91c1c}
+.chord-btn .btn-del{position:absolute;top:2px;right:4px;background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;padding:2px 4px}
+.chord-btn .btn-del:hover{color:#ef4444}
+.input-panel-wrapper{display:flex;flex-direction:column;gap:15px;margin-top:15px;padding-top:15px;border-top:1px solid #f1f5f9}
+.type-add-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.type-input{padding:10px 16px;border-radius:8px;border:2px solid var(--border);font-size:1rem;width:320px;max-width:100%;outline:none;transition:border-color .2s}
+.type-input:focus{border-color:var(--accent)}
+select,.btn-secondary{padding:9px 14px;border-radius:8px;border:1px solid var(--border);font-size:.95rem;background:#fff;cursor:pointer}
+.btn-action{background:var(--accent);color:#fff;border:none;font-weight:600}
+.btn-action:hover{background:var(--accent-hover)}
+.sharp-board{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.sharp-btn{padding:7px 12px;border-radius:8px;border:1px solid #c4b5fd;background:#f5f3ff;color:#5b21b6;font-weight:700;font-size:.95rem;cursor:pointer}
+.sharp-btn:hover{background:#ede9fe;border-color:#7c3aed}
+.sharp-btn:active{transform:scale(.95)}
+.seq-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.seq-title{font-weight:bold;font-size:1.1rem}
+#measures{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(460px,100%),1fr));gap:14px;text-align:left}
+.measure{border:2px solid #e2e8f0;border-radius:14px;padding:10px 12px 12px;background:#f8fafc;transition:border-color .15s,background .15s}
+.measure.playing{border-color:var(--playing);background:#f0fdf4}
+.measure-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.measure-title{font-weight:700;font-size:.95rem}
+.measure-tools{display:flex;gap:6px}
+.mini{border:1px solid var(--border);background:#fff;border-radius:8px;padding:4px 9px;font-size:.78rem;cursor:pointer;color:#475569}
+.mini:hover{border-color:var(--accent);color:var(--accent)}
+.beats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.beat{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:5px}
+.beat-num{font-weight:800;font-size:.9rem;color:#475569;text-align:center;margin-bottom:4px}
+.beat-slots{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.slot{--h:210;border:2px solid #e2e8f0;background:#fff;border-radius:10px;min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:4px 2px;color:#1e293b;transition:background .08s,transform .06s;touch-action:manipulation}
+.slot.up{background:#f8fafc;border-style:dashed}
+.slot:hover{border-color:var(--accent)}
+.slot-tag{font-size:.68rem;color:#94a3b8;font-weight:600}
+.slot-chord{font-size:1.1rem;font-weight:800;min-height:1.4em}
+.slot.filled{background:hsl(var(--h),85%,92%);border-color:hsl(var(--h),60%,55%);border-style:solid}
+.slot.filled .slot-tag{color:hsl(var(--h),40%,35%)}
+.slot.finger{border-style:solid;border-color:#a78bfa}
+.slot.finger .slot-tag{color:#7c3aed;font-weight:800}
+.slot.filled.finger{border-color:#7c3aed}
+.slot.playing{background:#bbf7d0;outline:3px solid var(--playing);transform:scale(1.07);position:relative;z-index:1}
+.slot.filled.playing{background:hsl(var(--h),90%,78%)}
+.empty-hint{color:#94a3b8;font-size:.9rem}
+@media (max-width:899px){
+.player-panel{position:fixed;left:0;top:0;width:min(300px,88vw);flex:none}
+.app.panel-hidden .container{padding-top:64px}
+}
+@media (max-width:520px){
+.container{padding:12px}
+header h1{font-size:1.7rem}
+#measures{grid-template-columns:1fr}
+.beats{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎸 Guitar Chord Player Studio</h1>
-            <div id="loading-status" class="status">กำลังโหลดฐานข้อมูลคอร์ด...</div>
-        </header>
-        
-        <div class="player-panel">
-            <button class="btn-play" id="btn-play">▶ เล่น</button>
-            <div class="control-group">
-                <span>ความเร็ว: <span id="bpm-val">85</span> BPM</span>
-                <input type="range" id="bpm-slider" min="40" max="200" value="85">
-            </div>
-            <div class="control-group">
-                <span>จำนวนห้อง (ห้องละ 4 จังหวะ)</span>
-                <div class="stepper">
-                    <button id="m-minus" title="ลดห้อง">−</button>
-                    <b id="m-count">4</b>
-                    <button id="m-plus" title="เพิ่มห้อง">+</button>
-                </div>
-            </div>
-            <div class="control-group">
-                <span>ตัวเลือก</span>
-                <div class="chips">
-                    <label class="chip"><input type="checkbox" id="opt-loop" checked><span>🔁 ลูปทั้งหมด</span></label>
-                    <label class="chip"><input type="checkbox" id="opt-met"><span>🥁 เมโทรนอม</span></label>
-                    <label class="chip"><input type="checkbox" id="opt-sub"><span>เคาะยกด้วย</span></label>
-                    <label class="chip"><input type="checkbox" id="opt-countin"><span>นับเข้า 1 ห้อง</span></label>
-                </div>
-            </div>
-            <div class="control-group">
-                <span>เสียงเมโทรนอม</span>
-                <input type="range" id="met-vol" min="0" max="100" value="60">
-            </div>
-            <div class="control-group">
-                <span>เสียงกีตาร์</span>
-                <select id="tone-select">
-                    <option value="steel">อะคูสติก สาย Steel (สดใส)</option>
-                    <option value="nylon">ไนลอน (นุ่ม)</option>
-                    <option value="clean">ไฟฟ้า คลีน (ใสหวาน)</option>
-                    <option value="crunch">ไฟฟ้า ครันช์ (โอเวอร์ไดรฟ์)</option>
-                    <option value="twelve">กีตาร์ 12 สาย (ระยิบระยับ)</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <span>สปีดดีดสาย: <span id="strum-val">เร็วทันใจ</span></span>
-                <input type="range" id="strum-slider" min="5" max="60" value="18">
-            </div>
-        </div>
-        
-        <div class="stage">
-            <div class="now-box">
-                <div id="now-playing">พร้อมเล่น · 4/4</div>
-                <div class="legend">
-                    1 ห้อง = 4 จังหวะ · 1 จังหวะ = <b>ตก ↓</b> (ดีดลง) + <b>ยก ↑</b> (ดีดขึ้น)<br>
-                    เลือกคอร์ดจากแป้นด้านล่าง แล้วคลิกช่องในห้องเพื่อวาง (คลิกซ้ำเพื่อลบ) · กด Space เพื่อเล่น/หยุด
-                </div>
-            </div>
-            <div class="chord-chart-card">
-                <div style="font-weight: bold; margin-bottom: 5px; font-size: 1.2rem;" id="chart-chord-name">-</div>
-                <div id="chart-svg"></div>
-            </div>
-        </div>
-        
-        <div class="deck-container">
-            <div class="deck-header">
-                <span style="font-weight: bold; font-size: 1.1rem;">แป้นคอร์ด (คลิกเพื่อเลือก + ฟังเสียง):</span>
-                <div>
-                    <span style="font-size: 0.9rem; color: #64748b;">ชุดยอดฮิต: </span>
-                    <button class="btn-secondary" id="preset-1">C - Am - F - G</button>
-                    <button class="btn-secondary" id="preset-2">G - Em - C - D</button>
-                    <button class="btn-secondary" id="btn-clear-deck">ล้างทั้งหมด</button>
-                </div>
-            </div>
-            <div class="chord-board" id="chord-board"></div>
-            <div class="input-panel-wrapper">
-                <div class="type-add-row">
-                    <input type="text" id="type-input" class="type-input" placeholder="พิมพ์ชื่อคอร์ด เช่น A, Em, C, G7">
-                    <button class="btn-secondary btn-action" id="btn-add-text">+ เพิ่มจากข้อความ</button>
-                </div>
-                <div style="font-size: 0.9rem; color: #64748b;">หรือเลือกคอร์ดทีละตัว:</div>
-                <div>
-                    <select id="root-note">
-                        <option value="C">C</option>
-                        <option value="C#">C#</option>
-                        <option value="D">D</option>
-                        <option value="Eb">D#</option>
-                        <option value="E">E</option>
-                        <option value="F">F</option>
-                        <option value="F#">F#</option>
-                        <option value="G">G</option>
-                        <option value="Ab">G#</option>
-                        <option value="A">A</option>
-                        <option value="Bb">A#</option>
-                        <option value="B">B</option>
-                    </select>
-                    <select id="chord-suffix"></select>
-                    <button class="btn-secondary btn-action" id="btn-add-dropdown">+ เพิ่มคอร์ด</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="seq-container">
-            <div class="seq-header">
-                <span class="seq-title">🎼 ห้องดนตรี</span>
-                <div>
-                    <span style="font-size: 0.9rem; color: #64748b;">แพทเทิร์น: </span>
-                    <select id="pattern-select">
-                        <option value="all">ทุกช่อง (↓↑ ↓↑ ↓↑ ↓↑)</option>
-                        <option value="down">เฉพาะตก (↓ ↓ ↓ ↓)</option>
-                        <option value="pop">ป็อปยอดฮิต (↓ ↓↑ ↑ ↓↑)</option>
-                        <option value="arpeggio">อาร์เพจโจ้ 1: เบส-3-2-3-1-2-3-2 (เกาทีละสาย)</option>
-                        <option value="arpeggio2">อาร์เพจโจ้ 2: เบส-3-2-3-1-3-2-3 (เกาทีละสาย)</option>
-                    </select>
-                    <button class="btn-secondary btn-action" id="btn-pattern-all" title="เปลี่ยนแพทเทิร์นของทุกห้องตามที่เลือก โดยคอร์ดในแต่ละห้องคงเดิม">🎼 แพทเทิร์น All</button>
-                    <button class="btn-secondary" id="btn-clear-pattern">ล้างจังหวะ</button>
-                </div>
-            </div>
-            <div id="measures"></div>
+<div class="app" id="app">
+
+<aside class="player-panel" id="player-panel">
+    <div class="panel-head">
+        <span>🎛 ตัวควบคุม</span>
+        <button class="btn-hide" id="btn-hide" title="ซ่อนแผงควบคุม">◀ ซ่อน</button>
+    </div>
+    <button class="btn-play" id="btn-play">▶ เล่น</button>
+    <div class="control-group">
+        <span>ความเร็ว: <span id="bpm-val">85</span> BPM</span>
+        <input type="range" id="bpm-slider" min="40" max="200" value="85">
+    </div>
+    <div class="control-group">
+        <span>จำนวนห้อง (ห้องละ 4 จังหวะ)</span>
+        <div class="stepper">
+            <button id="m-minus" title="ลดห้อง">−</button>
+            <b id="m-count">4</b>
+            <button id="m-plus" title="เพิ่มห้อง">+</button>
         </div>
     </div>
-    <script>
-        const $ = (id) => document.getElementById(id);
-        
-        
-        
-        let audioCtx = null;
-        let masterGain = null;
-        let metGain = null;
-        let strumSpreadMs = 18;
-        let metVolume = 0.6;
-        const OPEN_STRINGS_MIDI = [40, 45, 50, 55, 59, 64];
-        let buses = []; 
-        let driveShaper = null, driveOut = null, wetNode = null;
-        const eqNodes = [];
-        
-        function makeReverbIR(seconds = 1.1, decay = 3.2) {
-            const sr = audioCtx.sampleRate;
-            const len = Math.floor(sr * seconds);
-            const ir = audioCtx.createBuffer(2, len, sr);
-            for (let ch = 0; ch < 2; ch++) {
-                const d = ir.getChannelData(ch);
-                let lp = 0;
-                for (let i = 0; i < len; i++) {
-                    lp = lp * 0.6 + (Math.random() * 2 - 1) * 0.4; 
-                    d[i] = lp * Math.pow(1 - i / len, decay);
-                }
-            }
-            return ir;
+    <div class="control-group">
+        <span>ตัวเลือก</span>
+        <div class="chips">
+            <label class="chip"><input type="checkbox" id="opt-loop" checked><span>🔁 ลูปทั้งหมด</span></label>
+            <label class="chip"><input type="checkbox" id="opt-met"><span>🥁 เมโทรนอม</span></label>
+            <label class="chip"><input type="checkbox" id="opt-sub"><span>เคาะยกด้วย</span></label>
+            <label class="chip"><input type="checkbox" id="opt-countin"><span>นับเข้า 1 ห้อง</span></label>
+        </div>
+    </div>
+    <div class="control-group">
+        <span>เสียงเมโทรนอม</span>
+        <input type="range" id="met-vol" min="0" max="100" value="60">
+    </div>
+    <div class="control-group">
+        <span>เสียงกีตาร์</span>
+        <select id="tone-select">
+            <option value="steel">อะคูสติก สาย Steel (สดใส)</option>
+            <option value="nylon">ไนลอน (นุ่ม)</option>
+            <option value="clean">ไฟฟ้า คลีน (ใสหวาน)</option>
+            <option value="crunch">ไฟฟ้า ครันช์ (โอเวอร์ไดรฟ์)</option>
+            <option value="twelve">กีตาร์ 12 สาย (ระยิบระยับ)</option>
+        </select>
+    </div>
+    <div class="control-group">
+        <span>สปีดดีดสาย: <span id="strum-val">เร็วทันใจ</span></span>
+        <input type="range" id="strum-slider" min="5" max="60" value="18">
+    </div>
+</aside>
+
+<div id="panel-fab">
+    <button id="fab-open" title="แสดงแผงควบคุม">☰ แผงควบคุม</button>
+    <button id="fab-play" class="btn-play" title="เล่น / หยุด">▶</button>
+</div>
+
+<div class="container">
+    <header>
+        <h1>🎸 Guitar Chord Player Studio</h1>
+        <div id="loading-status" class="status">กำลังโหลดฐานข้อมูลคอร์ด...</div>
+    </header>
+
+    <div class="stage">
+        <div class="now-box">
+            <div id="now-playing">พร้อมเล่น · 4/4</div>
+            <div class="legend">
+                1 ห้อง = 4 จังหวะ · 1 จังหวะ = <b>ตก ↓</b> (ดีดลง) + <b>ยก ↑</b> (ดีดขึ้น)<br>
+                เลือกคอร์ดจากแป้นด้านล่าง แล้วคลิกช่องในห้องเพื่อวาง (คลิกซ้ำเพื่อลบ) · กด Space เพื่อเล่น/หยุด
+            </div>
+        </div>
+        <div class="chord-chart-card">
+            <div style="font-weight:bold;margin-bottom:5px;font-size:1.2rem" id="chart-chord-name">-</div>
+            <div id="chart-svg"></div>
+        </div>
+    </div>
+
+    <div class="deck-container">
+        <div class="deck-header">
+            <span style="font-weight:bold;font-size:1.1rem">แป้นคอร์ด (คลิกเพื่อเลือก + ฟังเสียง):</span>
+            <div>
+                <span style="font-size:.9rem;color:#64748b">ชุดยอดฮิต: </span>
+                <button class="btn-secondary" id="preset-1">C - Am - F - G</button>
+                <button class="btn-secondary" id="preset-2">G - Em - C - D</button>
+                <button class="btn-secondary" id="btn-clear-deck">ล้างทั้งหมด</button>
+            </div>
+        </div>
+        <div class="chord-board" id="chord-board"></div>
+        <div class="input-panel-wrapper">
+            <div class="type-add-row">
+                <input type="text" id="type-input" class="type-input" placeholder="พิมพ์ชื่อคอร์ด เช่น A, Em, F#m, C#7, Bb">
+                <button class="btn-secondary btn-action" id="btn-add-text">+ เพิ่มจากข้อความ</button>
+            </div>
+            <div style="font-size:.9rem;color:#64748b">คอร์ดติดชาร์ป (#) กดเพื่อเพิ่มเข้าแป้น:</div>
+            <div class="sharp-board" id="sharp-board"></div>
+            <div style="font-size:.9rem;color:#64748b">หรือเลือกคอร์ดทีละตัว:</div>
+            <div>
+                <select id="root-note">
+                    <option value="C">C</option>
+                    <option value="C#">C#</option>
+                    <option value="D">D</option>
+                    <option value="Eb">D#</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="F#">F#</option>
+                    <option value="G">G</option>
+                    <option value="Ab">G#</option>
+                    <option value="A">A</option>
+                    <option value="Bb">A#</option>
+                    <option value="B">B</option>
+                </select>
+                <select id="chord-suffix"></select>
+                <button class="btn-secondary btn-action" id="btn-add-dropdown">+ เพิ่มคอร์ด</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="seq-container">
+        <div class="seq-header">
+            <span class="seq-title">🎼 ห้องดนตรี</span>
+            <div>
+                <span style="font-size:.9rem;color:#64748b">แพทเทิร์น: </span>
+                <select id="pattern-select">
+                    <option value="all">ทุกช่อง (↓↑ ↓↑ ↓↑ ↓↑)</option>
+                    <option value="down">เฉพาะตก (↓ ↓ ↓ ↓)</option>
+                    <option value="pop">ป็อปยอดฮิต (↓ ↓↑ ↑ ↓↑)</option>
+                    <option value="arpeggio">อาร์เพจโจ้ 1: เบส-3-2-3-1-2-3-2 (เกาทีละสาย)</option>
+                    <option value="arpeggio2">อาร์เพจโจ้ 2: เบส-3-2-3-1-3-2-3 (เกาทีละสาย)</option>
+                </select>
+                <button class="btn-secondary btn-action" id="btn-pattern-all" title="เปลี่ยนแพทเทิร์นของทุกห้องตามที่เลือก โดยคอร์ดในแต่ละห้องคงเดิม">🎼 แพทเทิร์น All</button>
+                <button class="btn-secondary" id="btn-clear-pattern">ล้างจังหวะ</button>
+            </div>
+        </div>
+        <div id="measures"></div>
+    </div>
+</div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Audio ---------- */
+let audioCtx = null, masterGain = null, metGain = null;
+let strumSpreadMs = 18, metVolume = 0.6;
+const OPEN_STRINGS_MIDI = [40, 45, 50, 55, 59, 64];
+let buses = [];
+let driveShaper = null, driveOut = null, wetNode = null, bodyWet = null;
+const eqNodes = [];
+
+function makeReverbIR(seconds = 1.1, decay = 3.2) {
+    const sr = audioCtx.sampleRate, len = Math.floor(sr * seconds);
+    const ir = audioCtx.createBuffer(2, len, sr);
+    for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        let lp = 0;
+        for (let i = 0; i < len; i++) {
+            lp = lp * 0.6 + (Math.random() * 2 - 1) * 0.4;
+            d[i] = lp * Math.pow(1 - i / len, decay);
         }
-        function ensureAudioReady() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const comp = audioCtx.createDynamicsCompressor();
-                masterGain = audioCtx.createGain();
-                masterGain.gain.value = 0.85;
-                
-                const eqDefs = [
-                    ['peaking', 105, 5, 1.4],
-                    ['peaking', 210, 3, 1.5],
-                    ['peaking', 480, -3, 1.0],
-                    ['peaking', 2800, 2, 0.9],
-                    ['highshelf', 5500, -4, 0.7]
-                ];
-                
-                driveShaper = audioCtx.createWaveShaper();
-                driveShaper.oversample = '4x';
-                driveOut = audioCtx.createGain();
-                masterGain.connect(driveShaper);
-                driveShaper.connect(driveOut);
-                let node = driveOut;
-                eqDefs.forEach(([type, f, g, q]) => {
-                    const bq = audioCtx.createBiquadFilter();
-                    bq.type = type;
-                    bq.frequency.value = f;
-                    bq.gain.value = g;
-                    bq.Q.value = q;
-                    node.connect(bq);
-                    eqNodes.push(bq);
-                    node = bq;
-                });
-                const dry = audioCtx.createGain();
-                dry.gain.value = 0.85;
-                const conv = audioCtx.createConvolver();
-                conv.buffer = makeReverbIR();
-                wetNode = audioCtx.createGain();
-                wetNode.gain.value = 0.22;
-                node.connect(dry);
-                dry.connect(comp);
-                node.connect(conv);
-                conv.connect(wetNode);
-                wetNode.connect(comp);
-                metGain = audioCtx.createGain();
-                metGain.gain.value = metVolume;
-                metGain.connect(comp);
-                comp.connect(audioCtx.destination);
-                applyToneProfile();
-            }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-        function midiToFreq(midi) {
-            return 440 * Math.pow(2, (midi - 69) / 12);
-        }
-        function slotDur() {
-            
-            return 30 / bpm;
-        }
-        
-        
-        
-        
-        const TONES = {
-            steel:  { w: 0.42, smooth: 0.35, t60: 3.4, pickPos: 0.16, eq: [5, 3, -3, 2, -4],  wet: 0.22, drive: 0 },
-            nylon:  { w: 0.5,  smooth: 0.72, t60: 2.3, pickPos: 0.2,  eq: [5, 3, -3, 2, -4],  wet: 0.22, drive: 0 },
-            clean:  { w: 0.4,  smooth: 0.5,  t60: 4.2, pickPos: 0.25, eq: [1, 0, -2, 3, -3],  wet: 0.28, drive: 0 },
-            crunch: { w: 0.38, smooth: 0.45, t60: 4.5, pickPos: 0.2,  eq: [2, 0, -1, -2, -9], wet: 0.12, drive: 4.5, driveOut: 0.55 },
-            twelve: { w: 0.42, smooth: 0.35, t60: 3.0, pickPos: 0.16, eq: [5, 3, -3, 3, -3],  wet: 0.25, drive: 0, twelve: true }
-        };
-        let toneName = 'steel';
-        const pluckCache = new Map();
-        function makeDriveCurve(k) {
-            const n = 2048;
-            const c = new Float32Array(n);
-            const norm = Math.tanh(k);
-            for (let i = 0; i < n; i++) {
-                const x = i * 2 / (n - 1) - 1;
-                c[i] = Math.tanh(k * x) / norm;
-            }
-            return c;
-        }
-        function applyToneProfile() {
-            if (!audioCtx) return;
-            const p = TONES[toneName];
-            eqNodes.forEach((bq, i) => { bq.gain.value = p.eq[i]; });
-            wetNode.gain.value = p.wet;
-            driveShaper.curve = p.drive ? makeDriveCurve(p.drive) : null; 
-            driveOut.gain.value = p.drive ? (p.driveOut || 0.6) : 1;
-        }
-        function getPluckBuffer(midi) {
-            const sr = audioCtx.sampleRate;
-            const key = `${toneName}:${midi}:${sr}`;
-            if (pluckCache.has(key)) return pluckCache.get(key);
-            const p = TONES[toneName];
-            const freq = midiToFreq(midi);
-            const dur = 3.0 - Math.min(Math.max((midi - 40) / 40, 0), 1) * 1.0; 
-            const len = Math.floor(sr * dur);
-            
-            const delay = sr / freq - p.w;
-            const N = Math.floor(delay - 0.5);
-            const frac = delay - N;
-            const ap = (1 - frac) / (1 + frac);
-            
-            const line = new Float32Array(N);
-            let lp = 0;
-            for (let i = 0; i < N; i++) {
-                lp = lp * p.smooth + (Math.random() * 2 - 1) * (1 - p.smooth);
-                line[i] = lp;
-            }
-            const k = Math.max(1, Math.round(N * p.pickPos));
-            for (let i = N - 1; i >= k; i--) line[i] -= line[i - k];
-            let mean = 0;
-            for (let i = 0; i < N; i++) mean += line[i];
-            mean /= N;
-            let peak = 0.0001;
-            for (let i = 0; i < N; i++) {
-                line[i] -= mean;
-                peak = Math.max(peak, Math.abs(line[i]));
-            }
-            for (let i = 0; i < N; i++) line[i] /= peak;
-            const loss = Math.pow(10, -3 / (p.t60 * freq)); 
-            const buf = audioCtx.createBuffer(1, len, sr);
-            const out = buf.getChannelData(0);
-            let ptr = 0, prev = 0, apx = 0, apy = 0;
-            for (let i = 0; i < len; i++) {
-                const cur = line[ptr];
-                const f = ((1 - p.w) * cur + p.w * prev) * loss; 
-                const y = ap * f + apx - ap * apy;
-                apx = f;
-                apy = y;
-                line[ptr] = y;
-                out[i] = y;
-                prev = cur;
-                if (++ptr >= N) ptr = 0;
-            }
-            
-            let pk = 0.0001;
-            for (let i = 0; i < len; i++) pk = Math.max(pk, Math.abs(out[i]));
-            const fadeIn = Math.floor(sr * 0.001);
-            const fadeOut = Math.floor(sr * 0.08);
-            for (let i = 0; i < len; i++) {
-                let g = 0.9 / pk;
-                if (i < fadeIn) g *= i / fadeIn;
-                if (i > len - fadeOut) g *= (len - i) / fadeOut;
-                out[i] *= g;
-            }
-            pluckCache.set(key, buf);
-            return buf;
-        }
-        function warmChord(chord) {
-            if (!audioCtx || !chord) return;
-            const { frets, baseFret } = chord.position;
-            const tw = TONES[toneName].twelve;
-            frets.forEach((fret, si) => {
-                if (fret === -1) return;
-                const midi = OPEN_STRINGS_MIDI[si] + (fret === 0 ? 0 : (baseFret - 1) + fret);
-                getPluckBuffer(midi);
-                if (tw && si <= 3) getPluckBuffer(midi + 12);
+    }
+    return ir;
+}
+
+/* เสียงสะท้อนของตัวกล่องกีตาร์ (body resonance) สร้างจากโหมดการสั่นหลายความถี่ */
+function makeBodyIR() {
+    const sr = audioCtx.sampleRate, len = Math.floor(sr * 0.4);
+    const ir = audioCtx.createBuffer(2, len, sr);
+    const modes = [[98, 1, .14], [196, .8, .1], [275, .5, .08], [392, .6, .06], [520, .45, .05],
+                   [690, .35, .04], [930, .3, .035], [1250, .22, .03], [1700, .15, .025]];
+    for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        const ph = modes.map(() => Math.random() * 6.2832);
+        let l1 = 0;
+        for (let i = 0; i < len; i++) {
+            const t = i / sr;
+            let v = 0;
+            modes.forEach(([f, a, tau], j) => {
+                v += a * Math.sin(6.2832 * f * (ch ? 1.01 : 1) * t + ph[j]) * Math.exp(-t / tau);
             });
+            v += (Math.random() * 2 - 1) * 0.15 * Math.exp(-t / 0.03);
+            d[i] = v;
+            l1 += Math.abs(v);
         }
-        function warmAll() {
-            measures.forEach(row => row.forEach(id => warmChord(getChord(id))));
+        for (let i = 0; i < len; i++) d[i] /= l1;
+    }
+    return ir;
+}
+
+function ensureAudioReady() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const comp = audioCtx.createDynamicsCompressor();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        const eqDefs = [['peaking', 105, 5, 1.4], ['peaking', 210, 3, 1.5], ['peaking', 480, -3, 1.0], ['peaking', 2800, 2, 0.9], ['highshelf', 5500, -4, 0.7]];
+        driveShaper = audioCtx.createWaveShaper();
+        driveShaper.oversample = '4x';
+        driveOut = audioCtx.createGain();
+        masterGain.connect(driveShaper);
+        driveShaper.connect(driveOut);
+
+        const bodyConv = audioCtx.createConvolver();
+        bodyConv.normalize = false;
+        bodyConv.buffer = makeBodyIR();
+        bodyWet = audioCtx.createGain();
+        const bodySum = audioCtx.createGain();
+        driveOut.connect(bodySum);
+        driveOut.connect(bodyConv);
+        bodyConv.connect(bodyWet);
+        bodyWet.connect(bodySum);
+
+        let node = bodySum;
+        eqDefs.forEach(([type, f, g, q]) => {
+            const bq = audioCtx.createBiquadFilter();
+            bq.type = type; bq.frequency.value = f; bq.gain.value = g; bq.Q.value = q;
+            node.connect(bq);
+            eqNodes.push(bq);
+            node = bq;
+        });
+        const dry = audioCtx.createGain();
+        dry.gain.value = 0.85;
+        const conv = audioCtx.createConvolver();
+        conv.buffer = makeReverbIR();
+        wetNode = audioCtx.createGain();
+        wetNode.gain.value = 0.22;
+        node.connect(dry);
+        dry.connect(comp);
+        node.connect(conv);
+        conv.connect(wetNode);
+        wetNode.connect(comp);
+        metGain = audioCtx.createGain();
+        metGain.gain.value = metVolume;
+        metGain.connect(comp);
+        comp.connect(audioCtx.destination);
+        applyToneProfile();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+function slotDur() { return 30 / bpm; }
+
+/* w/smooth/t60/pickPos = พารามิเตอร์สาย, pol = ความต่างเซ็นต์ของสายสั่น 2 ระนาบ (เสียงสั่นพริ้วธรรมชาติ),
+   click = เสียงปิ๊กกระทบสาย, body = ปริมาณเสียงก้องของตัวกล่อง */
+const TONES = {
+    steel:  { w: 0.42, smooth: 0.35, t60: 3.4, pickPos: 0.16, pol: 3.5, click: 0.2,  body: 1.6, eq: [2, 1, -3, 2, -4],  wet: 0.2,  drive: 0 },
+    nylon:  { w: 0.5,  smooth: 0.72, t60: 2.3, pickPos: 0.2,  pol: 2.5, click: 0.08, body: 1.8, eq: [2, 1, -3, 2, -4],  wet: 0.2,  drive: 0 },
+    clean:  { w: 0.4,  smooth: 0.5,  t60: 4.2, pickPos: 0.25, pol: 1.5, click: 0.1,  body: 0.3, eq: [1, 0, -2, 3, -3],  wet: 0.28, drive: 0 },
+    crunch: { w: 0.38, smooth: 0.45, t60: 4.5, pickPos: 0.2,  pol: 1.5, click: 0.1,  body: 0,   eq: [2, 0, -1, -2, -9], wet: 0.12, drive: 4.5, driveOut: 0.55 },
+    twelve: { w: 0.42, smooth: 0.35, t60: 3.0, pickPos: 0.16, pol: 3.5, click: 0.18, body: 1.7, eq: [2, 1, -3, 3, -3],  wet: 0.25, drive: 0, twelve: true }
+};
+let toneName = 'steel';
+const pluckCache = new Map();
+function makeDriveCurve(k) {
+    const n = 2048, c = new Float32Array(n), norm = Math.tanh(k);
+    for (let i = 0; i < n; i++) { const x = i * 2 / (n - 1) - 1; c[i] = Math.tanh(k * x) / norm; }
+    return c;
+}
+function applyToneProfile() {
+    if (!audioCtx) return;
+    const p = TONES[toneName];
+    eqNodes.forEach((bq, i) => { bq.gain.value = p.eq[i]; });
+    wetNode.gain.value = p.wet;
+    bodyWet.gain.value = p.body;
+    driveShaper.curve = p.drive ? makeDriveCurve(p.drive) : null;
+    driveOut.gain.value = p.drive ? (p.driveOut || 0.6) : 1;
+}
+
+/* Karplus-Strong + all-pass fractional delay หนึ่งสาย */
+function ksRender(freq, len, p, exc, t60) {
+    const sr = audioCtx.sampleRate;
+    const delay = sr / freq - p.w;
+    const N = Math.floor(delay - 0.5);
+    const frac = delay - N;
+    const ap = (1 - frac) / (1 + frac);
+    const line = exc.slice(0, N);
+    const k = Math.max(1, Math.round(N * p.pickPos));
+    for (let i = N - 1; i >= k; i--) line[i] -= line[i - k];
+    let mean = 0;
+    for (let i = 0; i < N; i++) mean += line[i];
+    mean /= N;
+    let peak = 0.0001;
+    for (let i = 0; i < N; i++) { line[i] -= mean; peak = Math.max(peak, Math.abs(line[i])); }
+    for (let i = 0; i < N; i++) line[i] /= peak;
+    const loss = Math.pow(10, -3 / (t60 * freq));
+    const out = new Float32Array(len);
+    let ptr = 0, prev = 0, apx = 0, apy = 0;
+    for (let i = 0; i < len; i++) {
+        const cur = line[ptr];
+        const f = ((1 - p.w) * cur + p.w * prev) * loss;
+        const y = ap * f + apx - ap * apy;
+        apx = f; apy = y;
+        line[ptr] = y;
+        out[i] = y;
+        prev = cur;
+        if (++ptr >= N) ptr = 0;
+    }
+    return out;
+}
+function getPluckBuffer(midi) {
+    const sr = audioCtx.sampleRate;
+    const key = `${toneName}:${midi}:${sr}`;
+    if (pluckCache.has(key)) return pluckCache.get(key);
+    const p = TONES[toneName];
+    const freq = midiToFreq(midi);
+    const dur = 3.0 - Math.min(Math.max((midi - 40) / 40, 0), 1) * 1.0;
+    const len = Math.floor(sr * dur);
+
+    const exc = new Float32Array(Math.ceil(sr / freq) + 8);
+    let lp = 0;
+    for (let i = 0; i < exc.length; i++) {
+        lp = lp * p.smooth + (Math.random() * 2 - 1) * (1 - p.smooth);
+        exc[i] = lp;
+    }
+    // สายสั่น 2 ระนาบ (แนวตั้ง/แนวนอน) จูนต่างกันนิดหน่อย ทำให้เกิดเสียงพริ้ว/บีทแบบสายจริง
+    const a = ksRender(freq, len, p, exc, p.t60);
+    const b = ksRender(freq * Math.pow(2, p.pol / 1200), len, p, exc, p.t60 * 0.8);
+    const buf = audioCtx.createBuffer(1, len, sr);
+    const out = buf.getChannelData(0);
+    let pk = 0.0001;
+    for (let i = 0; i < len; i++) { out[i] = a[i] + 0.6 * b[i]; pk = Math.max(pk, Math.abs(out[i])); }
+    const fadeIn = Math.floor(sr * 0.001), fadeOut = Math.floor(sr * 0.08);
+    const clickLen = Math.floor(sr * 0.014);
+    let prevN = 0;
+    for (let i = 0; i < len; i++) {
+        let g = 0.9 / pk;
+        if (i < fadeIn) g *= i / fadeIn;
+        if (i > len - fadeOut) g *= (len - i) / fadeOut;
+        out[i] *= g;
+        if (i < clickLen) {
+            const n = Math.random() * 2 - 1;
+            out[i] += (n - prevN) * 0.5 * p.click * Math.exp(-i / (sr * 0.0035));
+            prevN = n;
         }
-        function playPluckedString(midi, time, vel, bus, pan, cents = 0) {
-            const src = audioCtx.createBufferSource();
-            src.buffer = getPluckBuffer(midi);
-            src.detune.value = cents + (Math.random() - 0.5) * 5; 
-            const gain = audioCtx.createGain();
-            gain.gain.value = 0.32 * vel;
-            const panner = audioCtx.createStereoPanner();
-            panner.pan.value = pan;
-            src.connect(gain);
-            gain.connect(panner);
-            panner.connect(bus);
-            src.start(time);
+    }
+    pluckCache.set(key, buf);
+    return buf;
+}
+function warmChord(chord) {
+    if (!audioCtx || !chord) return;
+    const { frets, baseFret } = chord.position;
+    const tw = TONES[toneName].twelve;
+    frets.forEach((fret, si) => {
+        if (fret === -1) return;
+        const midi = OPEN_STRINGS_MIDI[si] + (fret === 0 ? 0 : (baseFret - 1) + fret);
+        getPluckBuffer(midi);
+        if (tw && si <= 3) getPluckBuffer(midi + 12);
+    });
+}
+function warmAll() { measures.forEach(row => row.forEach(id => warmChord(getChord(id)))); }
+function playPluckedString(midi, time, vel, bus, pan, cents = 0) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = getPluckBuffer(midi);
+    src.detune.value = cents + (Math.random() - 0.5) * 5;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.32 * vel;
+    const panner = audioCtx.createStereoPanner();
+    panner.pan.value = pan;
+    src.connect(gain); gain.connect(panner); panner.connect(bus);
+    src.start(time);
+}
+function newBus(time) {
+    const last = buses[buses.length - 1];
+    if (last) {
+        last.g.gain.setValueAtTime(1, time);
+        last.g.gain.linearRampToValueAtTime(0.0001, time + 0.09);
+    }
+    const bus = audioCtx.createGain();
+    bus.connect(masterGain);
+    buses.push({ g: bus, t: time });
+    if (buses.length > 8) buses.shift();
+    return bus;
+}
+function strumChord(chord, time, dir = 'down', vel = 1) {
+    ensureAudioReady();
+    const { frets, baseFret } = chord.position;
+    let notes = [];
+    frets.forEach((fret, si) => {
+        if (fret === -1) return;
+        const actual = fret === 0 ? 0 : (baseFret - 1) + fret;
+        notes.push({ midi: OPEN_STRINGS_MIDI[si] + actual, si });
+    });
+    if (notes.length === 0) return;
+    if (dir === 'up') { notes = notes.slice().reverse().slice(0, 4); vel *= 0.8; }
+    const bus = newBus(time);
+    const maxSpread = slotDur() * 0.6;
+    const perString = Math.min(strumSpreadMs / 1000, maxSpread / Math.max(notes.length - 1, 1));
+    const twelve = TONES[toneName].twelve;
+    if (twelve) vel *= 0.85;
+    notes.forEach((n, i) => {
+        const human = Math.random() * 0.003;
+        // ความแรงลดหลั่นตามลำดับสาย ให้เหมือนการดีดจริง
+        const v = vel * (0.9 + Math.random() * 0.2) * (1 - i * 0.02);
+        const pan = -0.3 + (n.si / 5) * 0.6;
+        const t = time + i * perString + human;
+        playPluckedString(n.midi, t, v, bus, pan);
+        if (twelve) {
+            if (n.si <= 3) playPluckedString(n.midi + 12, t + 0.004, v * 0.5, bus, -pan);
+            else playPluckedString(n.midi, t + 0.006, v * 0.6, bus, -pan, 9);
         }
-        
-        function strumChord(chord, time, dir = 'down', vel = 1) {
-            ensureAudioReady();
-            const { frets, baseFret } = chord.position;
-            let notes = [];
-            frets.forEach((fret, si) => {
-                if (fret === -1) return;
-                const actual = fret === 0 ? 0 : (baseFret - 1) + fret;
-                notes.push({ midi: OPEN_STRINGS_MIDI[si] + actual, si });
-            });
-            if (notes.length === 0) return;
-            if (dir === 'up') {
-                notes = notes.slice().reverse().slice(0, 4);
-                vel *= 0.8;
-            }
-            
-            const last = buses[buses.length - 1];
-            if (last) {
-                last.g.gain.setValueAtTime(1, time);
-                last.g.gain.linearRampToValueAtTime(0.0001, time + 0.09);
-            }
-            const bus = audioCtx.createGain();
-            bus.connect(masterGain);
-            buses.push({ g: bus, t: time });
-            if (buses.length > 8) buses.shift();
-            const maxSpread = slotDur() * 0.6;
-            const perString = Math.min(strumSpreadMs / 1000, maxSpread / Math.max(notes.length - 1, 1));
-            const twelve = TONES[toneName].twelve;
-            if (twelve) vel *= 0.85;
-            notes.forEach((n, i) => {
-                const human = Math.random() * 0.003;            
-                const v = vel * (0.9 + Math.random() * 0.2);    
-                const pan = -0.3 + (n.si / 5) * 0.6;            
-                const t = time + i * perString + human;
-                playPluckedString(n.midi, t, v, bus, pan);
-                if (twelve) {
-                    
-                    if (n.si <= 3) playPluckedString(n.midi + 12, t + 0.004, v * 0.5, bus, -pan);
-                    else playPluckedString(n.midi, t + 0.006, v * 0.6, bus, -pan, 9);
-                }
-            });
-        }
-        
-        function pluckSingleString(chord, pick, time, vel) {
-            ensureAudioReady();
-            const si = stringIndexForPick(chord, pick);
-            if (si === null) return;
-            const { frets, baseFret } = chord.position;
-            const fret = frets[si];
-            const actual = fret === 0 ? 0 : (baseFret - 1) + fret;
-            const midi = OPEN_STRINGS_MIDI[si] + actual;
-            const last = buses[buses.length - 1];
-            if (last) {
-                last.g.gain.setValueAtTime(1, time);
-                last.g.gain.linearRampToValueAtTime(0.0001, time + 0.09);
-            }
-            const bus = audioCtx.createGain();
-            bus.connect(masterGain);
-            buses.push({ g: bus, t: time });
-            if (buses.length > 8) buses.shift();
-            const pan = -0.3 + (si / 5) * 0.6;
-            playPluckedString(midi, time, vel, bus, pan);
-        }
-        function chokeAll() {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            buses = buses.filter(b => b.t > now - 2.2);
-            buses.forEach(b => {
-                b.g.gain.cancelScheduledValues(now);
-                b.g.gain.setValueAtTime(b.g.gain.value, now);
-                b.g.gain.linearRampToValueAtTime(0.0001, now + 0.06);
-            });
-            buses = [];
-        }
-        
-        function playClick(time, kind) {
-            const freq = { accent: 1600, beat: 1100, sub: 800 }[kind];
-            const vol = { accent: 0.55, beat: 0.4, sub: 0.16 }[kind];
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, time);
-            g.gain.setValueAtTime(0.0001, time);
-            g.gain.exponentialRampToValueAtTime(vol, time + 0.001);
-            g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-            osc.connect(g);
-            g.connect(metGain);
-            osc.start(time);
-            osc.stop(time + 0.06);
-        }
-        
-        
-        
-        const SLOTS = 8; 
-        
-        
-        const PATTERN_DEFS = {
-            all:  { on: [1, 1, 1, 1, 1, 1, 1, 1], pick: [null, null, null, null, null, null, null, null] },
-            down: { on: [1, 0, 1, 0, 1, 0, 1, 0], pick: [null, null, null, null, null, null, null, null] },
-            pop:  { on: [1, 0, 1, 1, 0, 1, 1, 1], pick: [null, null, null, null, null, null, null, null] },
-            arpeggio: {
-                on:   [1, 1, 1, 1, 1, 1, 1, 1],
-                pick: ['bass', '3', '2', '3', '1', '2', '3', '2'] 
-            },
-            arpeggio2: {
-                on:   [1, 1, 1, 1, 1, 1, 1, 1],
-                pick: ['bass', '3', '2', '3', '1', '3', '2', '3'] 
-            }
-        };
-        let fullChordDb = null;
-        let myDeck = [];
-        let nextChordId = 1;
-        let measures = [];         
-        let measurePicks = [];     
-        let selectedBrush = null;  
-        let lastDrawnId = null;
-        let bpm = 85;
-        let loopAll = true;
-        let metOn = false;
-        let metSub = false;
-        let countIn = false;
-        const newMeasure = () => Array(SLOTS).fill(null);
-        const getChord = (id) => (id == null ? undefined : myDeck.find(c => c.id === id));
-        
-        
-        function stringIndexForPick(chord, pick) {
-            const frets = chord.position.frets;
-            if (pick === 'bass') {
-                for (let si = 0; si < frets.length; si++) if (frets[si] !== -1) return si;
-                return null;
-            }
-            const map = { '3': 3, '2': 4, '1': 5 };
-            const si = map[pick];
-            if (si === undefined || frets[si] === -1) return null; 
-            return si;
-        }
-        function pickLabel(pick) {
-            if (pick === 'bass') return 'เบส';
-            if (pick === '1' || pick === '2' || pick === '3') return 'สาย ' + pick;
-            return null;
-        }
-        
-        async function fetchChordDb() {
-            try {
-                const res = await fetch('https://raw.githubusercontent.com/tombatossals/chords-db/master/lib/guitar.json');
-                const data = await res.json();
-                fullChordDb = data.chords;
-                initApp();
-            } catch (e) {
-                $('loading-status').innerText = 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
-            }
-        }
-        function initApp() {
-            $('loading-status').innerText = 'พร้อมใช้งาน! เลือกคอร์ดแล้วคลิกช่องในห้องดนตรี จากนั้นกด ▶ เล่น';
-            const suffixes = new Set();
-            Object.values(fullChordDb).forEach(variations => {
-                variations.forEach(v => suffixes.add(v.suffix));
-            });
-            const suffixSelect = $('chord-suffix');
-            Array.from(suffixes).sort().forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s;
-                opt.innerText = s === 'major' ? 'Major' : s;
-                suffixSelect.appendChild(opt);
-            });
-            suffixSelect.value = 'major';
-            loadPreset('C-Am-F-G');
-        }
-        function toSharpDisplay(root) {
-            const map = { 'Eb': 'D#', 'Ab': 'G#', 'Bb': 'A#' };
-            return map[root] || root;
-        }
-        function parseChordToken(token) {
-            token = token.trim();
-            if (!token) return null;
-            const match = token.match(/^([A-Ga-g][#b]?)(.*)$/);
-            if (!match) return null;
-            let root = match[1].charAt(0).toUpperCase() + (match[1].slice(1) || '');
-            let rawSuffix = match[2].trim();
-            const mapToDbRoot = { 'Db': 'C#', 'D#': 'Eb', 'Gb': 'F#', 'G#': 'Ab', 'A#': 'Bb' };
-            if (mapToDbRoot[root]) root = mapToDbRoot[root];
-            let suffix = rawSuffix;
-            if (suffix === '' || suffix.toLowerCase() === 'maj') suffix = 'major';
-            else if (suffix === 'm' || suffix.toLowerCase() === 'min') suffix = 'minor';
-            if (fullChordDb && fullChordDb[root]) {
-                const found = fullChordDb[root].find(c => c.suffix.toLowerCase() === suffix.toLowerCase());
-                if (found) return { root, suffix: found.suffix };
-            }
-            return null;
-        }
-        
-        function addChordToDeck(root, suffix, render = true) {
-            const chordData = fullChordDb[root]?.find(c => c.suffix === suffix);
-            if (!chordData || !chordData.positions || chordData.positions.length === 0) return null;
-            const id = nextChordId++;
-            const item = {
-                id,
-                root,
-                suffix,
-                hue: (id * 67) % 360,
-                displayName: `${toSharpDisplay(root)}${suffix === 'major' ? '' : (suffix === 'minor' ? 'm' : suffix)}`,
-                position: chordData.positions[0]
-            };
-            myDeck.push(item);
-            if (selectedBrush === null) selectedBrush = id;
-            if (render) renderDeck();
-            return item;
-        }
-        function addChordsFromInput() {
-            const input = $('type-input');
-            const text = input.value.trim();
-            if (!text) return;
-            const tokens = text.split(/[,]+/).map(t => t.trim()).filter(Boolean);
-            const notFound = [];
-            tokens.forEach(token => {
-                const parsed = parseChordToken(token);
-                if (parsed) addChordToDeck(parsed.root, parsed.suffix);
-                else notFound.push(token);
-            });
-            if (notFound.length > 0) alert(`ไม่พบคอร์ดดังต่อไปนี้: ${notFound.join(', ')}`);
-            input.value = '';
-        }
-        function removeChord(id) {
-            myDeck = myDeck.filter(c => c.id !== id);
-            measures.forEach((row, m) => row.forEach((v, i) => {
-                if (v === id) { row[i] = null; measurePicks[m][i] = null; }
-            }));
-            if (selectedBrush === id) selectedBrush = myDeck.length ? myDeck[0].id : null;
-            renderDeck();
-            renderMeasures();
-        }
-        function renderDeck() {
-            const board = $('chord-board');
-            board.innerHTML = '';
-            if (myDeck.length === 0) {
-                const hint = document.createElement('span');
-                hint.className = 'empty-hint';
-                hint.textContent = 'ยังไม่มีคอร์ด พิมพ์คอร์ดด้านล่าง เช่น A, Em, C เพื่อเพิ่มได้เลย';
-                board.appendChild(hint);
-            }
-            myDeck.forEach(chord => {
-                const el = document.createElement('div');
-                el.className = 'chord-btn' + (selectedBrush === chord.id ? ' selected' : '');
-                el.dataset.id = chord.id;
-                el.style.setProperty('--h', chord.hue);
-                el.innerHTML = `<button class="btn-del" title="ลบคอร์ด" data-del="${chord.id}">✕</button><span>${chord.displayName}</span>`;
-                board.appendChild(el);
-            });
-            const er = document.createElement('div');
-            er.className = 'chord-btn eraser' + (selectedBrush === 'eraser' ? ' selected' : '');
-            er.dataset.id = 'eraser';
-            er.innerHTML = '<span>🧽 ยางลบ</span>';
-            board.appendChild(er);
-        }
-        function selectBrush(id) {
-            selectedBrush = id;
-            document.querySelectorAll('#chord-board .chord-btn').forEach(el => {
-                el.classList.toggle('selected', el.dataset.id === String(id));
-            });
-            if (id !== 'eraser') {
-                const chord = getChord(id);
-                if (chord) {
-                    if (!isPlaying) {
-                        ensureAudioReady();
-                        strumChord(chord, audioCtx.currentTime + 0.01, 'down', 1);
-                    }
-                    drawChordDiagram(chord);
-                }
-            }
-        }
-        function drawChordDiagram(chord) {
-            lastDrawnId = chord.id;
-            $('chart-chord-name').innerText = chord.displayName;
-            const container = $('chart-svg');
-            container.innerHTML = '';
-            try {
-                const chart = new svguitar.SVGuitarChord('#chart-svg');
-                const pos = chord.position;
-                const fingers = [];
-                pos.frets.forEach((fret, i) => {
-                    const str = 6 - i;
-                    if (fret === -1) fingers.push([str, 'x']);
-                    else if (fret === 0) fingers.push([str, 0]);
-                    else fingers.push([str, fret, (pos.fingers && pos.fingers[i] > 0) ? String(pos.fingers[i]) : '']);
-                });
-                const barres = (pos.barres || []).map(b => {
-                    const idx = pos.frets.map((f, i) => (f === b ? i : -1)).filter(i => i >= 0);
-                    if (!idx.length) return null;
-                    return { fret: b, fromString: 6 - idx[0], toString: 6 - idx[idx.length - 1] };
-                }).filter(Boolean);
-                chart.configure({
-                    strings: 6,
-                    frets: 5,
-                    position: pos.baseFret,
-                    fixedDiagramPosition: true,
-                    fingerSize: 0.7,
-                    title: ''
-                })
-                .chord({ fingers, barres })
-                .draw();
-            } catch (err) {
-                console.error('วาดภาพคอร์ดไม่สำเร็จ', err);
-            }
-        }
-        function clearDeck() {
-            stopPlayback();
-            myDeck = [];
-            selectedBrush = null;
-            measures = measures.map(() => newMeasure());
-            measurePicks = measurePicks.map(() => newMeasure());
-            renderDeck();
-            renderMeasures();
-            $('chart-chord-name').innerText = '-';
-            $('chart-svg').innerHTML = '';
-            lastDrawnId = null;
-        }
-        function loadPreset(name) {
-            stopPlayback();
-            const presets = {
-                'C-Am-F-G': ['C', 'A minor', 'F', 'G'],
-                'G-Em-C-D': ['G', 'E minor', 'C', 'D']
-            };
-            myDeck = [];
-            selectedBrush = null;
-            const ids = [];
-            presets[name].forEach(c => {
-                const p = parseChordToken(c);
-                if (!p) return;
-                const item = addChordToDeck(p.root, p.suffix, false);
-                if (item) ids.push(item.id);
-            });
-            
-            const def = PATTERN_DEFS[$('pattern-select').value];
-            measures = ids.map(id => def.on.map(v => (v ? id : null)));
-            measurePicks = ids.map(() => def.pick.slice());
-            $('m-count').innerText = measures.length;
-            selectedBrush = ids.length ? ids[0] : null;
-            renderDeck();
-            renderMeasures();
-            if (ids.length) drawChordDiagram(getChord(ids[0]));
-        }
-        
-        
-        
-        function slotHtml(m, s) {
-            const up = s % 2 === 1;
-            return `<button class="slot ${up ? 'up' : 'down'}" id="slot-${m}-${s}" data-m="${m}" data-s="${s}">
-                        <span class="slot-tag"></span>
-                        <span class="slot-chord"></span>
-                    </button>`;
-        }
-        function renderMeasures() {
-            const wrap = $('measures');
-            wrap.innerHTML = '';
-            measures.forEach((cells, m) => {
-                const card = document.createElement('div');
-                card.className = 'measure';
-                card.id = `measure-${m}`;
-                let beatsHtml = '';
-                for (let b = 0; b < 4; b++) {
-                    beatsHtml += `<div class="beat">
-                        <div class="beat-num">${b + 1}</div>
-                        <div class="beat-slots">${slotHtml(m, b * 2)}${slotHtml(m, b * 2 + 1)}</div>
-                    </div>`;
-                }
-                card.innerHTML = `
-                    <div class="measure-head">
-                        <span class="measure-title">ห้องที่ ${m + 1}</span>
-                        <span class="measure-tools">
-                            <button class="mini" data-act="fill" data-m="${m}" title="เติมคอร์ดที่เลือกตามแพทเทิร์น">✨ เติม</button>
-                            ${m > 0 ? `<button class="mini" data-act="copy" data-m="${m}" title="คัดลอกจากห้องก่อนหน้า">⧉ คัดลอกห้องก่อน</button>` : ''}
-                            <button class="mini" data-act="clear" data-m="${m}" title="ล้างห้องนี้">🗑</button>
-                        </span>
-                    </div>
-                    <div class="beats">${beatsHtml}</div>`;
-                wrap.appendChild(card);
-                for (let s = 0; s < SLOTS; s++) refreshSlot(m, s);
-            });
-            $('m-count').innerText = measures.length;
-            reapplyHighlight();
-        }
-        function refreshSlot(m, s) {
-            const el = $(`slot-${m}-${s}`);
-            if (!el) return;
-            const chord = getChord(measures[m][s]);
-            const nameEl = el.querySelector('.slot-chord');
-            const tagEl = el.querySelector('.slot-tag');
-            const pick = measurePicks[m] ? measurePicks[m][s] : null;
-            const label = pickLabel(pick);
-            tagEl.textContent = label || (s % 2 ? 'ยก ↑' : 'ตก ↓');
-            el.classList.toggle('finger', !!label);
-            if (chord) {
-                el.classList.add('filled');
-                el.style.setProperty('--h', chord.hue);
-                nameEl.textContent = chord.displayName;
-            } else {
-                el.classList.remove('filled');
-                el.style.removeProperty('--h');
-                nameEl.textContent = '';
-            }
-        }
-        function refreshMeasure(m) {
-            for (let s = 0; s < SLOTS; s++) refreshSlot(m, s);
-        }
-        function setMeasureCount(n) {
-            n = Math.max(1, Math.min(16, n));
-            if (n === measures.length) return;
-            if (n > measures.length) {
-                while (measures.length < n) { measures.push(newMeasure()); measurePicks.push(newMeasure()); }
-            } else {
-                measures.length = n;
-                measurePicks.length = n;
-            }
-            renderMeasures();
-        }
-        function paintSlot(m, s) {
-            const brush = selectedBrush;
-            if (brush === null) return;
-            if (brush === 'eraser') {
-                measures[m][s] = null;
-            } else {
-                measures[m][s] = (measures[m][s] === brush) ? null : brush;
-            }
-            measurePicks[m][s] = null; 
-            refreshSlot(m, s);
-            const chord = getChord(measures[m][s]);
-            if (chord && audioCtx) warmChord(chord);
-            if (chord && !isPlaying) {
+    });
+}
+function pluckSingleString(chord, pick, time, vel) {
+    ensureAudioReady();
+    const si = stringIndexForPick(chord, pick);
+    if (si === null) return;
+    const { frets, baseFret } = chord.position;
+    const fret = frets[si];
+    const actual = fret === 0 ? 0 : (baseFret - 1) + fret;
+    const midi = OPEN_STRINGS_MIDI[si] + actual;
+    const bus = newBus(time);
+    const pan = -0.3 + (si / 5) * 0.6;
+    playPluckedString(midi, time, vel, bus, pan);
+}
+function chokeAll() {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    buses = buses.filter(b => b.t > now - 2.2);
+    buses.forEach(b => {
+        b.g.gain.cancelScheduledValues(now);
+        b.g.gain.setValueAtTime(b.g.gain.value, now);
+        b.g.gain.linearRampToValueAtTime(0.0001, now + 0.06);
+    });
+    buses = [];
+}
+function playClick(time, kind) {
+    const freq = { accent: 1600, beat: 1100, sub: 800 }[kind];
+    const vol = { accent: 0.55, beat: 0.4, sub: 0.16 }[kind];
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, time);
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(vol, time + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    osc.connect(g); g.connect(metGain);
+    osc.start(time); osc.stop(time + 0.06);
+}
+
+/* ---------- Data ---------- */
+const SLOTS = 8;
+const PATTERN_DEFS = {
+    all:  { on: [1, 1, 1, 1, 1, 1, 1, 1], pick: [null, null, null, null, null, null, null, null] },
+    down: { on: [1, 0, 1, 0, 1, 0, 1, 0], pick: [null, null, null, null, null, null, null, null] },
+    pop:  { on: [1, 0, 1, 1, 0, 1, 1, 1], pick: [null, null, null, null, null, null, null, null] },
+    arpeggio:  { on: [1, 1, 1, 1, 1, 1, 1, 1], pick: ['bass', '3', '2', '3', '1', '2', '3', '2'] },
+    arpeggio2: { on: [1, 1, 1, 1, 1, 1, 1, 1], pick: ['bass', '3', '2', '3', '1', '3', '2', '3'] }
+};
+let fullChordDb = null, myDeck = [], nextChordId = 1;
+let measures = [], measurePicks = [];
+let selectedBrush = null, lastDrawnId = null;
+let bpm = 85, loopAll = true, metOn = false, metSub = false, countIn = false;
+const newMeasure = () => Array(SLOTS).fill(null);
+const getChord = (id) => (id == null ? undefined : myDeck.find(c => c.id === id));
+
+function stringIndexForPick(chord, pick) {
+    const frets = chord.position.frets;
+    if (pick === 'bass') {
+        for (let si = 0; si < frets.length; si++) if (frets[si] !== -1) return si;
+        return null;
+    }
+    const map = { '3': 3, '2': 4, '1': 5 };
+    const si = map[pick];
+    if (si === undefined || frets[si] === -1) return null;
+    return si;
+}
+function pickLabel(pick) {
+    if (pick === 'bass') return 'เบส';
+    if (pick === '1' || pick === '2' || pick === '3') return 'สาย ' + pick;
+    return null;
+}
+
+async function fetchChordDb() {
+    try {
+        const res = await fetch('https://raw.githubusercontent.com/tombatossals/chords-db/master/lib/guitar.json');
+        const data = await res.json();
+        fullChordDb = data.chords;
+        initApp();
+    } catch (e) {
+        $('loading-status').innerText = 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
+    }
+}
+function initApp() {
+    $('loading-status').innerText = 'พร้อมใช้งาน! เลือกคอร์ดแล้วคลิกช่องในห้องดนตรี จากนั้นกด ▶ เล่น';
+    const suffixes = new Set();
+    Object.values(fullChordDb).forEach(variations => variations.forEach(v => suffixes.add(v.suffix)));
+    const suffixSelect = $('chord-suffix');
+    Array.from(suffixes).sort().forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.innerText = s === 'major' ? 'Major' : s;
+        suffixSelect.appendChild(opt);
+    });
+    suffixSelect.value = 'major';
+    buildSharpBoard();
+    loadPreset('C-Am-F-G');
+}
+function toSharpDisplay(root) {
+    return { 'Eb': 'D#', 'Ab': 'G#', 'Bb': 'A#' }[root] || root;
+}
+
+/* ปุ่มคอร์ดติดชาร์ปแบบเร็ว: C# D# F# G# A# × (เมเจอร์ / ไมเนอร์ / 7 / m7 / maj7) */
+function buildSharpBoard() {
+    const board = $('sharp-board');
+    board.innerHTML = '';
+    const roots = [['C#', 'C#'], ['D#', 'Eb'], ['F#', 'F#'], ['G#', 'Ab'], ['A#', 'Bb']];
+    const types = [['major', ''], ['minor', 'm'], ['7', '7'], ['m7', 'm7'], ['maj7', 'maj7']];
+    roots.forEach(([label, dbRoot]) => {
+        types.forEach(([suffix, text]) => {
+            if (!fullChordDb[dbRoot] || !fullChordDb[dbRoot].some(c => c.suffix === suffix)) return;
+            const b = document.createElement('button');
+            b.className = 'sharp-btn';
+            b.textContent = label + text;
+            b.dataset.root = dbRoot;
+            b.dataset.suffix = suffix;
+            board.appendChild(b);
+        });
+    });
+}
+
+function parseChordToken(token) {
+    token = token.trim();
+    if (!token) return null;
+    const match = token.match(/^([A-Ga-g][#b]?)(.*)$/);
+    if (!match) return null;
+    let root = match[1].charAt(0).toUpperCase() + (match[1].slice(1) || '');
+    const rawSuffix = match[2].trim();
+    const mapToDbRoot = { 'Db': 'C#', 'D#': 'Eb', 'Gb': 'F#', 'G#': 'Ab', 'A#': 'Bb', 'Cb': 'B', 'E#': 'F', 'B#': 'C', 'Fb': 'E' };
+    if (mapToDbRoot[root]) root = mapToDbRoot[root];
+    let suffix = rawSuffix;
+    if (suffix === '' || suffix.toLowerCase() === 'maj') suffix = 'major';
+    else if (suffix === 'm' || suffix.toLowerCase() === 'min') suffix = 'minor';
+    if (fullChordDb && fullChordDb[root]) {
+        const found = fullChordDb[root].find(c => c.suffix.toLowerCase() === suffix.toLowerCase());
+        if (found) return { root, suffix: found.suffix };
+    }
+    return null;
+}
+function addChordToDeck(root, suffix, render = true) {
+    const chordData = fullChordDb[root]?.find(c => c.suffix === suffix);
+    if (!chordData || !chordData.positions || chordData.positions.length === 0) return null;
+    const id = nextChordId++;
+    const item = {
+        id, root, suffix,
+        hue: (id * 67) % 360,
+        displayName: `${toSharpDisplay(root)}${suffix === 'major' ? '' : (suffix === 'minor' ? 'm' : suffix)}`,
+        position: chordData.positions[0]
+    };
+    myDeck.push(item);
+    if (selectedBrush === null) selectedBrush = id;
+    if (render) renderDeck();
+    return item;
+}
+function addChordsFromInput() {
+    const input = $('type-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const tokens = text.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
+    const notFound = [];
+    tokens.forEach(token => {
+        const parsed = parseChordToken(token);
+        if (parsed) addChordToDeck(parsed.root, parsed.suffix);
+        else notFound.push(token);
+    });
+    if (notFound.length > 0) alert(`ไม่พบคอร์ดดังต่อไปนี้: ${notFound.join(', ')}`);
+    input.value = '';
+}
+function removeChord(id) {
+    myDeck = myDeck.filter(c => c.id !== id);
+    measures.forEach((row, m) => row.forEach((v, i) => {
+        if (v === id) { row[i] = null; measurePicks[m][i] = null; }
+    }));
+    if (selectedBrush === id) selectedBrush = myDeck.length ? myDeck[0].id : null;
+    renderDeck();
+    renderMeasures();
+}
+function renderDeck() {
+    const board = $('chord-board');
+    board.innerHTML = '';
+    if (myDeck.length === 0) {
+        const hint = document.createElement('span');
+        hint.className = 'empty-hint';
+        hint.textContent = 'ยังไม่มีคอร์ด พิมพ์คอร์ดด้านล่าง เช่น A, Em, C เพื่อเพิ่มได้เลย';
+        board.appendChild(hint);
+    }
+    myDeck.forEach(chord => {
+        const el = document.createElement('div');
+        el.className = 'chord-btn' + (selectedBrush === chord.id ? ' selected' : '');
+        el.dataset.id = chord.id;
+        el.style.setProperty('--h', chord.hue);
+        el.innerHTML = `<button class="btn-del" title="ลบคอร์ด" data-del="${chord.id}">✕</button><span>${chord.displayName}</span>`;
+        board.appendChild(el);
+    });
+    const er = document.createElement('div');
+    er.className = 'chord-btn eraser' + (selectedBrush === 'eraser' ? ' selected' : '');
+    er.dataset.id = 'eraser';
+    er.innerHTML = '<span>🧽 ยางลบ</span>';
+    board.appendChild(er);
+}
+function selectBrush(id) {
+    selectedBrush = id;
+    document.querySelectorAll('#chord-board .chord-btn').forEach(el => {
+        el.classList.toggle('selected', el.dataset.id === String(id));
+    });
+    if (id !== 'eraser') {
+        const chord = getChord(id);
+        if (chord) {
+            if (!isPlaying) {
                 ensureAudioReady();
-                strumChord(chord, audioCtx.currentTime + 0.01, s % 2 ? 'up' : 'down', 1);
-                drawChordDiagram(chord);
+                strumChord(chord, audioCtx.currentTime + 0.01, 'down', 1);
             }
+            drawChordDiagram(chord);
         }
-        function fillMeasure(m) {
-            const brush = selectedBrush;
-            if (brush === null) return;
-            if (brush === 'eraser') {
-                measures[m] = newMeasure();
-                measurePicks[m] = newMeasure();
+    }
+}
+function drawChordDiagram(chord) {
+    lastDrawnId = chord.id;
+    $('chart-chord-name').innerText = chord.displayName;
+    const container = $('chart-svg');
+    container.innerHTML = '';
+    try {
+        const chart = new svguitar.SVGuitarChord('#chart-svg');
+        const pos = chord.position;
+        const fingers = [];
+        pos.frets.forEach((fret, i) => {
+            const str = 6 - i;
+            if (fret === -1) fingers.push([str, 'x']);
+            else if (fret === 0) fingers.push([str, 0]);
+            else fingers.push([str, fret, (pos.fingers && pos.fingers[i] > 0) ? String(pos.fingers[i]) : '']);
+        });
+        const barres = (pos.barres || []).map(b => {
+            const idx = pos.frets.map((f, i) => (f === b ? i : -1)).filter(i => i >= 0);
+            if (!idx.length) return null;
+            return { fret: b, fromString: 6 - idx[0], toString: 6 - idx[idx.length - 1] };
+        }).filter(Boolean);
+        chart.configure({ strings: 6, frets: 5, position: pos.baseFret, fixedDiagramPosition: true, fingerSize: 0.7, title: '' })
+            .chord({ fingers, barres })
+            .draw();
+    } catch (err) {
+        console.error('วาดภาพคอร์ดไม่สำเร็จ', err);
+    }
+}
+function clearDeck() {
+    stopPlayback();
+    myDeck = [];
+    selectedBrush = null;
+    measures = measures.map(() => newMeasure());
+    measurePicks = measurePicks.map(() => newMeasure());
+    renderDeck();
+    renderMeasures();
+    $('chart-chord-name').innerText = '-';
+    $('chart-svg').innerHTML = '';
+    lastDrawnId = null;
+}
+function loadPreset(name) {
+    stopPlayback();
+    const presets = { 'C-Am-F-G': ['C', 'A minor', 'F', 'G'], 'G-Em-C-D': ['G', 'E minor', 'C', 'D'] };
+    myDeck = [];
+    selectedBrush = null;
+    const ids = [];
+    presets[name].forEach(c => {
+        const p = parseChordToken(c);
+        if (!p) return;
+        const item = addChordToDeck(p.root, p.suffix, false);
+        if (item) ids.push(item.id);
+    });
+    const def = PATTERN_DEFS[$('pattern-select').value];
+    measures = ids.map(id => def.on.map(v => (v ? id : null)));
+    measurePicks = ids.map(() => def.pick.slice());
+    $('m-count').innerText = measures.length;
+    selectedBrush = ids.length ? ids[0] : null;
+    renderDeck();
+    renderMeasures();
+    if (ids.length) drawChordDiagram(getChord(ids[0]));
+}
+
+/* ---------- Measures ---------- */
+function slotHtml(m, s) {
+    const up = s % 2 === 1;
+    return `<button class="slot ${up ? 'up' : 'down'}" id="slot-${m}-${s}" data-m="${m}" data-s="${s}">
+                <span class="slot-tag"></span>
+                <span class="slot-chord"></span>
+            </button>`;
+}
+function renderMeasures() {
+    const wrap = $('measures');
+    wrap.innerHTML = '';
+    measures.forEach((cells, m) => {
+        const card = document.createElement('div');
+        card.className = 'measure';
+        card.id = `measure-${m}`;
+        let beatsHtml = '';
+        for (let b = 0; b < 4; b++) {
+            beatsHtml += `<div class="beat">
+                <div class="beat-num">${b + 1}</div>
+                <div class="beat-slots">${slotHtml(m, b * 2)}${slotHtml(m, b * 2 + 1)}</div>
+            </div>`;
+        }
+        card.innerHTML = `
+            <div class="measure-head">
+                <span class="measure-title">ห้องที่ ${m + 1}</span>
+                <span class="measure-tools">
+                    <button class="mini" data-act="fill" data-m="${m}" title="เติมคอร์ดที่เลือกตามแพทเทิร์น">✨ เติม</button>
+                    ${m > 0 ? `<button class="mini" data-act="copy" data-m="${m}" title="คัดลอกจากห้องก่อนหน้า">⧉ คัดลอกห้องก่อน</button>` : ''}
+                    <button class="mini" data-act="clear" data-m="${m}" title="ล้างห้องนี้">🗑</button>
+                </span>
+            </div>
+            <div class="beats">${beatsHtml}</div>`;
+        wrap.appendChild(card);
+        for (let s = 0; s < SLOTS; s++) refreshSlot(m, s);
+    });
+    $('m-count').innerText = measures.length;
+    reapplyHighlight();
+}
+function refreshSlot(m, s) {
+    const el = $(`slot-${m}-${s}`);
+    if (!el) return;
+    const chord = getChord(measures[m][s]);
+    const nameEl = el.querySelector('.slot-chord');
+    const tagEl = el.querySelector('.slot-tag');
+    const pick = measurePicks[m] ? measurePicks[m][s] : null;
+    const label = pickLabel(pick);
+    tagEl.textContent = label || (s % 2 ? 'ยก ↑' : 'ตก ↓');
+    el.classList.toggle('finger', !!label);
+    if (chord) {
+        el.classList.add('filled');
+        el.style.setProperty('--h', chord.hue);
+        nameEl.textContent = chord.displayName;
+    } else {
+        el.classList.remove('filled');
+        el.style.removeProperty('--h');
+        nameEl.textContent = '';
+    }
+}
+function refreshMeasure(m) { for (let s = 0; s < SLOTS; s++) refreshSlot(m, s); }
+function setMeasureCount(n) {
+    n = Math.max(1, Math.min(16, n));
+    if (n === measures.length) return;
+    if (n > measures.length) {
+        while (measures.length < n) { measures.push(newMeasure()); measurePicks.push(newMeasure()); }
+    } else {
+        measures.length = n;
+        measurePicks.length = n;
+    }
+    renderMeasures();
+}
+function paintSlot(m, s) {
+    const brush = selectedBrush;
+    if (brush === null) return;
+    if (brush === 'eraser') measures[m][s] = null;
+    else measures[m][s] = (measures[m][s] === brush) ? null : brush;
+    measurePicks[m][s] = null;
+    refreshSlot(m, s);
+    const chord = getChord(measures[m][s]);
+    if (chord && audioCtx) warmChord(chord);
+    if (chord && !isPlaying) {
+        ensureAudioReady();
+        strumChord(chord, audioCtx.currentTime + 0.01, s % 2 ? 'up' : 'down', 1);
+        drawChordDiagram(chord);
+    }
+}
+function fillMeasure(m) {
+    const brush = selectedBrush;
+    if (brush === null) return;
+    if (brush === 'eraser') {
+        measures[m] = newMeasure();
+        measurePicks[m] = newMeasure();
+    } else {
+        const def = PATTERN_DEFS[$('pattern-select').value];
+        measures[m] = def.on.map(v => (v ? brush : null));
+        measurePicks[m] = def.pick.slice();
+    }
+    refreshMeasure(m);
+}
+function applyPatternToAll() {
+    const def = PATTERN_DEFS[$('pattern-select').value];
+    measures = measures.map((row, m) => {
+        const firstId = row.find(v => v !== null);
+        if (firstId === undefined) { measurePicks[m] = newMeasure(); return newMeasure(); }
+        let carry = firstId;
+        const chordAt = row.map(v => { if (v !== null) carry = v; return carry; });
+        measurePicks[m] = def.pick.slice();
+        return def.on.map((on, s) => (on ? chordAt[s] : null));
+    });
+    measures.forEach((_, m) => refreshMeasure(m));
+}
+$('measures').addEventListener('click', (e) => {
+    const slot = e.target.closest('.slot');
+    if (slot) { paintSlot(+slot.dataset.m, +slot.dataset.s); return; }
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const m = +btn.dataset.m;
+    if (btn.dataset.act === 'fill') fillMeasure(m);
+    else if (btn.dataset.act === 'clear') { measures[m] = newMeasure(); measurePicks[m] = newMeasure(); refreshMeasure(m); }
+    else if (btn.dataset.act === 'copy' && m > 0) { measures[m] = measures[m - 1].slice(); measurePicks[m] = measurePicks[m - 1].slice(); refreshMeasure(m); }
+});
+
+/* ---------- Transport ---------- */
+const LOOKAHEAD_MS = 25, SCHEDULE_AHEAD = 0.12;
+let isPlaying = false, schedTimer = null, rafId = null;
+let nextSlotTime = 0, nextSlotIndex = 0, visualQueue = [], playingIndex = null;
+const totalSlots = () => measures.length * SLOTS;
+
+function startPlayback() {
+    ensureAudioReady();
+    warmAll();
+    if (isPlaying) return;
+    if (measures.length === 0) return;
+    isPlaying = true;
+    nextSlotIndex = countIn ? -SLOTS : 0;
+    nextSlotTime = audioCtx.currentTime + 0.08;
+    visualQueue = [];
+    schedTimer = setInterval(scheduler, LOOKAHEAD_MS);
+    rafId = requestAnimationFrame(visualLoop);
+    updateTransportUI();
+}
+function stopPlayback(choke = true) {
+    if (!isPlaying) return;
+    isPlaying = false;
+    if (schedTimer) { clearInterval(schedTimer); schedTimer = null; }
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    visualQueue = [];
+    clearHighlight();
+    playingIndex = null;
+    $('now-playing').textContent = 'พร้อมเล่น · 4/4';
+    if (choke) chokeAll();
+    updateTransportUI();
+}
+function scheduler() {
+    if (nextSlotTime < audioCtx.currentTime - 0.05) nextSlotTime = audioCtx.currentTime + 0.05;
+    const horizon = audioCtx.currentTime + SCHEDULE_AHEAD;
+    while (nextSlotTime < horizon) {
+        if (nextSlotIndex >= totalSlots()) {
+            if (loopAll) {
+                nextSlotIndex = 0;
             } else {
-                const def = PATTERN_DEFS[$('pattern-select').value];
-                measures[m] = def.on.map(v => (v ? brush : null));
-                measurePicks[m] = def.pick.slice();
-            }
-            refreshMeasure(m);
-        }
-        
-        function applyPatternToAll() {
-            const def = PATTERN_DEFS[$('pattern-select').value];
-            measures = measures.map((row, m) => {
-                const firstId = row.find(v => v !== null);
-                if (firstId === undefined) { measurePicks[m] = newMeasure(); return newMeasure(); } 
-                
-                let carry = firstId;
-                const chordAt = row.map(v => {
-                    if (v !== null) carry = v;
-                    return carry;
-                });
-                measurePicks[m] = def.pick.slice();
-                return def.on.map((on, s) => (on ? chordAt[s] : null));
-            });
-            measures.forEach((_, m) => refreshMeasure(m));
-        }
-        $('measures').addEventListener('click', (e) => {
-            const slot = e.target.closest('.slot');
-            if (slot) {
-                paintSlot(+slot.dataset.m, +slot.dataset.s);
+                visualQueue.push({ stop: true, time: nextSlotTime });
+                clearInterval(schedTimer);
+                schedTimer = null;
                 return;
             }
-            const btn = e.target.closest('[data-act]');
-            if (!btn) return;
-            const m = +btn.dataset.m;
-            if (btn.dataset.act === 'fill') fillMeasure(m);
-            else if (btn.dataset.act === 'clear') { measures[m] = newMeasure(); measurePicks[m] = newMeasure(); refreshMeasure(m); }
-            else if (btn.dataset.act === 'copy' && m > 0) { measures[m] = measures[m - 1].slice(); measurePicks[m] = measurePicks[m - 1].slice(); refreshMeasure(m); }
-        });
-        
-        
-        
-        const LOOKAHEAD_MS = 25;
-        const SCHEDULE_AHEAD = 0.12;
-        let isPlaying = false;
-        let schedTimer = null;
-        let rafId = null;
-        let nextSlotTime = 0;
-        let nextSlotIndex = 0;
-        let visualQueue = [];
-        let playingIndex = null;
-        const totalSlots = () => measures.length * SLOTS;
-        function startPlayback() {
-            ensureAudioReady();
-            warmAll();
-            if (isPlaying) return;
-            if (measures.length === 0) return;
-            isPlaying = true;
-            nextSlotIndex = countIn ? -SLOTS : 0; 
-            nextSlotTime = audioCtx.currentTime + 0.08;
-            visualQueue = [];
-            schedTimer = setInterval(scheduler, LOOKAHEAD_MS);
-            rafId = requestAnimationFrame(visualLoop);
-            updateTransportUI();
         }
-        function stopPlayback(choke = true) {
-            if (!isPlaying) return;
-            isPlaying = false;
-            if (schedTimer) { clearInterval(schedTimer); schedTimer = null; }
-            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-            visualQueue = [];
-            clearHighlight();
-            playingIndex = null;
-            $('now-playing').textContent = 'พร้อมเล่น · 4/4';
-            if (choke) chokeAll();
-            updateTransportUI();
-        }
-        function scheduler() {
-            
-            if (nextSlotTime < audioCtx.currentTime - 0.05) {
-                nextSlotTime = audioCtx.currentTime + 0.05;
-            }
-            const horizon = audioCtx.currentTime + SCHEDULE_AHEAD;
-            while (nextSlotTime < horizon) {
-                if (nextSlotIndex >= totalSlots()) {
-                    if (loopAll) {
-                        nextSlotIndex = 0; 
-                    } else {
-                        visualQueue.push({ stop: true, time: nextSlotTime });
-                        clearInterval(schedTimer);
-                        schedTimer = null;
-                        return;
-                    }
-                }
-                scheduleSlot(nextSlotIndex, nextSlotTime);
-                nextSlotTime += slotDur();
-                nextSlotIndex++;
+        scheduleSlot(nextSlotIndex, nextSlotTime);
+        nextSlotTime += slotDur();
+        nextSlotIndex++;
+    }
+}
+function scheduleSlot(i, time) {
+    const counting = i < 0;
+    const s = counting ? i + SLOTS : i % SLOTS;
+    const m = counting ? -1 : Math.floor(i / SLOTS);
+    if (counting || metOn) {
+        if (s % 2 === 0) playClick(time, s === 0 ? 'accent' : 'beat');
+        else if (!counting && metSub) playClick(time, 'sub');
+    }
+    if (!counting) {
+        const chord = getChord(measures[m] && measures[m][s]);
+        if (chord) {
+            const pick = measurePicks[m] && measurePicks[m][s];
+            if (pick) {
+                pluckSingleString(chord, pick, time, pick === 'bass' ? 1.0 : 0.85);
+            } else {
+                const up = s % 2 === 1;
+                const vel = s === 0 ? 1.1 : (up ? 0.8 : 0.95);
+                strumChord(chord, time, up ? 'up' : 'down', vel);
             }
         }
-        function scheduleSlot(i, time) {
-            const counting = i < 0;
-            const s = counting ? i + SLOTS : i % SLOTS;
-            const m = counting ? -1 : Math.floor(i / SLOTS);
-            
-            if (counting || metOn) {
-                if (s % 2 === 0) playClick(time, s === 0 ? 'accent' : 'beat');
-                else if (!counting && metSub) playClick(time, 'sub');
-            }
-            if (!counting) {
-                const chord = getChord(measures[m] && measures[m][s]);
-                if (chord) {
-                    const pick = measurePicks[m] && measurePicks[m][s];
-                    if (pick) {
-                        pluckSingleString(chord, pick, time, pick === 'bass' ? 1.0 : 0.85);
-                    } else {
-                        const up = s % 2 === 1;
-                        const vel = s === 0 ? 1.1 : (up ? 0.8 : 0.95);
-                        strumChord(chord, time, up ? 'up' : 'down', vel);
-                    }
-                }
-            }
-            visualQueue.push({ index: i, time });
-        }
-        function visualLoop() {
-            const now = audioCtx.currentTime;
-            while (visualQueue.length && visualQueue[0].time <= now) {
-                const ev = visualQueue.shift();
-                if (ev.stop) { stopPlayback(false); return; }
-                highlightSlot(ev.index);
-            }
-            rafId = requestAnimationFrame(visualLoop);
-        }
-        function clearHighlight() {
-            document.querySelectorAll('.slot.playing').forEach(el => el.classList.remove('playing'));
-            document.querySelectorAll('.measure.playing').forEach(el => el.classList.remove('playing'));
-        }
-        function highlightSlot(i) {
-            clearHighlight();
-            playingIndex = i;
-            const nowEl = $('now-playing');
-            if (i < 0) {
-                nowEl.textContent = `นับเข้า ${Math.floor((i + SLOTS) / 2) + 1}`;
-                return;
-            }
-            const m = Math.floor(i / SLOTS);
-            const s = i % SLOTS;
-            const slotEl = $(`slot-${m}-${s}`);
-            const card = $(`measure-${m}`);
-            if (slotEl) slotEl.classList.add('playing');
-            if (card) {
-                card.classList.add('playing');
-                if (s === 0) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
-            nowEl.textContent = `ห้อง ${m + 1}/${measures.length} · จังหวะ ${Math.floor(s / 2) + 1} · ${s % 2 ? 'ยก ↑' : 'ตก ↓'}`;
-            const chord = getChord(measures[m] && measures[m][s]);
-            if (chord && chord.id !== lastDrawnId) drawChordDiagram(chord);
-        }
-        function reapplyHighlight() {
-            if (isPlaying && playingIndex !== null && playingIndex >= 0) {
-                const m = Math.floor(playingIndex / SLOTS);
-                const s = playingIndex % SLOTS;
-                const slotEl = $(`slot-${m}-${s}`);
-                const card = $(`measure-${m}`);
-                if (slotEl) slotEl.classList.add('playing');
-                if (card) card.classList.add('playing');
-            }
-        }
-        function updateTransportUI() {
-            const btn = $('btn-play');
-            btn.textContent = isPlaying ? '⏹ หยุด' : '▶ เล่น';
-            btn.classList.toggle('stopped', isPlaying);
-        }
-        function togglePlay() {
-            if (isPlaying) stopPlayback();
-            else startPlayback();
-        }
-        
-        
-        
-        $('btn-play').addEventListener('click', togglePlay);
-        $('bpm-slider').addEventListener('input', (e) => {
-            bpm = parseInt(e.target.value);
-            $('bpm-val').innerText = bpm;
-        });
-        $('strum-slider').addEventListener('input', (e) => {
-            strumSpreadMs = parseInt(e.target.value);
-            const label = $('strum-val');
-            if (strumSpreadMs <= 10) label.innerText = 'ทันที (Slap)';
-            else if (strumSpreadMs <= 25) label.innerText = 'เร็วทันใจ';
-            else if (strumSpreadMs <= 40) label.innerText = 'ปานกลาง';
-            else label.innerText = 'เกาช้าๆ';
-        });
-        $('met-vol').addEventListener('input', (e) => {
-            metVolume = parseInt(e.target.value) / 100;
-            if (metGain) metGain.gain.value = metVolume;
-        });
-        $('tone-select').addEventListener('change', (e) => {
-            toneName = e.target.value;
-            pluckCache.clear();
-            applyToneProfile();
-            if (isPlaying) {
-                warmAll();
-            } else if (selectedBrush !== null && selectedBrush !== 'eraser') {
-                const c = getChord(selectedBrush);
-                if (c) { ensureAudioReady(); strumChord(c, audioCtx.currentTime + 0.01, 'down', 1); }
-            }
-        });
-        $('m-minus').addEventListener('click', () => setMeasureCount(measures.length - 1));
-        $('m-plus').addEventListener('click', () => setMeasureCount(measures.length + 1));
-        $('opt-loop').addEventListener('change', (e) => { loopAll = e.target.checked; });
-        $('opt-met').addEventListener('change', (e) => { metOn = e.target.checked; });
-        $('opt-sub').addEventListener('change', (e) => { metSub = e.target.checked; });
-        $('opt-countin').addEventListener('change', (e) => { countIn = e.target.checked; });
-        $('preset-1').addEventListener('click', () => loadPreset('C-Am-F-G'));
-        $('preset-2').addEventListener('click', () => loadPreset('G-Em-C-D'));
-        $('btn-clear-deck').addEventListener('click', clearDeck);
-        $('btn-pattern-all').addEventListener('click', applyPatternToAll);
-        $('btn-clear-pattern').addEventListener('click', () => {
-            measures = measures.map(() => newMeasure());
-            measurePicks = measurePicks.map(() => newMeasure());
-            renderMeasures();
-        });
-        $('btn-add-text').addEventListener('click', addChordsFromInput);
-        $('type-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addChordsFromInput(); });
-        $('btn-add-dropdown').addEventListener('click', () => {
-            addChordToDeck($('root-note').value, $('chord-suffix').value);
-        });
-        $('chord-board').addEventListener('pointerdown', (e) => {
-            const del = e.target.closest('.btn-del');
-            if (del) { removeChord(+del.dataset.del); return; }
-            const el = e.target.closest('.chord-btn');
-            if (!el) return;
-            selectBrush(el.dataset.id === 'eraser' ? 'eraser' : +el.dataset.id);
-        });
-        
-        window.addEventListener('keydown', (e) => {
-            if (e.code !== 'Space') return;
-            const tag = (e.target.tagName || '').toUpperCase();
-            if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(tag)) return;
-            e.preventDefault();
-            togglePlay();
-        });
-        
-        window.addEventListener('pointerdown', ensureAudioReady, { once: true });
-        
-        measures = Array.from({ length: 4 }, newMeasure);
-        measurePicks = Array.from({ length: 4 }, newMeasure);
-        renderDeck();
-        renderMeasures();
-        fetchChordDb();
-    </script>
+    }
+    visualQueue.push({ index: i, time });
+}
+function visualLoop() {
+    const now = audioCtx.currentTime;
+    while (visualQueue.length && visualQueue[0].time <= now) {
+        const ev = visualQueue.shift();
+        if (ev.stop) { stopPlayback(false); return; }
+        highlightSlot(ev.index);
+    }
+    rafId = requestAnimationFrame(visualLoop);
+}
+function clearHighlight() {
+    document.querySelectorAll('.slot.playing').forEach(el => el.classList.remove('playing'));
+    document.querySelectorAll('.measure.playing').forEach(el => el.classList.remove('playing'));
+}
+/* ไม่เลื่อนหน้าจออัตโนมัติ — แค่ไฮไลต์ช่องที่กำลังเล่น */
+function highlightSlot(i) {
+    clearHighlight();
+    playingIndex = i;
+    const nowEl = $('now-playing');
+    if (i < 0) {
+        nowEl.textContent = `นับเข้า ${Math.floor((i + SLOTS) / 2) + 1}`;
+        return;
+    }
+    const m = Math.floor(i / SLOTS), s = i % SLOTS;
+    const slotEl = $(`slot-${m}-${s}`), card = $(`measure-${m}`);
+    if (slotEl) slotEl.classList.add('playing');
+    if (card) card.classList.add('playing');
+    nowEl.textContent = `ห้อง ${m + 1}/${measures.length} · จังหวะ ${Math.floor(s / 2) + 1} · ${s % 2 ? 'ยก ↑' : 'ตก ↓'}`;
+    const chord = getChord(measures[m] && measures[m][s]);
+    if (chord && chord.id !== lastDrawnId) drawChordDiagram(chord);
+}
+function reapplyHighlight() {
+    if (isPlaying && playingIndex !== null && playingIndex >= 0) {
+        const m = Math.floor(playingIndex / SLOTS), s = playingIndex % SLOTS;
+        const slotEl = $(`slot-${m}-${s}`), card = $(`measure-${m}`);
+        if (slotEl) slotEl.classList.add('playing');
+        if (card) card.classList.add('playing');
+    }
+}
+function updateTransportUI() {
+    const btn = $('btn-play'), fab = $('fab-play');
+    btn.textContent = isPlaying ? '⏹ หยุด' : '▶ เล่น';
+    fab.textContent = isPlaying ? '⏹' : '▶';
+    btn.classList.toggle('stopped', isPlaying);
+    fab.classList.toggle('stopped', isPlaying);
+}
+function togglePlay() { if (isPlaying) stopPlayback(); else startPlayback(); }
+
+/* ---------- แผงควบคุมด้านซ้าย (ซ่อน/แสดงได้) ---------- */
+function setPanel(open) {
+    $('app').classList.toggle('panel-hidden', !open);
+    try { localStorage.setItem('chordPanelOpen', open ? '1' : '0'); } catch (e) {}
+}
+(function initPanel() {
+    let open = window.innerWidth >= 900;
+    try {
+        const saved = localStorage.getItem('chordPanelOpen');
+        if (saved !== null && window.innerWidth >= 900) open = saved === '1';
+    } catch (e) {}
+    setPanel(open);
+})();
+$('btn-hide').addEventListener('click', () => setPanel(false));
+$('fab-open').addEventListener('click', () => setPanel(true));
+
+/* ---------- Events ---------- */
+$('btn-play').addEventListener('click', togglePlay);
+$('fab-play').addEventListener('click', togglePlay);
+$('bpm-slider').addEventListener('input', (e) => {
+    bpm = parseInt(e.target.value);
+    $('bpm-val').innerText = bpm;
+});
+$('strum-slider').addEventListener('input', (e) => {
+    strumSpreadMs = parseInt(e.target.value);
+    const label = $('strum-val');
+    if (strumSpreadMs <= 10) label.innerText = 'ทันที (Slap)';
+    else if (strumSpreadMs <= 25) label.innerText = 'เร็วทันใจ';
+    else if (strumSpreadMs <= 40) label.innerText = 'ปานกลาง';
+    else label.innerText = 'เกาช้าๆ';
+});
+$('met-vol').addEventListener('input', (e) => {
+    metVolume = parseInt(e.target.value) / 100;
+    if (metGain) metGain.gain.value = metVolume;
+});
+$('tone-select').addEventListener('change', (e) => {
+    toneName = e.target.value;
+    pluckCache.clear();
+    applyToneProfile();
+    if (isPlaying) {
+        warmAll();
+    } else if (selectedBrush !== null && selectedBrush !== 'eraser') {
+        const c = getChord(selectedBrush);
+        if (c) { ensureAudioReady(); strumChord(c, audioCtx.currentTime + 0.01, 'down', 1); }
+    }
+});
+$('m-minus').addEventListener('click', () => setMeasureCount(measures.length - 1));
+$('m-plus').addEventListener('click', () => setMeasureCount(measures.length + 1));
+$('opt-loop').addEventListener('change', (e) => { loopAll = e.target.checked; });
+$('opt-met').addEventListener('change', (e) => { metOn = e.target.checked; });
+$('opt-sub').addEventListener('change', (e) => { metSub = e.target.checked; });
+$('opt-countin').addEventListener('change', (e) => { countIn = e.target.checked; });
+$('preset-1').addEventListener('click', () => loadPreset('C-Am-F-G'));
+$('preset-2').addEventListener('click', () => loadPreset('G-Em-C-D'));
+$('btn-clear-deck').addEventListener('click', clearDeck);
+$('btn-pattern-all').addEventListener('click', applyPatternToAll);
+$('btn-clear-pattern').addEventListener('click', () => {
+    measures = measures.map(() => newMeasure());
+    measurePicks = measurePicks.map(() => newMeasure());
+    renderMeasures();
+});
+$('btn-add-text').addEventListener('click', addChordsFromInput);
+$('type-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addChordsFromInput(); });
+$('btn-add-dropdown').addEventListener('click', () => {
+    addChordToDeck($('root-note').value, $('chord-suffix').value);
+});
+$('sharp-board').addEventListener('click', (e) => {
+    const b = e.target.closest('.sharp-btn');
+    if (!b) return;
+    const item = addChordToDeck(b.dataset.root, b.dataset.suffix);
+    if (item) selectBrush(item.id);
+});
+$('chord-board').addEventListener('pointerdown', (e) => {
+    const del = e.target.closest('.btn-del');
+    if (del) { removeChord(+del.dataset.del); return; }
+    const el = e.target.closest('.chord-btn');
+    if (!el) return;
+    selectBrush(el.dataset.id === 'eraser' ? 'eraser' : +el.dataset.id);
+});
+window.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space') return;
+    const tag = (e.target.tagName || '').toUpperCase();
+    if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(tag)) return;
+    e.preventDefault();
+    togglePlay();
+});
+window.addEventListener('pointerdown', ensureAudioReady, { once: true });
+
+measures = Array.from({ length: 4 }, newMeasure);
+measurePicks = Array.from({ length: 4 }, newMeasure);
+renderDeck();
+renderMeasures();
+fetchChordDb();
+</script>
 </body>
 </html>
