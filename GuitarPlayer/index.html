@@ -169,7 +169,7 @@ header h1{font-size:1.7rem}
 
 <div class="container">
     <header>
-        <h1>🎸 Guitar Chord Player Studio</h1>
+        <h1>Guitar Chord Player Studio</h1>
         <div id="loading-status" class="status">กำลังโหลดฐานข้อมูลคอร์ด...</div>
     </header>
 
@@ -607,7 +607,13 @@ function initApp() {
     loadPreset('C-Am-F-G');
 }
 function toSharpDisplay(root) {
-    return { 'Eb': 'D#', 'Ab': 'G#', 'Bb': 'A#' }[root] || root;
+    return { 'Eb': 'D#', 'Ab': 'G#', 'Bb': 'A#', 'Csharp': 'C#', 'Fsharp': 'F#' }[root] || root;
+}
+/* ฐานข้อมูลใช้คีย์ 'Csharp' / 'Fsharp' แทน 'C#' / 'F#' — แปลงให้ตรงกับคีย์ที่มีอยู่จริง */
+function dbKey(root) {
+    if (!fullChordDb) return root;
+    for (const c of [root, root.replace('#', 'sharp')]) if (fullChordDb[c]) return c;
+    return root;
 }
 
 /* ปุ่มคอร์ดติดชาร์ปแบบเร็ว: C# D# F# G# A# × (เมเจอร์ / ไมเนอร์ / 7 / m7 / maj7) */
@@ -616,8 +622,10 @@ function buildSharpBoard() {
     board.innerHTML = '';
     const roots = [['C#', 'C#'], ['D#', 'Eb'], ['F#', 'F#'], ['G#', 'Ab'], ['A#', 'Bb']];
     const types = [['major', ''], ['minor', 'm'], ['7', '7'], ['m7', 'm7'], ['maj7', 'maj7']];
-    roots.forEach(([label, dbRoot]) => {
+    roots.forEach(([label, dbRoot0]) => {
+        let dbRoot = dbRoot0;
         types.forEach(([suffix, text]) => {
+            dbRoot = dbKey(dbRoot);
             if (!fullChordDb[dbRoot] || !fullChordDb[dbRoot].some(c => c.suffix === suffix)) return;
             const b = document.createElement('button');
             b.className = 'sharp-btn';
@@ -638,6 +646,7 @@ function parseChordToken(token) {
     const rawSuffix = match[2].trim();
     const mapToDbRoot = { 'Db': 'C#', 'D#': 'Eb', 'Gb': 'F#', 'G#': 'Ab', 'A#': 'Bb', 'Cb': 'B', 'E#': 'F', 'B#': 'C', 'Fb': 'E' };
     if (mapToDbRoot[root]) root = mapToDbRoot[root];
+    root = dbKey(root);
     let suffix = rawSuffix;
     if (suffix === '' || suffix.toLowerCase() === 'maj') suffix = 'major';
     else if (suffix === 'm' || suffix.toLowerCase() === 'min') suffix = 'minor';
@@ -648,6 +657,7 @@ function parseChordToken(token) {
     return null;
 }
 function addChordToDeck(root, suffix, render = true) {
+    root = dbKey(root);
     const chordData = fullChordDb[root]?.find(c => c.suffix === suffix);
     if (!chordData || !chordData.positions || chordData.positions.length === 0) return null;
     const id = nextChordId++;
