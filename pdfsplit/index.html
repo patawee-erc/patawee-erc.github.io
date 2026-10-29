@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Splitter & Compressor with Progress</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4726/4726010.png">
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -31,20 +27,24 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        .preview-card {
+            cursor: pointer;
+            transition: box-shadow .15s, border-color .15s, background-color .15s;
+        }
+        .preview-card:hover {
+            border-color: #a5b4fc;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6">
-        
         <header class="text-center mb-8">
             <h1 class="text-3xl font-bold text-indigo-600 mb-2">✂️ แยกหน้า & บีบอัดลดขนาด PDF</h1>
             <p class="text-slate-500 text-sm">แยกหน้าเอกสาร, พรีวิวดูเลขหน้า, บีบอัดลดขนาดไฟล์ และ Export เป็น ZIP</p>
         </header>
-        
         <div id="upload-box"
             class="max-w-xl mx-auto border-2 border-dashed border-indigo-200 bg-white rounded-2xl p-10 text-center hover:border-indigo-400 transition cursor-pointer shadow-sm">
-            <input type="file" id="pdf-input" accept="application/pdf" class="hidden">
-            
+            <input type="file" id="pdf-input" accept="application/pdf,.pdf" class="hidden">
             <div id="upload-prompt" class="space-y-4">
                 <div
                     class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
@@ -59,7 +59,6 @@
                     <p class="text-xs text-slate-400 mt-1">ประมวลผลบนเบราว์เซอร์ของคุณอย่างปลอดภัย 100%</p>
                 </div>
             </div>
-            
             <div id="upload-progress-container" class="hidden space-y-4 py-4">
                 <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto">
                 </div>
@@ -68,7 +67,6 @@
                         <span id="upload-status-text" class="text-slate-600">กำลังอ่านไฟล์...</span>
                         <span id="upload-percent-text" class="text-indigo-600">0%</span>
                     </div>
-                    
                     <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
                         <div id="upload-progress-bar"
                             class="bg-indigo-600 h-full rounded-full transition-all duration-200 ease-out"
@@ -78,11 +76,8 @@
                 <p class="text-xs text-slate-400" id="upload-subtext">กรุณารอสักครู่ ระบบกำลังจัดเตรียมหน้าเอกสาร...</p>
             </div>
         </div>
-        
         <div id="workspace" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
             <div class="lg:col-span-7 space-y-5">
-                
                 <div
                     class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex justify-between items-center">
                     <div class="overflow-hidden mr-4">
@@ -91,27 +86,24 @@
                         </p>
                     </div>
                     <button id="change-file-btn" class="shrink-0 text-xs bg-slate-100 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 px-3 py-2 rounded-xl transition font-medium">
-            เปลี่ยนไฟล์
-          </button>
+                        เปลี่ยนไฟล์
+                    </button>
                 </div>
-                
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h2 class="text-base font-bold text-slate-800">กำหนดส่วนที่ต้องการแยก</h2>
-                            <p class="text-xs text-slate-400 mt-0.5">ระบุช่วงหน้า เช่น <code>1-3</code> หรือ
-                                <code>4</code> หรือ <code>1,3,5</code></p>
-                        </div>
-                        <button id="add-split-btn" class="text-xs sm:text-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1">
-              <span>+</span> เพิ่มรายการ
-            </button>
+                    <div class="border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800">กำหนดส่วนที่ต้องการแยก</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">ระบุช่วงหน้า เช่น <code>1-3</code> หรือ
+                            <code>4</code> หรือ <code>1,3,5</code> ·
+                            หรือคลิกที่ภาพตัวอย่างด้านขวาเพื่อเลือกหน้าลงในรายการที่กำลังแก้ไข
+                        </p>
                     </div>
-                    
                     <div id="split-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                        
                     </div>
+                    <button id="add-split-btn" type="button"
+                        class="w-full text-sm border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
+                        <span>+</span> เพิ่มรายการ
+                    </button>
                 </div>
-                
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -122,37 +114,53 @@
                             </div>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="compress-toggle" class="sr-only peer">
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
+                            <input type="checkbox" id="compress-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
                     </div>
-                    
                     <div id="compress-options" class="hidden pt-3 border-t border-slate-100 grid grid-cols-3 gap-2">
-                        <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 flex flex-col items-center text-center transition">
-              <input type="radio" name="compress-quality" value="low" class="text-indigo-600">
-              <span class="text-xs font-semibold mt-1">ไฟล์เล็กสุด</span>
-              <span class="text-[10px] text-slate-400">ลดขนาดสูงสุด (คมชัดน้อย)</span>
-            </label>
-                        <label class="border-2 border-indigo-500 bg-indigo-50/30 p-2.5 rounded-xl cursor-pointer flex flex-col items-center text-center transition">
-              <input type="radio" name="compress-quality" value="medium" checked class="text-indigo-600">
-              <span class="text-xs font-semibold text-indigo-900 mt-1">ปานกลาง (แนะนำ)</span>
-              <span class="text-[10px] text-slate-500">คมชัดพอดี ขนาดลดลงมาก</span>
-            </label>
-                        <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 flex flex-col items-center text-center transition">
-              <input type="radio" name="compress-quality" value="high" class="text-indigo-600">
-              <span class="text-xs font-semibold mt-1">คุณภาพสูง</span>
-              <span class="text-[10px] text-slate-400">เน้นความคมชัด ขนาดลดน้อย</span>
-            </label>
+                        <label class="compress-opt border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 flex flex-col items-center text-center transition">
+                            <input type="radio" name="compress-quality" value="low" class="text-indigo-600">
+                            <span class="text-xs font-semibold mt-1">ไฟล์เล็กสุด</span>
+                            <span class="text-[10px] text-slate-400">ลดขนาดสูงสุด (คมชัดน้อย)</span>
+                        </label>
+                        <label class="compress-opt border-2 border-indigo-500 bg-indigo-50/30 p-2.5 rounded-xl cursor-pointer flex flex-col items-center text-center transition">
+                            <input type="radio" name="compress-quality" value="medium" checked class="text-indigo-600">
+                            <span class="text-xs font-semibold text-indigo-900 mt-1">ปานกลาง (แนะนำ)</span>
+                            <span class="text-[10px] text-slate-500">คมชัดพอดี ขนาดลดลงมาก</span>
+                        </label>
+                        <label class="compress-opt border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 flex flex-col items-center text-center transition">
+                            <input type="radio" name="compress-quality" value="high" class="text-indigo-600">
+                            <span class="text-xs font-semibold mt-1">คุณภาพสูง</span>
+                            <span class="text-[10px] text-slate-400">เน้นความคมชัด ขนาดลดน้อย</span>
+                        </label>
                     </div>
+                    <p id="compress-note"
+                        class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-relaxed">
+                        ⚠️ โหมดนี้จะแปลงแต่ละหน้าเป็นรูปภาพ ทำให้ข้อความในไฟล์เลือก ค้นหา หรือคัดลอกไม่ได้
+                        หากบีบอัดแล้วไฟล์ไม่เล็กลง ระบบจะใช้ไฟล์ต้นฉบับของส่วนนั้นให้อัตโนมัติ
+                    </p>
                 </div>
-                
-                <div>
-                    <button id="process-btn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-100 transition flex items-center justify-center gap-2">
-            <span id="btn-text">📦 แยกไฟล์และดาวน์โหลดเป็น ZIP</span>
-          </button>
+                <div class="space-y-3">
+                    <button id="process-btn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-indigo-100 transition flex items-center justify-center gap-2">
+                        <span id="btn-text">📦 แยกไฟล์และดาวน์โหลด</span>
+                    </button>
+                    <div id="process-progress" class="hidden space-y-1.5">
+                        <div class="flex justify-between text-xs font-semibold px-1">
+                            <span id="process-status-text" class="text-slate-600">กำลังประมวลผล...</span>
+                            <span id="process-percent-text" class="text-indigo-600">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                            <div id="process-progress-bar"
+                                class="bg-indigo-600 h-full rounded-full transition-all duration-200 ease-out"
+                                style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="result-summary"
+                        class="hidden text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 leading-relaxed">
+                    </div>
                 </div>
             </div>
-            
             <div class="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm sticky top-6">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
@@ -162,17 +170,23 @@
                 </div>
                 <div id="preview-container"
                     class="space-y-4 max-h-[75vh] overflow-y-auto p-2 bg-slate-50 border border-slate-100 rounded-xl custom-scrollbar">
-                    
                 </div>
             </div>
         </div>
     </div>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const PREVIEW_SCALE = 0.6;
     let pdfDoc = null;
     let pdfJsDoc = null;
     let totalPages = 0;
     let splitCount = 0;
+    let activeRow = null;
+    
+    let previewToken = 0;
+    let previewObserver = null;
+    let renderQueue = Promise.resolve();
+    let renderedCount = 0;
     const uploadBox = document.getElementById('upload-box');
     const uploadPrompt = document.getElementById('upload-prompt');
     const uploadProgressContainer = document.getElementById('upload-progress-container');
@@ -193,12 +207,33 @@
     const previewStatus = document.getElementById('preview-status');
     const compressToggle = document.getElementById('compress-toggle');
     const compressOptions = document.getElementById('compress-options');
+    const compressNote = document.getElementById('compress-note');
+    const processProgress = document.getElementById('process-progress');
+    const processProgressBar = document.getElementById('process-progress-bar');
+    const processStatusText = document.getElementById('process-status-text');
+    const processPercentText = document.getElementById('process-percent-text');
+    const resultSummary = document.getElementById('result-summary');
+    const nextFrame = () => new Promise(r => setTimeout(r, 0));
     
     compressToggle.addEventListener('change', (e) => {
       compressOptions.classList.toggle('hidden', !e.target.checked);
+      compressNote.classList.toggle('hidden', !e.target.checked);
     });
-    uploadBox.addEventListener('click', (e) => {
-      
+    compressOptions.addEventListener('change', () => {
+      compressOptions.querySelectorAll('.compress-opt').forEach(label => {
+        const checked = label.querySelector('input').checked;
+        label.classList.toggle('border-2', checked);
+        label.classList.toggle('border-indigo-500', checked);
+        label.classList.toggle('bg-indigo-50/30', checked);
+        label.classList.toggle('border', !checked);
+        label.classList.toggle('border-slate-200', !checked);
+      });
+    });
+    
+    function isPdfFile(file) {
+      return file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    }
+    uploadBox.addEventListener('click', () => {
       if (!uploadProgressContainer.classList.contains('hidden')) return;
       pdfInput.click();
     });
@@ -212,53 +247,63 @@
     pdfInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) handleFile(e.target.files[0]);
     });
+    function resetViewer() {
+      previewToken++;
+      if (previewObserver) { previewObserver.disconnect(); previewObserver = null; }
+      renderQueue = Promise.resolve();
+      renderedCount = 0;
+      if (pdfJsDoc) { pdfJsDoc.destroy().catch(() => {}); pdfJsDoc = null; }
+      pdfDoc = null;
+      totalPages = 0;
+      activeRow = null;
+      previewContainer.innerHTML = '';
+      splitList.innerHTML = '';
+      resultSummary.classList.add('hidden');
+      processProgress.classList.add('hidden');
+    }
     changeFileBtn.addEventListener('click', () => {
+      resetViewer();
       pdfInput.value = '';
       workspace.classList.add('hidden');
       uploadBox.classList.remove('hidden');
       uploadPrompt.classList.remove('hidden');
       uploadProgressContainer.classList.add('hidden');
-      previewContainer.innerHTML = '';
       setUploadProgress(0, '', '');
     });
-    
     function setUploadProgress(percent, statusText, subText = "") {
       uploadProgressBar.style.width = `${percent}%`;
       uploadPercentText.textContent = `${Math.round(percent)}%`;
       if (statusText) uploadStatusText.textContent = statusText;
       if (subText) uploadSubtext.textContent = subText;
     }
-    
     async function handleFile(file) {
-      if (file.type !== 'application/pdf') {
+      if (!isPdfFile(file)) {
         alert('กรุณาเลือกไฟล์ PDF เท่านั้น');
         return;
       }
-      
+      resetViewer();
       uploadPrompt.classList.add('hidden');
       uploadProgressContainer.classList.remove('hidden');
       setUploadProgress(10, 'กำลังอ่านข้อมูลไฟล์จากเครื่อง...', file.name);
       fileNameEl.textContent = file.name;
       try {
-        
         const arrayBuffer = await readFileAsArrayBufferWithProgress(file);
         setUploadProgress(40, 'กำลังแยกโครงสร้างไฟล์ PDF...');
         pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer.slice(0));
         totalPages = pdfDoc.getPageCount();
         pageCountEl.textContent = `จำนวนหน้าทั้งหมด: ${totalPages} หน้า`;
-        setUploadProgress(50, 'กำลังโหลดหน้าตัวอย่าง...');
-        
-        
-        await renderPreviewsWithProgress(arrayBuffer.slice(0));
-        
+        setUploadProgress(60, 'กำลังเตรียมตัวอย่างหน้าเอกสาร...');
+        pdfJsDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+        setUploadProgress(80, 'กำลังสร้างรายการหน้า...', `${totalPages} หน้า`);
+        await buildPreviewPlaceholders();
         setUploadProgress(100, 'เตรียมความพร้อมเสร็จสิ้น!');
         setTimeout(() => {
           uploadBox.classList.add('hidden');
           workspace.classList.remove('hidden');
-          
           splitList.innerHTML = '';
           splitCount = 0;
-          addSplitRow("1", `Part_1`);
+          const row = addSplitRow("1", "Part_1");
+          setActiveRow(row);
         }, 300);
       } catch (err) {
         alert('เกิดข้อผิดพลาดในการเปิดไฟล์ PDF (อาจติดรหัสผ่าน หรือไฟล์ไม่สมบูรณ์)');
@@ -266,15 +311,13 @@
         changeFileBtn.click();
       }
     }
-    
     function readFileAsArrayBufferWithProgress(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onprogress = (e) => {
           if (e.lengthComputable) {
-            
             const percent = 10 + Math.round((e.loaded / e.total) * 25);
-            setUploadProgress(percent, 'กำลังอ่านข้อมูลไฟล์...', `${(e.loaded / (1024*1024)).toFixed(1)} MB / ${(e.total / (1024*1024)).toFixed(1)} MB`);
+            setUploadProgress(percent, 'กำลังอ่านข้อมูลไฟล์...', `${(e.loaded / (1024 * 1024)).toFixed(1)} MB / ${(e.total / (1024 * 1024)).toFixed(1)} MB`);
           }
         };
         reader.onload = () => resolve(reader.result);
@@ -283,48 +326,122 @@
       });
     }
     
-    async function renderPreviewsWithProgress(arrayBuffer) {
+    async function buildPreviewPlaceholders() {
       previewContainer.innerHTML = '';
-      previewStatus.textContent = 'กำลังโหลดตัวอย่าง...';
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-      pdfJsDoc = await loadingTask.promise;
-      for (let i = 1; i <= pdfJsDoc.numPages; i++) {
-        
-        const percent = 50 + Math.round((i / pdfJsDoc.numPages) * 45);
-        setUploadProgress(percent, `กำลังสร้างหน้าตัวอย่าง... (${i}/${pdfJsDoc.numPages})`, `หน้า ${i}`);
-        const page = await pdfJsDoc.getPage(i);
-        const viewport = page.getViewport({ scale: 0.6 });
+      renderedCount = 0;
+      const first = await pdfJsDoc.getPage(1);
+      const vp = first.getViewport({ scale: PREVIEW_SCALE });
+      first.cleanup();
+      previewObserver = new IntersectionObserver(onPreviewIntersect, {
+        root: previewContainer,
+        rootMargin: '400px 0px',
+        threshold: 0.01
+      });
+      const token = previewToken;
+      for (let i = 1; i <= totalPages; i++) {
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col items-center';
-        const canvas = document.createElement('canvas');
-        canvas.className = 'rounded border border-slate-100 shadow-inner max-w-full h-auto';
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport: viewport }).promise;
-        const label = document.createElement('div');
-        label.className = 'mt-2 px-3 py-0.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full border border-slate-200';
-        label.textContent = `หน้า ${i}`;
-        card.appendChild(canvas);
-        card.appendChild(label);
+        card.className = 'preview-card bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col items-center';
+        card.dataset.page = i;
+        card.innerHTML = `
+          <div class="preview-slot w-full flex justify-center">
+            <div class="animate-pulse bg-slate-100 rounded border border-slate-100"
+                 style="width:${vp.width}px;max-width:100%;aspect-ratio:${vp.width}/${vp.height}"></div>
+          </div>
+          <div class="page-label mt-2 px-3 py-0.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full border border-slate-200">หน้า ${i}</div>
+        `;
         previewContainer.appendChild(card);
+        previewObserver.observe(card);
       }
-      previewStatus.textContent = `ครบทั้งหมด ${pdfJsDoc.numPages} หน้า`;
+      updatePreviewStatus(token);
     }
+    function updatePreviewStatus() {
+      previewStatus.textContent = `ทั้งหมด ${totalPages} หน้า · โหลดแล้ว ${renderedCount}`;
+    }
+    function onPreviewIntersect(entries) {
+      const token = previewToken;
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const card = entry.target;
+        if (card.dataset.queued) return;
+        card.dataset.queued = '1';
+        previewObserver && previewObserver.unobserve(card);
+        renderQueue = renderQueue
+          .then(() => renderPreviewPage(card, token))
+          .catch(err => console.error(err));
+      });
+    }
+    async function renderPreviewPage(card, token) {
+      if (token !== previewToken || !pdfJsDoc) return;
+      const pageNum = Number(card.dataset.page);
+      const page = await pdfJsDoc.getPage(pageNum);
+      if (token !== previewToken) return;
+      const viewport = page.getViewport({ scale: PREVIEW_SCALE });
+      const canvas = document.createElement('canvas');
+      canvas.className = 'rounded border border-slate-100 shadow-inner max-w-full h-auto';
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      page.cleanup();
+      if (token !== previewToken) return;
+      const slot = card.querySelector('.preview-slot');
+      slot.innerHTML = '';
+      slot.appendChild(canvas);
+      renderedCount++;
+      updatePreviewStatus();
+    }
+    
+    function highlightPreview() {
+      const selected = activeRow
+        ? new Set(parseLenient(activeRow.querySelector('.split-range').value, totalPages))
+        : new Set();
+      previewContainer.querySelectorAll('.preview-card').forEach(card => {
+        const n = Number(card.dataset.page);
+        const sel = selected.has(n - 1);
+        card.classList.toggle('ring-2', sel);
+        card.classList.toggle('ring-indigo-500', sel);
+        card.classList.toggle('bg-indigo-50', sel);
+        card.classList.toggle('bg-white', !sel);
+        card.classList.toggle('border-indigo-300', sel);
+        card.classList.toggle('border-slate-200', !sel);
+        card.querySelector('.page-label').textContent = sel ? `✓ หน้า ${n}` : `หน้า ${n}`;
+      });
+    }
+    previewContainer.addEventListener('click', (e) => {
+      const card = e.target.closest('.preview-card');
+      if (!card || !activeRow) return;
+      const p = Number(card.dataset.page) - 1;
+      const input = activeRow.querySelector('.split-range');
+      const set = new Set(parseLenient(input.value, totalPages));
+      if (set.has(p)) set.delete(p); else set.add(p);
+      input.value = indicesToRange([...set].sort((a, b) => a - b));
+      highlightPreview();
+    });
+    function setActiveRow(row) {
+      activeRow = row;
+      Array.from(splitList.children).forEach(r => {
+        const on = r === row;
+        r.classList.toggle('ring-2', on);
+        r.classList.toggle('ring-indigo-300', on);
+        r.classList.toggle('border-indigo-300', on);
+        r.classList.toggle('border-slate-200', !on);
+      });
+      highlightPreview();
+    }
+    
     function addSplitRow(defaultRange = "", defaultName = "") {
       splitCount++;
       const row = document.createElement('div');
-      row.className = "flex flex-col sm:flex-row items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl";
+      row.className = "flex flex-col sm:flex-row items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl transition";
       row.innerHTML = `
         <div class="flex-1 w-full sm:w-auto">
           <label class="block text-xs font-medium text-slate-500 mb-1">ช่วงหน้า (เช่น 1-3, 5)</label>
-          <input type="text" class="split-range w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" 
-                 placeholder="เช่น 1-${totalPages}" value="${defaultRange}">
+          <input type="text" class="split-range w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                 placeholder="เช่น 1-${totalPages}">
         </div>
         <div class="flex-1 w-full sm:w-auto">
           <label class="block text-xs font-medium text-slate-500 mb-1">ตั้งชื่อไฟล์ใหม่</label>
-          <input type="text" class="split-name w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" 
-                 placeholder="ชื่อไฟล์" value="${defaultName || 'Part_' + splitCount}">
+          <input type="text" class="split-name w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                 placeholder="ชื่อไฟล์">
         </div>
         <div class="self-end sm:self-center pt-1 sm:pt-5">
           <button type="button" class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm delete-btn transition">
@@ -332,16 +449,45 @@
           </button>
         </div>
       `;
-      row.querySelector('.delete-btn').addEventListener('click', () => {
+      const rangeInput = row.querySelector('.split-range');
+      const nameInput = row.querySelector('.split-name');
+      rangeInput.value = defaultRange;
+      nameInput.value = defaultName || ('Part_' + splitCount);
+      row.addEventListener('focusin', () => { if (activeRow !== row) setActiveRow(row); });
+      row.addEventListener('click', () => { if (activeRow !== row) setActiveRow(row); });
+      rangeInput.addEventListener('input', highlightPreview);
+      row.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
         if (splitList.children.length > 1) {
+          const wasActive = activeRow === row;
           row.remove();
+          if (wasActive) setActiveRow(splitList.lastElementChild);
         } else {
           alert('ต้องมีอย่างน้อย 1 รายการ');
         }
       });
       splitList.appendChild(row);
+      return row;
     }
-    addSplitBtn.addEventListener('click', () => addSplitRow());
+    function nextRangeSuggestion() {
+      let maxPage = 0;
+      for (const r of splitList.children) {
+        const idx = parseLenient(r.querySelector('.split-range').value, totalPages);
+        if (idx.length) maxPage = Math.max(maxPage, idx[idx.length - 1] + 1);
+      }
+      const next = maxPage + 1;
+      if (next > totalPages) return '';
+      return next === totalPages ? `${next}` : `${next}-${totalPages}`;
+    }
+    addSplitBtn.addEventListener('click', () => {
+      const row = addSplitRow(nextRangeSuggestion());
+      setActiveRow(row);
+      row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const input = row.querySelector('.split-range');
+      input.focus();
+      input.select();
+    });
+    
     function parsePageRange(rangeStr, maxPages) {
       const pages = new Set();
       const parts = rangeStr.split(',').map(s => s.trim());
@@ -367,7 +513,62 @@
       }
       return Array.from(pages).sort((a, b) => a - b);
     }
-    async function generateCompressedPdf(pageIndices, qualitySetting) {
+    
+    function parseLenient(rangeStr, maxPages) {
+      const pages = new Set();
+      String(rangeStr).split(',').forEach(raw => {
+        const part = raw.trim();
+        let m;
+        if ((m = part.match(/^(\d+)\s*-\s*(\d+)$/))) {
+          const s = Math.max(1, parseInt(m[1], 10));
+          const e = Math.min(maxPages, parseInt(m[2], 10));
+          for (let i = s; i <= e; i++) pages.add(i - 1);
+        } else if (/^\d+$/.test(part)) {
+          const p = parseInt(part, 10);
+          if (p >= 1 && p <= maxPages) pages.add(p - 1);
+        }
+      });
+      return Array.from(pages).sort((a, b) => a - b);
+    }
+    function indicesToRange(indices) {
+      const out = [];
+      let i = 0;
+      while (i < indices.length) {
+        let j = i;
+        while (j + 1 < indices.length && indices[j + 1] === indices[j] + 1) j++;
+        out.push(j > i ? `${indices[i] + 1}-${indices[j] + 1}` : `${indices[i] + 1}`);
+        i = j + 1;
+      }
+      return out.join(',');
+    }
+    
+    function formatSize(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+    function setProcessProgress(percent, text) {
+      processProgressBar.style.width = `${percent}%`;
+      processPercentText.textContent = `${Math.round(percent)}%`;
+      if (text) processStatusText.textContent = text;
+    }
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+    async function makeOriginalPdf(pageIndices) {
+      const newPdf = await PDFLib.PDFDocument.create();
+      const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+      copiedPages.forEach(p => newPdf.addPage(p));
+      return await newPdf.save({ useObjectStreams: true });
+    }
+    async function generateCompressedPdf(pageIndices, qualitySetting, onPageDone) {
       const settings = {
         low:    { scale: 1.0, quality: 0.5 },
         medium: { scale: 1.25, quality: 0.65 },
@@ -375,8 +576,7 @@
       }[qualitySetting] || { scale: 1.25, quality: 0.65 };
       const newPdf = await PDFLib.PDFDocument.create();
       for (let i = 0; i < pageIndices.length; i++) {
-        const pageNum = pageIndices[i] + 1;
-        const page = await pdfJsDoc.getPage(pageNum);
+        const page = await pdfJsDoc.getPage(pageIndices[i] + 1);
         const viewport = page.getViewport({ scale: settings.scale });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
@@ -384,6 +584,10 @@
         const ctx = canvas.getContext('2d');
         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
         const imgDataUrl = canvas.toDataURL('image/jpeg', settings.quality);
+        
+        canvas.width = 0;
+        canvas.height = 0;
+        page.cleanup();
         const embeddedImg = await newPdf.embedJpg(imgDataUrl);
         const origViewport = page.getViewport({ scale: 1.0 });
         const newPage = newPdf.addPage([origViewport.width, origViewport.height]);
@@ -393,6 +597,8 @@
           width: origViewport.width,
           height: origViewport.height
         });
+        if (onPageDone) onPageDone();
+        await nextFrame(); 
       }
       return await newPdf.save();
     }
@@ -414,38 +620,78 @@
         return;
       }
       processBtn.disabled = true;
+      resultSummary.classList.add('hidden');
+      processProgress.classList.remove('hidden');
+      setProcessProgress(0, 'เริ่มประมวลผล...');
       const isCompress = compressToggle.checked;
       const qualitySetting = document.querySelector('input[name="compress-quality"]:checked')?.value || 'medium';
+      const totalWork = splitsData.reduce((s, x) => s + x.indices.length, 0);
+      let doneWork = 0;
+      const bump = (n = 1) => {
+        doneWork += n;
+        setProcessProgress(Math.min(100, (doneWork / totalWork) * 100));
+      };
+      let sizeBefore = 0;
+      let sizeAfter = 0;
+      let keptOriginal = 0;
       try {
-        const zip = new JSZip();
+        const results = [];
         for (let idx = 0; idx < splitsData.length; idx++) {
           const item = splitsData[idx];
-          btnText.textContent = `กำลังทำไฟล์ที่ ${idx + 1}/${splitsData.length}: ${item.fileName}...`;
+          const label = `ไฟล์ที่ ${idx + 1}/${splitsData.length}: ${item.fileName}`;
+          btnText.textContent = `กำลังทำ${label}...`;
+          setProcessProgress(Math.min(100, (doneWork / totalWork) * 100), `กำลังทำ${label}`);
+          await nextFrame();
           let pdfBytes;
+          const originalBytes = await makeOriginalPdf(item.indices);
           if (isCompress) {
-            pdfBytes = await generateCompressedPdf(item.indices, qualitySetting);
+            const compressed = await generateCompressedPdf(item.indices, qualitySetting, () => bump(1));
+            sizeBefore += originalBytes.length;
+            if (compressed.length < originalBytes.length) {
+              pdfBytes = compressed;
+            } else {
+              pdfBytes = originalBytes;
+              keptOriginal++;
+            }
+            sizeAfter += pdfBytes.length;
           } else {
-            const newPdf = await PDFLib.PDFDocument.create();
-            const copiedPages = await newPdf.copyPages(pdfDoc, item.indices);
-            copiedPages.forEach(p => newPdf.addPage(p));
-            pdfBytes = await newPdf.save({ useObjectStreams: true });
+            pdfBytes = originalBytes;
+            bump(item.indices.length);
           }
-          const cleanName = item.fileName.endsWith('.pdf') ? item.fileName : `${item.fileName}.pdf`;
-          zip.file(cleanName, pdfBytes);
+          const cleanName = item.fileName.toLowerCase().endsWith('.pdf') ? item.fileName : `${item.fileName}.pdf`;
+          results.push({ name: cleanName, bytes: pdfBytes });
         }
-        btnText.textContent = '📦 กำลังบีบอัดไฟล์ ZIP...';
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(zipBlob);
-        link.download = `pdf_splits_${Date.now()}.zip`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        if (results.length === 1) {
+          
+          btnText.textContent = '⬇️ กำลังดาวน์โหลด...';
+          downloadBlob(new Blob([results[0].bytes], { type: 'application/pdf' }), results[0].name);
+        } else {
+          btnText.textContent = '📦 กำลังรวมไฟล์ ZIP...';
+          setProcessProgress(100, 'กำลังรวมไฟล์ ZIP...');
+          const zip = new JSZip();
+          results.forEach(r => zip.file(r.name, r.bytes));
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          downloadBlob(zipBlob, `pdf_splits_${Date.now()}.zip`);
+        }
+        setProcessProgress(100, 'เสร็จเรียบร้อย');
+        const totalBytes = results.reduce((s, r) => s + r.bytes.length, 0);
+        let summary = `✅ สำเร็จ ${results.length} ไฟล์ · ขนาดรวม ${formatSize(totalBytes)}`;
+        if (isCompress) {
+          const saved = sizeBefore > 0 ? Math.round((1 - sizeAfter / sizeBefore) * 100) : 0;
+          summary += `<br>🗜️ ก่อนบีบอัด ${formatSize(sizeBefore)} → หลังบีบอัด ${formatSize(sizeAfter)} (ลดลง ${saved}%)`;
+          if (keptOriginal > 0) {
+            summary += `<br>ℹ️ ${keptOriginal} ไฟล์ใช้ต้นฉบับ เพราะบีบอัดแล้วไฟล์ไม่เล็กลง`;
+          }
+        }
+        resultSummary.innerHTML = summary;
+        resultSummary.classList.remove('hidden');
       } catch (err) {
         console.error(err);
+        processProgress.classList.add('hidden');
         alert('เกิดข้อผิดพลาดในการประมวลผล PDF');
       } finally {
         processBtn.disabled = false;
-        btnText.textContent = '📦 แยกไฟล์และดาวน์โหลดเป็น ZIP';
+        btnText.textContent = '📦 แยกไฟล์และดาวน์โหลด';
       }
     });
     </script>
