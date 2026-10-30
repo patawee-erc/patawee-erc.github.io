@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pokemon Defense FINAL - Auto Battler</title>
+    <style>
+        body {
+            margin: 0;
+            background: #120b24;
+            color: #fff;
+            font-family: "Courier New", monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px
+        }
+
+        #wrap {
+            width: 100%;
+            max-width: 568px
+        }
+
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #2b1b57;
+            border: 4px solid #f5c542;
+            font-weight: bold;
+            font-size: 14px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            width: 100%;
+            display: block;
+            background: #2b1b57;
+            border: 4px solid #f5c542;
+            border-top: 0;
+            box-sizing: border-box;
+            cursor: pointer;
+            image-rendering: pixelated;
+        }
+
+        #panel {
+            background: #2b1b57;
+            border: 4px solid #f5c542;
+            border-top: 0;
+            padding: 8px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #bench {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-height: 58px;
+            margin-bottom: 8px
+        }
+
+        .slot {
+            width: 78px;
+            height: 56px;
+            background: #3d2a7a;
+            border: 3px solid #888;
+            color: #fff;
+            font: 11px "Courier New", monospace;
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .slot img {
+            width: 32px;
+            height: 32px;
+            image-rendering: pixelated;
+            object-fit: contain;
+        }
+
+        .slot.sel {
+            outline: 3px solid #ffeb3b;
+            background: #5d3ebc;
+        }
+
+        .btn {
+            background: #f5c542;
+            color: #2b1b57;
+            border: 3px solid #fff;
+            font: bold 13px "Courier New", monospace;
+            padding: 8px 9px;
+            cursor: pointer;
+            margin-right: 4px;
+            margin-bottom: 4px;
+            transition: 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-sell {
+            background: #e91e63;
+            color: #fff;
+        }
+
+        .btn.active-speed {
+            background: #ff5722 !important;
+            color: #fff !important;
+        }
+
+        .btn.music-off {
+            background: #555 !important;
+            color: #aaa !important;
+            border-color: #888 !important;
+        }
+
+        .btn:disabled {
+            background: #555;
+            color: #888;
+            border-color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #msg {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #ffe9a0;
+            min-height: 18px
+        }
+
+        #help {
+            font-size: 11px;
+            color: #bba;
+            margin-top: 6px;
+            line-height: 1.5
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrap">
+        <div id="hud">
+            <span id="hl">❤ 20</span><span id="hg">💰 300</span><span id="hw">WAVE 1</span><span id="hk">👾 -</span>
+        </div>
+        <canvas id="c" width="560" height="640"></canvas>
+        <div id="panel">
+            <div id="bench"></div>
+            <button class="btn" id="bRoll">🎲 Roll (100G)</button>
+            <button class="btn" id="bEvo">🧬 Evolve</button>
+            <button class="btn btn-sell" id="bSell" disabled>💰 ขายคืน</button>
+            <button class="btn" id="bStart">⚔ Start Battle</button>
+            <button class="btn" id="bSpeed">⏩ Speed: 1x</button>
+            <button class="btn" id="bMusic">🎵 BGM: ON</button>
+            <button class="btn" id="bRestart" style="display:none">↻ Restart</button>
+            <div id="msg"></div>
+            <div id="help">
+                <b>ระบบวาปบอท:</b> บอทศัตรูทั้งหมดจะวาปเข้ามาพร้อมกันที่ขอบบนของสังเวียนทันทีที่เริ่มเวฟ<br>
+                <b>สเกลจำนวนบอท (*3):</b> จำนวนบอทจะเพิ่มขึ้น 3 เท่าทุกเวฟ (เวฟ 1: 3 ตัว, เวฟ 2: 9 ตัว, เวฟ 3: 27 ตัว, เวฟ 4: 81 ตัว...) ยิ่งฆ่าได้มาก ยิ่งรวยเร็ว!<br>
+                <b>ระบบขายคืน:</b> คลิกเลือกโปเกมอนใน Bench หรือบนกระดาน แล้วกด <b>💰 ขายคืน</b> ได้เงินคืน 50%
+            </div>
+        </div>
+    </div>
+    <script>
+        const W = 560, H = 640, CS = 70, GY = 420, COLS = 8, ROWS = 3;
+        const cv = document.getElementById('c'), g = cv.getContext('2d');
+        g.imageSmoothingEnabled = false;
+
+        const SHOWDOWN_URL = 'https://play.pokemonshowdown.com/sprites/gen5/';
+        const imgCache = {};
+        function getSprite(key) {
+          if (!key) return null;
+          if (!imgCache[key]) {
+            const img = new Image();
+            img.src = `${SHOWDOWN_URL}${key}.png`;
+            imgCache[key] = img;
+          }
+          return imgCache[key];
+        }
+
+        // ==========================================
+        // 🔊 ระบบเสียง SFX & ดนตรี BGM 8-BIT
+        // ==========================================
+       // ==========================================
+        // 🔊 ระบบเสียง SFX & ดนตรี BGM 8-BIT (แก้ไขใหม่)
+        // ==========================================
+        let actx = null;
+        let bgmGain = null;
+        let isBgmOn = true;
+
+        function initAudio() {
+          if (!actx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            actx = new AudioCtx();
+            bgmGain = actx.createGain();
+            bgmGain.gain.setValueAtTime(0.2, actx.currentTime); // เพิ่มระดับเสียงให้ได้ยินชัดเจน
+            bgmGain.connect(actx.destination);
+            BGM.init();
+          }
+          
+          // ปลดล็อกระบบเสียงของเบราว์เซอร์
+          if (actx.state === 'suspended') {
+            actx.resume().then(() => {
+              if (isBgmOn && !BGM.running) BGM.start();
+            });
+          } else {
+            if (isBgmOn && !BGM.running) BGM.start();
+          }
+        }
+
+        const Sound = {
+          playTone(freq, type, duration, endFreq = null, vol = 0.15) {
+            if (!actx) return;
+            try {
+              const osc = actx.createOscillator();
+              const gain = actx.createGain();
+              osc.type = type;
+              osc.frequency.setValueAtTime(freq, actx.currentTime);
+              if (endFreq) {
+                osc.frequency.exponentialRampToValueAtTime(Math.max(10, endFreq), actx.currentTime + duration);
+              }
+              gain.gain.setValueAtTime(vol, actx.currentTime);
+              gain.gain.linearRampToValueAtTime(0.001, actx.currentTime + duration);
+              osc.connect(gain);
+              gain.connect(actx.destination);
+              osc.start();
+              osc.stop(actx.currentTime + duration);
+            } catch (e) {}
+          },
+          click() { this.playTone(600, 'square', 0.04, 300, 0.08); },
+          roll() {
+            if (!actx) return;
+            this.playTone(523, 'triangle', 0.07, null, 0.2);
+            setTimeout(() => this.playTone(784, 'triangle', 0.12, null, 0.2), 60);
+          },
+          sell() {
+            if (!actx) return;
+            this.playTone(880, 'sine', 0.08, null, 0.2);
+            setTimeout(() => this.playTone(1174, 'sine', 0.15, null, 0.2), 60);
+          },
+          warp() { this.playTone(180, 'sine', 0.22, 900, 0.2); },
+          evo() {
+            if (!actx) return;
+            [440, 554, 659, 880].forEach((f, i) => {
+              setTimeout(() => this.playTone(f, 'square', 0.15, null, 0.18), i * 85);
+            });
+          },
+          hit(isCrit) {
+            this.playTone(isCrit ? 820 : 300, isCrit ? 'sawtooth' : 'square', isCrit ? 0.12 : 0.05, isCrit ? 100 : 80, isCrit ? 0.2 : 0.1);
+          },
+          zap() { this.playTone(950, 'sawtooth', 0.09, 200, 0.14); },
+          boom() { this.playTone(150, 'triangle', 0.4, 25, 0.35); },
+          leak() { this.playTone(160, 'sawtooth', 0.25, 60, 0.25); },
+          win() {
+            if (!actx) return;
+            [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => this.playTone(f, 'sine', 0.18, null, 0.2), i * 80));
+          },
+          gameover() {
+            if (!actx) return;
+            [400, 360, 320, 260].forEach((f, i) => setTimeout(() => this.playTone(f, 'sawtooth', 0.25, f - 30, 0.25), i * 140));
+          }
+        };
+
+        // 🎵 ดนตรีประกอบ 8-Bit Chiptune Sequencer แบบเปิดฟังได้ทันที
+        const BGM = {
+          step: 0,
+          running: false,
+          intervalId: null,
+          noiseBuffer: null,
+          melody: [
+            330, 0, 330, 392, 440, 0, 494, 0,
+            523, 494, 440, 392, 330, 0, 294, 0,
+            330, 0, 330, 392, 440, 0, 494, 523,
+            587, 0, 494, 0, 392, 440, 330, 0
+          ],
+          bass: [
+            165, 165, 165, 165, 196, 196, 220, 220,
+            165, 165, 165, 165, 147, 147, 131, 147,
+            165, 165, 165, 165, 196, 196, 220, 220,
+            247, 247, 220, 220, 196, 196, 165, 165
+          ],
+          drums: [
+            1, 0, 2, 0, 1, 0, 2, 1,
+            1, 0, 2, 0, 1, 1, 2, 0,
+            1, 0, 2, 0, 1, 0, 2, 1,
+            1, 0, 2, 1, 1, 0, 2, 2
+          ],
+          init() {
+            if (!actx || this.noiseBuffer) return;
+            const bufferSize = Math.floor(actx.sampleRate * 0.05);
+            this.noiseBuffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+            const data = this.noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+              data[i] = Math.random() * 2 - 1;
+            }
+          },
+          playDrum(type) {
+            if (!actx || !bgmGain || !this.noiseBuffer) return;
+            try {
+              const src = actx.createBufferSource();
+              src.buffer = this.noiseBuffer;
+              const gNode = actx.createGain();
+              gNode.gain.setValueAtTime(type === 2 ? 0.15 : 0.08, actx.currentTime);
+              gNode.gain.linearRampToValueAtTime(0.001, actx.currentTime + (type === 2 ? 0.08 : 0.04));
+              src.connect(gNode);
+              gNode.connect(bgmGain);
+              src.start();
+            } catch (e) {}
+          },
+          playNote(freq, type, dur, vol) {
+            if (!actx || !bgmGain || freq <= 0) return;
+            try {
+              const osc = actx.createOscillator();
+              const gNode = actx.createGain();
+              osc.type = type;
+              osc.frequency.setValueAtTime(freq, actx.currentTime);
+              gNode.gain.setValueAtTime(vol, actx.currentTime);
+              gNode.gain.linearRampToValueAtTime(0.001, actx.currentTime + dur);
+              osc.connect(gNode);
+              gNode.connect(bgmGain);
+              osc.start();
+              osc.stop(actx.currentTime + dur);
+            } catch (e) {}
+          },
+          tick() {
+            if (!this.running || !isBgmOn || !actx || actx.state !== 'running') return;
+            const m = this.melody[this.step];
+            const b = this.bass[this.step];
+            const d = this.drums[this.step];
+
+            if (m) this.playNote(m, 'square', 0.11, 0.15); // ปรับความดังเมโลดี้ขึ้น
+            if (b) this.playNote(b, 'triangle', 0.13, 0.25); // ปรับความดังเบสขึ้น
+            if (d) this.playDrum(d);
+
+            this.step = (this.step + 1) % 32;
+          },
+          start() {
+            if (this.running) return;
+            this.running = true;
+            this.step = 0;
+            if (this.intervalId) clearInterval(this.intervalId);
+            this.intervalId = setInterval(() => this.tick(), 135);
+          },
+          stop() {
+            this.running = false;
+            if (this.intervalId) {
+              clearInterval(this.intervalId);
+              this.intervalId = null;
+            }
+          }
+        };
+
+        // ==========================================
+        // 🎨 พื้นหลังสังเวียน
+        // ==========================================
+        const bgCanvas = document.createElement('canvas');
+        bgCanvas.width = W; bgCanvas.height = H;
+        const bg = bgCanvas.getContext('2d');
+        bg.imageSmoothingEnabled = false;
+
+        function buildPixelBackground() {
+          const pRand = s => { let x = Math.sin(s++) * 10000; return x - Math.floor(x); };
+          bg.fillStyle = '#cf9d63';
+          bg.fillRect(0, 0, W, 405);
+
+          for (let y = 30; y < 405; y += 4) {
+            for (let x = 0; x < W; x += 4) {
+              const r = pRand(x * 13 + y * 71);
+              if (r < 0.12) {
+                bg.fillStyle = '#b7834b';
+                bg.fillRect(x, y, 3, 3);
+              } else if (r > 0.88) {
+                bg.fillStyle = '#dfb581';
+                bg.fillRect(x, y, 3, 3);
+              }
+            }
+          }
+
+          bg.fillStyle = '#2f283d';
+          bg.fillRect(0, 0, W, 26);
+          bg.fillStyle = '#423a54';
+          bg.fillRect(0, 22, W, 5);
+          for (let x = 0; x < W; x += 35) {
+            bg.fillStyle = '#554b6d';
+            bg.fillRect(x + 2, 2, 6, 20);
+            bg.fillStyle = '#e8541c';
+            bg.fillRect(x + 3, 4, 4, 5);
+          }
+
+          bg.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+          bg.lineWidth = 4;
+          bg.strokeRect(32, 45, W - 64, 340);
+
+          const cx = W / 2, cy = 215, rBall = 86;
+          bg.save();
+          bg.beginPath();
+          bg.arc(cx, cy, rBall, Math.PI, 0, false);
+          bg.fillStyle = 'rgba(215, 60, 50, 0.28)';
+          bg.fill();
+          bg.beginPath();
+          bg.arc(cx, cy, rBall, 0, Math.PI, false);
+          bg.fillStyle = 'rgba(240, 240, 240, 0.28)';
+          bg.fill();
+
+          bg.strokeStyle = 'rgba(40, 30, 40, 0.4)';
+          bg.lineWidth = 7;
+          bg.beginPath();
+          bg.arc(cx, cy, rBall, 0, Math.PI * 2);
+          bg.stroke();
+          bg.beginPath();
+          bg.moveTo(cx - rBall, cy);
+          bg.lineTo(cx + rBall, cy);
+          bg.stroke();
+
+          bg.beginPath();
+          bg.arc(cx, cy, 26, 0, Math.PI * 2);
+          bg.fillStyle = '#cf9d63';
+          bg.fill();
+          bg.stroke();
+          bg.beginPath();
+          bg.arc(cx, cy, 14, 0, Math.PI * 2);
+          bg.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          bg.fill();
+          bg.stroke();
+          bg.restore();
+
+          bg.fillStyle = '#4c5663';
+          bg.fillRect(0, 405, W, 15);
+          bg.fillStyle = '#677585';
+          bg.fillRect(0, 405, W, 3);
+          for (let x = 0; x < W; x += 18) {
+            bg.fillStyle = '#39414b';
+            bg.fillRect(x, 408, 2, 12);
+          }
+
+          bg.fillStyle = '#3f9b2d';
+          bg.fillRect(0, 420, W, H - 420);
+
+          const gSize = 14;
+          for (let y = 420; y < H; y += gSize) {
+            for (let x = 0; x < W; x += gSize) {
+              if (((x / gSize) + (y / gSize)) % 2 === 0) {
+                bg.fillStyle = '#48ad34';
+                bg.fillRect(x, y, gSize, gSize);
+              }
+            }
+          }
+
+          for (let y = 422; y < H - 8; y += 12) {
+            for (let x = 6; x < W - 6; x += 12) {
+              const fl = pRand(x * 43 + y * 97);
+              if (fl < 0.25) {
+                bg.fillStyle = '#2f7c22';
+                bg.fillRect(x, y + 4, 2, 4);
+                bg.fillRect(x + 2, y + 2, 2, 6);
+                bg.fillRect(x + 4, y + 5, 2, 3);
+              } else if (fl > 0.88) {
+                const flowerColor = fl > 0.96 ? '#ff5c8a' : (fl > 0.92 ? '#ffdf4a' : '#ffffff');
+                bg.fillStyle = flowerColor;
+                bg.fillRect(x, y + 2, 3, 3);
+                bg.fillStyle = '#ff9900';
+                bg.fillRect(x + 1, y + 3, 1, 1);
+              }
+            }
+          }
+        }
+        buildPixelBackground();
+
+        const TY = {
+          fire:'#e8541c', water:'#3a8ee8', grass:'#4cb04c', electric:'#f0d020',
+          rock:'#9a8460', normal:'#a8a878', psychic:'#f85888', steel:'#607d8b',
+          fighting:'#c03028', ghost:'#705898', dragon:'#7038f8', flying:'#a890f0',
+          ice:'#58c8d0', ground:'#e0c068', bug:'#a8b820'
+        };
+        const TE = {
+          fire:'🔥', water:'💧', grass:'🍃', rock:'🪨', normal:'⭐', electric:'⚡',
+          psychic:'🔮', steel:'🛡️', fighting:'🥊', ghost:'👻', dragon:'🐉', flying:'🪽',
+          ice:'❄️', ground:'🏜️', bug:'🦗'
+        };
+        const TL = Object.keys(TY);
+        const ADV = {
+          water:['fire','ground','rock'], fire:['grass','ice','bug','steel'],
+          grass:['water','ground','rock'], electric:['water','flying'],
+          rock:['fire','electric','flying','bug'], ground:['fire','electric','rock','steel'],
+          fighting:['normal','rock','steel','ice'], psychic:['fighting'],
+          ghost:['psychic','ghost'], dragon:['dragon'], steel:['rock','ice'],
+          flying:['grass','fighting','bug'], ice:['grass','ground','flying','dragon'],
+          bug:['grass','psychic']
+        };
+        const RC = { evo:'#5ad05a', common:'#cccccc', rare:'#5ab0ff', legend:'#ffb020' };
+
+        const D = {
+          geodude: { n:'Geodude', e:'🪨', t:'rock', r:'common', hp:700, atk:25, as:1.1, rng:45, melee:1, boom:400, evo:'graveler' },
+          graveler: { n:'Graveler', e:'🌑', t:'rock', r:'evo', hp:1200, atk:45, as:1.1, rng:45, melee:1, boom:1200, evo:'golem' },
+          golem: { n:'Golem', e:'🗿', t:'rock', r:'rare', hp:2000, atk:75, as:1.2, rng:50, melee:1, boom:3500 },
+          charmander: { n:'Charmander', e:'🦎', t:'fire', r:'common', hp:280, atk:28, as:0.9, rng:140, evo:'charmeleon' },
+          charmeleon: { n:'Charmeleon', e:'🦖', t:'fire', r:'evo', hp:480, atk:52, as:0.9, rng:150, evo:'charizard' },
+          charizard: { n:'Charizard', e:'🔥', t:'fire', r:'rare', hp:950, atk:95, as:0.85, rng:170, aura:1.25 },
+          squirtle: { n:'Squirtle', e:'🐢', t:'water', r:'common', hp:350, atk:22, as:0.9, rng:140, evo:'wartortle' },
+          wartortle: { n:'Wartortle', e:'🌊', t:'water', r:'evo', hp:600, atk:45, as:0.9, rng:150, evo:'blastoise' },
+          blastoise: { n:'Blastoise', e:'🛡️', t:'water', r:'rare', hp:1200, atk:85, as:0.8, rng:180, splash:40 },
+          bulbasaur: { n:'Bulbasaur', e:'🌱', t:'grass', r:'common', hp:320, atk:24, as:0.9, rng:140, evo:'ivysaur' },
+          ivysaur: { n:'Ivysaur', e:'🌿', t:'grass', r:'evo', hp:550, atk:48, as:0.9, rng:150, evo:'venusaur' },
+          venusaur: { n:'Venusaur', e:'🌺', t:'grass', r:'rare', hp:1100, atk:80, as:0.85, rng:170 },
+          mareep: { n:'Mareep', e:'☁️', t:'electric', r:'common', hp:260, atk:20, as:1.0, rng:140, ch:1, evo:'flaaffy' },
+          flaaffy: { n:'Flaaffy', e:'🦙', t:'electric', r:'evo', hp:450, atk:42, as:1.0, rng:150, ch:2, evo:'ampharos' },
+          ampharos: { n:'Ampharos', e:'🐑', t:'electric', r:'rare', hp:850, atk:88, as:0.95, rng:170, ch:4 },
+          shieldon: { n:'Shieldon', e:'🛡️', t:'steel', r:'common', hp:900, atk:15, as:1.3, rng:45, melee:1, evo:'bastiodon' },
+          bastiodon: { n:'Bastiodon', e:'🏰', t:'steel', r:'rare', hp:2600, atk:35, as:1.4, rng:50, melee:1, defBuff:0.5 },
+          magikarp: { n:'Magikarp', e:'🐟', t:'water', r:'common', hp:120, atk:5, as:1.5, rng:40, melee:1, evo:'gyarados' },
+          gyarados: { n:'Gyarados', e:'🐉', t:'water', r:'rare', hp:1600, atk:130, as:0.75, rng:120, melee:1 },
+          rattata: { n:'Rattata', e:'🐀', t:'normal', r:'common', hp:280, atk:22, as:0.75, rng:45, melee:1, evo:'raticate' },
+          raticate: { n:'Raticate', e:'🦫', t:'normal', r:'evo', hp:650, atk:55, as:0.6, rng:45, melee:1, crit:0.3 },
+          abra: { n:'Abra', e:'🥄', t:'psychic', r:'common', hp:180, atk:40, as:1.2, rng:160, evo:'kadabra' },
+          kadabra: { n:'Kadabra', e:'🔮', t:'psychic', r:'evo', hp:380, atk:85, as:1.1, rng:180, evo:'alakazam' },
+          alakazam: { n:'Alakazam', e:'🧙‍♂️', t:'psychic', r:'rare', hp:750, atk:170, as:0.9, rng:200 },
+          machop: { n:'Machop', e:'💪', t:'fighting', r:'common', hp:500, atk:35, as:1.0, rng:45, melee:1, evo:'machoke' },
+          machoke: { n:'Machoke', e:'🏋️', t:'fighting', r:'evo', hp:950, atk:68, as:1.0, rng:45, melee:1, evo:'machamp' },
+          machamp: { n:'Machamp', e:'🥊', t:'fighting', r:'rare', hp:1700, atk:125, as:0.85, rng:50, melee:1 },
+          pikachu: { n:'Pikachu', e:'⚡', t:'electric', r:'common', hp:300, atk:30, as:0.75, rng:150, evo:'raichu' },
+          raichu: { n:'Raichu', e:'🌩️', t:'electric', r:'rare', hp:700, atk:75, as:0.65, rng:160 },
+          gastly: { n:'Gastly', e:'👻', t:'ghost', r:'common', hp:220, atk:32, as:0.9, rng:150, evo:'haunter' },
+          haunter: { n:'Haunter', e:'👥', t:'ghost', r:'evo', hp:440, atk:65, as:0.85, rng:160, evo:'gengar' },
+          gengar: { n:'Gengar', e:'😈', t:'ghost', r:'rare', hp:850, atk:120, as:0.75, rng:170 },
+          dratini: { n:'Dratini', e:'🐍', t:'dragon', r:'common', hp:320, atk:28, as:0.95, rng:140, evo:'dragonair' },
+          dragonair: { n:'Dragonair', e:'💫', t:'dragon', r:'evo', hp:650, atk:60, as:0.9, rng:160, evo:'dragonite' },
+          dragonite: { n:'Dragonite', e:'🐲', t:'dragon', r:'rare', hp:1500, atk:135, as:0.8, rng:160, splash:30 },
+          pidgey: { n:'Pidgey', e:'🐦', t:'flying', r:'common', hp:260, atk:20, as:0.8, rng:140, evo:'pidgeotto' },
+          pidgeotto: { n:'Pidgeotto', e:'🪽', t:'flying', r:'evo', hp:480, atk:44, as:0.75, rng:150, evo:'pidgeot' },
+          pidgeot: { n:'Pidgeot', e:'🦅', t:'flying', r:'rare', hp:900, atk:82, as:0.65, rng:160 },
+          slowpoke: { n:'Slowpoke', e:'🦥', t:'water', r:'common', hp:600, atk:18, as:1.3, rng:50, melee:1, evo:'slowbro' },
+          slowbro: { n:'Slowbro', e:'🐚', t:'water', r:'rare', hp:1800, atk:55, as:1.2, rng:50, melee:1, regen:30 },
+          shellder: { n:'Shellder', e:'🦪', t:'water', r:'common', hp:450, atk:22, as:1.0, rng:130, evo:'cloyster' },
+          cloyster: { n:'Cloyster', e:'💠', t:'ice', r:'rare', hp:1300, atk:70, as:0.8, rng:150, thorns:30 },
+          scyther: { n:'Scyther', e:'🦗', t:'bug', r:'rare', hp:750, atk:70, as:0.65, rng:50, melee:1, evo:'scizor' },
+          scizor: { n:'Scizor', e:'✂️', t:'steel', r:'rare', hp:1400, atk:120, as:0.7, rng:50, melee:1 },
+          rhyhorn: { n:'Rhyhorn', e:'🦏', t:'ground', r:'common', hp:750, atk:32, as:1.2, rng:50, melee:1, evo:'rhydon' },
+          rhydon: { n:'Rhydon', e:'🦾', t:'ground', r:'rare', hp:1650, atk:80, as:1.1, rng:55, melee:1 },
+          growlithe: { n:'Growlithe', e:'🐶', t:'fire', r:'common', hp:420, atk:30, as:0.85, rng:50, melee:1, evo:'arcanine' },
+          arcanine: { n:'Arcanine', e:'🦁', t:'fire', r:'rare', hp:1250, atk:90, as:0.75, rng:55, melee:1 },
+          eevee: { n:'Eevee', e:'🦊', t:'normal', r:'common', hp:320, atk:25, as:0.85, rng:130, evo:'jolteon' },
+          jolteon: { n:'Jolteon', e:'⚡', t:'electric', r:'rare', hp:800, atk:85, as:0.55, rng:160 },
+          mewtwo: { n:'Mewtwo', e:'🧬', t:'psychic', r:'legend', hp:1800, atk:180, as:0.75, rng:210, splash:50 },
+          zapdos: { n:'Zapdos', e:'🦅', t:'electric', r:'legend', hp:1600, atk:150, as:0.8, rng:190, ch:5 }
+        };
+
+        Object.keys(D).forEach(k => getSprite(k));
+
+        const EV = {};
+        for (const k in D) {
+          if (D[k].evo) EV[k] = D[k].evo;
+        }
+
+        function getRefund(key) {
+          const d = D[key];
+          if (!d) return 50;
+          if (d.r === 'common') return 50;
+          if (d.r === 'evo') return 100;
+          if (d.r === 'rare') return 150;
+          if (d.r === 'legend') return 250;
+          return 50;
+        }
+
+        let gold, lives, wave, phase, sel, board, bench, units, fx, fl;
+        let gameSpeed = 1;
+
+        const $ = id => document.getElementById(id);
+        const say = s => $('msg').textContent = s;
+        const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+        function near(p, list) {
+          let b = null, bd = 1e9;
+          for (const v of list) { const d = dist(p, v); if (d < bd) { bd = d; b = v; } }
+          return b;
+        }
+
+        function reset() {
+          gold = 300; lives = 20; wave = 1; phase = 'prep'; sel = null; bench = []; units = []; fx = []; fl = [];
+          board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+          say('เริ่มเกม! สุ่มโปเกมอน แล้ววางลงบนทุ่งหญ้าฝั่งเรา'); ui();
+        }
+
+        function getSelectedKey() {
+          if (!sel) return null;
+          if (sel.type === 'bench') return bench[sel.idx];
+          if (sel.type === 'board') return board[sel.r][sel.c];
+          return null;
+        }
+
+        // ==========================================
+        // 📈 สเกลจำนวนบอทเพิ่มขึ้น 3 เท่า (*3) ในแต่ละเลเวล
+        // Wave 1: 3, Wave 2: 9, Wave 3: 27, Wave 4: 81...
+        // ==========================================
+        function waveTotal(w) { 
+            const normalEnemies = Math.min(24, w * 2); // เพิ่มทีละ 3 และตันสูงสุดที่ 30 ตัว
+            const hasBoss = (w % 5 === 0) || (w >= 10); // มีบอสทุก 5 เวฟ และตั้งแต่เวฟ 10 ขึ้นไปจะมีบอสทุกรอบ
+            return normalEnemies + (hasBoss ? 1 : 0); 
+        }
+
+        function kText() {
+          if (phase === 'battle') return '👾 เหลือ ' + units.filter(u => u.team === 1 && u.hp > 0).length + '/' + waveTotal(wave);
+          return '👾 เวฟนี้ ' + waveTotal(wave);
+        }
+
+        function ui() {
+          $('hl').textContent = '❤ ' + Math.max(0, lives);
+          $('hg').textContent = '💰 ' + gold;
+          $('hw').textContent = 'WAVE ' + wave;
+          $('hk').textContent = kText();
+          const b = $('bench'); b.innerHTML = '';
+          bench.forEach((k, i) => {
+            const d = D[k], s = document.createElement('button');
+            const isSel = (sel && sel.type === 'bench' && sel.idx === i);
+            s.className = 'slot' + (isSel ? ' sel' : '');
+            s.style.borderColor = RC[d.r];
+            s.title = d.n + ' | HP ' + d.hp + ' ATK ' + d.atk + ' | ' + d.t;
+            s.innerHTML = `
+              <img src="${SHOWDOWN_URL}${k}.png" alt="${d.n}" onerror="this.outerHTML='<span style=\\'font-size:18px\\'>${d.e}</span>'">
+              <div>${d.n}</div>
+            `;
+            s.onclick = () => { 
+              initAudio();
+              Sound.click();
+              if (phase !== 'prep') return; 
+              if (sel && sel.type === 'bench' && sel.idx === i) {
+                sel = null;
+              } else {
+                sel = { type: 'bench', idx: i };
+              }
+              ui(); 
+            };
+            b.appendChild(s);
+          });
+          
+          const f = evoFind();
+          const selKey = getSelectedKey();
+
+          $('bRoll').disabled = phase !== 'prep' || gold < 100 || bench.length >= 6;
+          $('bStart').disabled = phase !== 'prep';
+          $('bEvo').disabled = phase !== 'prep' || !f;
+          $('bEvo').textContent = f ? `🧬 Evolve (${D[f.k].n})` : '🧬 Evolve';
+          
+          if (phase === 'prep' && selKey) {
+            const ref = getRefund(selKey);
+            $('bSell').disabled = false;
+            $('bSell').textContent = `💰 ขาย (${ref}G)`;
+          } else {
+            $('bSell').disabled = true;
+            $('bSell').textContent = '💰 ขายคืน';
+          }
+
+          $('bRestart').style.display = phase === 'over' ? 'inline-block' : 'none';
+        }
+
+        function evoFind() {
+          for (const k of Object.keys(EV)) {
+            const locs = [];
+            for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (board[r][c] === k) locs.push({ r, c });
+            bench.forEach((b, i) => { if (b === k) locs.push({ i }); });
+            if (locs.length >= 2) return { k, locs: locs.slice(0, 2) };
+          }
+          return null;
+        }
+
+        function evolve() {
+          initAudio();
+          if (phase !== 'prep') return;
+          const f = evoFind();
+          if (!f) return say('ต้องมีโปเกมอนตัวเดียวกัน 2 ตัวบนกระดานหรือ Bench');
+          const to = EV[f.k];
+          const bi = f.locs.filter(l => l.i !== undefined).map(l => l.i).sort((a, b) => b - a);
+          const bd = f.locs.filter(l => l.i === undefined);
+          bd.forEach(l => board[l.r][l.c] = null);
+          bi.forEach(i => bench.splice(i, 1));
+          if (bd.length) board[bd[0].r][bd[0].c] = to; else bench.push(to);
+          sel = null;
+          Sound.evo();
+          say('🧬 ' + D[f.k].n + ' ×2 รวมร่างเป็น ' + D[to].n + ' สำเร็จ!');
+          ui();
+        }
+
+        function sellSelected() {
+          initAudio();
+          if (phase !== 'prep' || !sel) return;
+          const k = getSelectedKey();
+          if (!k) return;
+          const ref = getRefund(k);
+          gold += ref;
+
+          if (sel.type === 'bench') {
+            bench.splice(sel.idx, 1);
+          } else if (sel.type === 'board') {
+            board[sel.r][sel.c] = null;
+          }
+
+          Sound.sell();
+          say(`💰 ขาย ${D[k].n} ได้รับเงินคืน +${ref}G`);
+          sel = null;
+          ui();
+        }
+
+        function roll() {
+          initAudio();
+          if (phase !== 'prep') return;
+          if (gold < 100) return say('เงินไม่พอ!');
+          if (bench.length >= 6) return say('Bench เต็ม วางลงกระดานก่อน');
+          gold -= 100;
+          Sound.roll();
+          const r = Math.random(), rar = r < .7 ? 'common' : r < .95 ? 'rare' : 'legend';
+          const pool = Object.keys(D).filter(k => D[k].r === rar);
+          const k = pool[Math.floor(Math.random() * pool.length)];
+          bench.push(k);
+          say('ได้ ' + D[k].n + ' (' + rar.toUpperCase() + ')' + (rar === 'legend' ? ' ✨✨' : ''));
+          ui();
+        }
+
+        function mkU(team, k, x, y, gx, gy) {
+          const d = D[k] || D.rattata;
+          return Object.assign({}, d, { 
+            team, 
+            key: k, 
+            x, y, gx, gy, 
+            mhp: d.hp, 
+            cd: Math.random() * .5, 
+            rad: 22 
+          });
+        }
+
+        function spawnEnemy(k, x, y, isBoss = false) {
+          const d = D[k] || D.rattata;
+          const hpBase = (90 + wave * 45) * (isBoss ? 4.5 : 1);
+          const atkBase = (9 + wave * 3.2) * (isBoss ? 1.8 : 1);
+          const statRatio = d.hp / 350;
+
+          return Object.assign({}, d, {
+            team: 1,
+            key: k,
+            mhp: Math.round(hpBase * statRatio),
+            hp: Math.round(hpBase * statRatio),
+            atk: Math.round(atkBase * (d.atk / 35)),
+            as: d.as,
+            rng: d.rng || 46,
+            melee: d.melee || 0,
+            spd: Math.max(22, 38 - (d.melee ? 0 : 10)),
+            x, y,
+            cd: Math.random() * 0.4,
+            rad: isBoss ? 32 : (d.melee ? 21 : 18),
+            gx: 0, gy: 0
+          });
+        }
+
+        // ==========================================
+        // 🌀 ระบบวาปบอทเข้าสู่ขอบบนสนามพร้อมกันทั้งหมด
+        // ==========================================
+        function startBattle() {
+          initAudio();
+          if (phase !== 'prep') return;
+          units = [];
+          for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+            const k = board[r][c];
+            if (k) units.push(mkU(0, k, c * CS + CS / 2, GY + r * CS + CS / 2, c, r));
+          }
+          if (!units.length) return say('วางโปเกมอนลงบนทุ่งหญ้าก่อน!');
+          
+          // จำนวนศัตรูทวีคณ *3
+          const n = Math.min(24, wave * 2);
+          
+          let enemyPool = [];
+          if (wave <= 2) {
+            enemyPool = Object.keys(D).filter(k => D[k].r === 'common');
+          } else if (wave <= 4) {
+            enemyPool = Object.keys(D).filter(k => D[k].r === 'common' || D[k].r === 'evo');
+          } else {
+            enemyPool = Object.keys(D).filter(k => D[k].r !== 'legend');
+          }
+
+          Sound.warp();
+
+          // บอททุกตัววาปปรากฏกายพร้อมกันที่ขอบบนของสังเวียน (Y: 55 ถึง 130)
+          for (let i = 0; i < n; i++) {
+            const wildKey = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+            const ex = 45 + Math.random() * (W - 90);
+            const ey = 55 + Math.random() * 80; // เกิดใกล้ขอบด้านบนภายในสังเวียน
+            
+            units.push(spawnEnemy(wildKey, ex, ey, false));
+
+            // เอฟเฟกต์วงแหวนวาป
+            fx.push({ k: 'c', x: ex, y: ey, r: 24, t: 0.35, T: 0.35, c: '#00e5ff' });
+          }
+
+          // ตรวจสอบเงื่อนไขบอส (ทุก 5 เวฟ หรือตั้งแต่เวฟ 10 ขึ้นไปจะมีบอสทุกรอบ)
+            const hasBoss = (wave % 5 === 0) || (wave >= 10);
+            
+            if (hasBoss) {
+              const bossPool = ['charizard', 'blastoise', 'ampharos', 'alakazam', 'gengar', 'dragonite', 'mewtwo', 'zapdos'];
+              const bossKey = bossPool[Math.floor(Math.random() * bossPool.length)];
+              const bx = W / 2, by = 75;
+              units.push(spawnEnemy(bossKey, bx, by, true));
+              fx.push({ k: 'c', x: bx, y: by, r: 50, t: 0.5, T: 0.5, c: '#ffd700' });
+              say(`⚠ BOSS WAVE! บอส ${D[bossKey].n} วาปมาพร้อมฝูงสมุน ${n} ตัว!`);
+            } else {
+              say(`Wave ${wave} เริ่มแล้ว! ศัตรู ${n} ตัว วาปเข้าสู่สังเวียนพร้อมกัน!`);
+            }
+          
+          phase = 'battle'; sel = null; ui();
+        }
+
+        function hit(src, tg, base) {
+          const m = (ADV[src.t] || []).includes(tg.t) ? 1.5 : 1;
+          const isCrit = Math.random() < (src.crit || 0.1);
+          let dmg = Math.round(base * m * (isCrit ? 1.5 : 1));
+          
+          if (tg.defBuff) dmg = Math.round(dmg * (1 - tg.defBuff));
+          tg.hp -= dmg;
+
+          Sound.hit(isCrit || m > 1);
+
+          if (tg.thorns && src.hp > 0 && dist(src, tg) <= 65) {
+            src.hp -= tg.thorns;
+            fl.push({ x: src.x, y: src.y - 12, s: tg.thorns, c: '#58c8d0', l: .5 });
+          }
+
+          fl.push({ x: tg.x + (Math.random() * 20 - 10), y: tg.y - 24, s: dmg, c: (m > 1 || isCrit) ? '#ff3030' : '#ffffff', l: .75, big: m > 1 || isCrit });
+        }
+
+        function atk(u, tg, foes) {
+          let a = u.atk;
+
+          if (units.some(v => v.aura && v.hp > 0 && v.team === u.team && dist(v, u) <= 90)) {
+            a *= 1.25;
+          }
+          
+          if (u.ch) {
+            const list = [tg]; let p = tg;
+            for (let i = 0; i < u.ch; i++) {
+              const n = near(p, foes.filter(f => !list.includes(f) && dist(p, f) <= 150));
+              if (!n) break; list.push(n); p = n;
+            }
+            let p0 = u;
+            list.forEach(t => {
+              fx.push({ k: 'l', x: p0.x, y: p0.y, x2: t.x, y2: t.y, t: .2, T: .2, c: '#ffee33' });
+              hit(u, t, a); p0 = t;
+            });
+            Sound.zap();
+          } else {
+            fx.push({ k: 'l', x: u.x, y: u.y, x2: tg.x, y2: tg.y, t: .12, T: .12, c: u.melee ? '#ffffff' : (TY[u.t] || '#ffffff') });
+            hit(u, tg, a);
+            
+            if (u.splash) {
+              foes.filter(f => f !== tg && dist(tg, f) <= 75).forEach(f => hit(u, f, a * 0.4));
+            }
+          }
+        }
+
+        function deaths() {
+          let ch = true;
+          while (ch) {
+            ch = false;
+            for (const u of units) {
+              if (u.hp <= 0 && !u.done) {
+                u.done = 1; ch = true;
+                if (u.team === 1 && !u.leak) gold += 20;
+
+                if (u.boom) {
+                  Sound.boom();
+                  fx.push({ k: 'c', x: u.x, y: u.y, r: 85, t: .4, T: .4, c: '#ff8a00' });
+                  units.forEach(v => { 
+                    if (v.team !== u.team && v.hp > 0 && dist(u, v) <= 85) {
+                      hit(u, v, u.boom); 
+                    }
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // ==========================================
+        // ⚡ อัปเดตการต่อสู้ความเร็วสูง (High Performance Step)
+        // ==========================================
+        function step(dt) {
+          const team0 = units.filter(v => v.team === 0 && v.hp > 0);
+          const team1 = units.filter(v => v.team === 1 && v.hp > 0);
+
+          for (const u of units) {
+            if (u.hp <= 0) continue;
+            
+            if (u.regen && u.hp < u.mhp) {
+              u.hp = Math.min(u.mhp, u.hp + u.regen * dt);
+            }
+
+            u.cd = Math.max(0, u.cd - dt);
+
+            const foes = (u.team === 0) ? team1 : team0;
+            const tg = near(u, foes);
+
+            if (tg && dist(u, tg) <= u.rng) {
+              if (u.cd === 0) { u.cd = u.as; atk(u, tg, foes); }
+            } else if (u.team === 1) {
+              if (tg && dist(u, tg) <= 260) {
+                const d = dist(u, tg) || 1;
+                u.x += (tg.x - u.x) / d * u.spd * 1.5 * dt;
+                u.y += (tg.y - u.y) / d * u.spd * 1.5 * dt;
+              } else {
+                u.y += u.spd * dt;
+                if (u.y > H + 10) { 
+                  u.hp = 0; 
+                  u.leak = 1; 
+                  lives--; 
+                  Sound.leak();
+                  say('ศัตรูทะลุฐาน! Lives -1'); 
+                }
+              }
+            } else if (tg) {
+              const d = dist(u, tg) || 1;
+              u.x += (tg.x - u.x) / d * 70 * dt; 
+              u.y += (tg.y - u.y) / d * 70 * dt;
+            }
+          }
+
+          deaths();
+
+          if (lives <= 0) { 
+            phase = 'over'; 
+            Sound.gameover();
+            ui(); 
+            return; 
+          }
+
+          if (!units.some(u => u.team === 1 && u.hp > 0)) {
+            gold += 60;
+            Sound.win();
+            say('Wave ' + wave + ' ผ่านแล้ว! โบนัส +60G โปเกมอนกลับสู่กระดาน');
+            wave++; units = []; phase = 'prep'; ui();
+          } else {
+            $('hl').textContent = '❤ ' + Math.max(0, lives);
+            $('hg').textContent = '💰 ' + gold;
+            $('hk').textContent = kText();
+          }
+        }
+
+        function drawUnit(u) {
+          g.beginPath();
+          g.ellipse(u.x, u.y + u.rad * 0.7, u.rad, u.rad * 0.45, 0, 0, Math.PI * 2);
+          g.fillStyle = u.team ? 'rgba(230, 40, 40, 0.45)' : (TY[u.t] ? TY[u.t] + '66' : 'rgba(64, 160, 255, 0.45)');
+          g.fill();
+          g.strokeStyle = u.team ? '#ff3030' : '#ffffff';
+          g.lineWidth = 1.5;
+          g.stroke();
+
+          const img = getSprite(u.key);
+          const sz = u.rad * 2.3;
+          if (img && img.complete && img.naturalWidth > 0) {
+            g.drawImage(img, u.x - sz / 2, u.y - sz / 2 - 2, sz, sz);
+          } else {
+            g.font = (u.rad >= 30 ? 28 : 18) + 'px sans-serif';
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            g.fillStyle = '#fff';
+            g.fillText(u.e || '👾', u.x, u.y);
+          }
+
+          const w = u.rad * 2, y = u.y - u.rad - 10;
+          g.fillStyle = '#000';
+          g.fillRect(u.x - w / 2, y, w, 4);
+          g.fillStyle = u.team ? '#e03030' : '#40d040';
+          g.fillRect(u.x - w / 2, y, w * Math.max(0, u.hp) / u.mhp, 4);
+        }
+
+        function draw() {
+          g.clearRect(0, 0, W, H);
+          g.drawImage(bgCanvas, 0, 0);
+
+          g.fillStyle = '#222';
+          g.font = 'bold 13px "Courier New"';
+          g.textAlign = 'left';
+          g.fillText('▼ POKEMON ARENA (Spawn Top)', 10, 18);
+
+          if (phase === 'battle') {
+            g.textAlign = 'right';
+            g.fillStyle = '#ffe9a0';
+            g.lineWidth = 3;
+            g.strokeStyle = '#2b1b57';
+            g.strokeText('ศัตรูเหลือ ' + units.filter(u => u.team === 1 && u.hp > 0).length + '/' + waveTotal(wave), W - 12, 18);
+            g.fillText('ศัตรูเหลือ ' + units.filter(u => u.team === 1 && u.hp > 0).length + '/' + waveTotal(wave), W - 12, 18);
+            g.textAlign = 'left';
+          }
+
+          g.fillStyle = '#ff3333';
+          g.fillRect(0, H - 4, W, 4);
+
+          g.fillStyle = '#ffffff';
+          g.font = 'bold 12px "Courier New"';
+          g.lineWidth = 3;
+          g.strokeStyle = '#1b4d14';
+          g.strokeText('▲ TRAINER MEADOW (Your Team)', 10, GY - 4);
+          g.fillText('▲ TRAINER MEADOW (Your Team)', 10, GY - 4);
+
+          for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+              const gx = c * CS, gy = GY + r * CS;
+              g.fillStyle = (r + c) % 2 ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+              g.fillRect(gx + 2, gy + 2, CS - 4, CS - 4);
+
+              g.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+              g.lineWidth = 1.5;
+              g.strokeRect(gx + 2, gy + 2, CS - 4, CS - 4);
+
+              if (phase === 'prep' && sel && sel.type === 'board' && sel.r === r && sel.c === c) {
+                g.fillStyle = 'rgba(255, 235, 59, 0.35)';
+                g.fillRect(gx + 2, gy + 2, CS - 4, CS - 4);
+              } else if (phase === 'prep' && sel && sel.type === 'bench' && !board[r][c]) {
+                g.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                g.fillRect(gx + 3, gy + 3, CS - 6, CS - 6);
+              }
+            }
+          }
+
+          if (phase === 'prep') {
+            for (let r = 0; r < ROWS; r++) {
+              for (let c = 0; c < COLS; c++) {
+                const k = board[r][c];
+                if (k) drawUnit({ team: 0, key: k, e: D[k].e, t: D[k].t, x: c * CS + CS / 2, y: GY + r * CS + CS / 2, hp: 1, mhp: 1, rad: 22 });
+              }
+            }
+          } else {
+            units.forEach(u => { if (u.hp > 0) drawUnit(u); });
+          }
+
+          fx.forEach(f => {
+            g.globalAlpha = Math.max(0, f.t / f.T);
+            if (f.k === 'l') {
+              g.strokeStyle = f.c;
+              g.lineWidth = 3;
+              g.beginPath();
+              g.moveTo(f.x, f.y);
+              g.lineTo(f.x2, f.y2);
+              g.stroke();
+            } else {
+              g.fillStyle = f.c;
+              g.beginPath();
+              g.arc(f.x, f.y, f.r * (1 - f.t / f.T * .5), 0, Math.PI * 2);
+              g.fill();
+            }
+            g.globalAlpha = 1;
+          });
+
+          fl.forEach(f => {
+            g.globalAlpha = Math.min(1, f.l * 2);
+            g.font = 'bold ' + (f.big ? 18 : 14) + 'px "Courier New"';
+            g.textAlign = 'center';
+            g.lineWidth = 3;
+            g.strokeStyle = '#000';
+            g.strokeText(f.s, f.x, f.y);
+            g.fillStyle = f.c;
+            g.fillText(f.s, f.x, f.y);
+            g.globalAlpha = 1;
+          });
+
+          if (phase === 'over') {
+            g.fillStyle = 'rgba(0,0,0,.75)';
+            g.fillRect(0, 0, W, H);
+            g.fillStyle = '#ff4040';
+            g.font = 'bold 44px "Courier New"';
+            g.textAlign = 'center';
+            g.fillText('GAME OVER', W / 2, H / 2 - 10);
+            g.fillStyle = '#fff';
+            g.font = 'bold 18px "Courier New"';
+            g.fillText('ไปถึง Wave ' + wave, W / 2, H / 2 + 30);
+          }
+        }
+
+        let last = performance.now();
+        function loop(now) {
+          const rawDt = Math.min(.05, (now - last) / 1000);
+          last = now;
+          const dt = rawDt * (phase === 'battle' ? gameSpeed : 1);
+
+          if (phase === 'battle') step(dt);
+          fx.forEach(f => f.t -= dt); fx = fx.filter(f => f.t > 0);
+          fl.forEach(f => { f.y -= 30 * dt; f.l -= dt; }); fl = fl.filter(f => f.l > 0);
+          draw();
+          requestAnimationFrame(loop);
+        }
+
+        cv.onclick = e => {
+          initAudio();
+          if (phase !== 'prep') return;
+          const r = cv.getBoundingClientRect();
+          const x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+          const c = Math.floor(x / CS), rw = Math.floor((y - GY) / CS);
+          if (c < 0 || c >= COLS || rw < 0 || rw >= ROWS) return;
+          const cur = board[rw][c];
+
+          if (sel && sel.type === 'bench') {
+            const k = bench[sel.idx];
+            board[rw][c] = k; 
+            bench.splice(sel.idx, 1);
+            if (cur) bench.push(cur);
+            sel = null;
+            Sound.click();
+          } else if (sel && sel.type === 'board') {
+            if (sel.r === rw && sel.c === c) {
+              sel = null;
+            } else {
+              const movingKey = board[sel.r][sel.c];
+              board[sel.r][sel.c] = cur;
+              board[rw][c] = movingKey;
+              sel = null;
+              Sound.click();
+            }
+          } else if (cur) {
+            sel = { type: 'board', r: rw, c };
+            Sound.click();
+          }
+          ui();
+        };
+
+        $('bRoll').onclick = roll;
+        $('bStart').onclick = startBattle;
+        $('bEvo').onclick = evolve;
+        $('bSell').onclick = sellSelected;
+        $('bRestart').onclick = () => { initAudio(); Sound.click(); reset(); };
+
+        $('bSpeed').onclick = () => {
+          initAudio();
+          Sound.click();
+          gameSpeed = gameSpeed === 1 ? 2 : 1;
+          $('bSpeed').textContent = `⏩ Speed: ${gameSpeed}x`;
+          if (gameSpeed === 2) {
+            $('bSpeed').classList.add('active-speed');
+          } else {
+            $('bSpeed').classList.remove('active-speed');
+          }
+        };
+
+        $('bMusic').onclick = () => {
+          initAudio();
+          Sound.click();
+          isBgmOn = !isBgmOn;
+          if (isBgmOn) {
+            BGM.start();
+            $('bMusic').textContent = '🎵 BGM: ON';
+            $('bMusic').classList.remove('music-off');
+          } else {
+            BGM.stop();
+            $('bMusic').textContent = '🔇 BGM: OFF';
+            $('bMusic').classList.add('music-off');
+          }
+        };
+
+        window.addEventListener('click', () => { initAudio(); }, { once: true });
+
+        reset();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+
+</html>
