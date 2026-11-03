@@ -12,7 +12,6 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        
         :root {
             --ink: #1f2a2c;
             --ink-soft: #3b4749;
@@ -22,9 +21,10 @@
             --cream: #f1ece0;
             --mist: #e4eaeb;
             --line: #e8e4d9;
-            --accent-from: #3a4749;
-            --accent-to: #141b1c;
-            --accent-fg: #faf8f3;
+            
+            --accent-from: #e53935;
+            --accent-to: #b71c1c;
+            --accent-fg: #ffffff;
             --blob-a: #efe6d2;
             --blob-b: #dde7e9;
             --r-card: 22px;
@@ -44,9 +44,10 @@
             --cream: #263032;
             --mist: #2a3436;
             --line: #2b3537;
-            --accent-from: #f4f1ea;
-            --accent-to: #cfc9b8;
-            --accent-fg: #141b1c;
+            
+            --accent-from: #ef5350;
+            --accent-to: #c62828;
+            --accent-fg: #ffffff;
             --blob-a: #2a2a22;
             --blob-b: #1b2b2f;
             --shadow-1: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .2);
@@ -57,6 +58,11 @@
         *::before,
         *::after {
             box-sizing: border-box;
+        }
+        
+        ::selection {
+            background: #ef5350;
+            color: #ffffff;
         }
         [hidden] {
             display: none !important;
@@ -76,7 +82,6 @@
             transition: background .4s var(--ease), color .4s var(--ease);
             -webkit-font-smoothing: antialiased;
         }
-        
         .ambient {
             position: fixed;
             inset: 0;
@@ -105,12 +110,10 @@
             bottom: -160px;
             left: -140px;
         }
-        
         header {
             text-align: center;
             padding: 56px 20px 36px;
         }
-        
         .logo-plate {
             display: block;
             width: clamp(170px, 26vw, 230px);
@@ -148,7 +151,6 @@
             font-size: 1.05rem;
             animation: fadeUp .8s var(--ease) .25s both;
         }
-        
         .search {
             position: relative;
             max-width: 520px;
@@ -181,8 +183,8 @@
             opacity: .8;
         }
         .search input:focus-visible {
-            border-color: var(--ink);
-            box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 12%, transparent), var(--shadow-2);
+            border-color: var(--accent-from);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-from) 18%, transparent), var(--shadow-2);
         }
         .search kbd {
             position: absolute;
@@ -205,7 +207,6 @@
             color: var(--muted);
             animation: fadeUp .8s var(--ease) .45s both;
         }
-        
         .container {
             max-width: 1180px;
             margin: 0 auto;
@@ -264,7 +265,6 @@
             transition: background .35s var(--ease), color .35s var(--ease), transform .35s var(--ease);
         }
         .tile::after {
-            
             content: "";
             position: absolute;
             inset: 0;
@@ -314,13 +314,13 @@
             transition: all .35s var(--ease);
         }
         .card:focus-visible {
-            outline: 3px solid var(--ink);
+            outline: 3px solid var(--accent-from);
             outline-offset: 3px;
         }
         @media (hover: hover) {
             .card.in:hover {
                 transform: translateY(-6px);
-                border-color: color-mix(in srgb, var(--ink) 35%, var(--line));
+                border-color: color-mix(in srgb, var(--accent-from) 40%, var(--line));
                 box-shadow: var(--shadow-3);
                 transition-delay: 0ms;
             }
@@ -348,14 +348,12 @@
             font-size: 1.8rem;
             opacity: .6;
         }
-        
         footer {
             padding: 48px 20px 64px;
             text-align: center;
             font-size: .88rem;
             color: var(--muted);
         }
-        
         .tweaks-toggle {
             position: fixed;
             right: 18px;
@@ -431,12 +429,12 @@
             cursor: pointer;
             transition: all .25s var(--ease);
         }
+        
         .seg button[aria-pressed="true"] {
             color: var(--accent-fg);
             background: linear-gradient(145deg, var(--accent-from), var(--accent-to));
             box-shadow: var(--shadow-1);
         }
-        
         @keyframes fadeUp {
             from {
                 opacity: 0;
@@ -486,7 +484,6 @@
                 transform: none;
             }
         }
-        
         @media (max-width: 600px) {
             header {
                 padding-top: 40px;
@@ -537,7 +534,6 @@
     <footer>
         <p>&copy; 2026 milkomilk</p>
     </footer>
-    
     <button class="tweaks-toggle" id="tweaksToggle" aria-expanded="false" aria-controls="tweaksPanel" aria-label="Tweaks" title="Tweaks (T)">
         <i class="fa-solid fa-sliders"></i>
     </button>
@@ -566,7 +562,6 @@
         </div>
     </aside>
     <script>
-        
         const APPS = [
             { icon: 'fa-solid fa-circle-user', title: 'About Me', desc: 'เกี่ยวกับเรา / ข้อมูลเพิ่มเติม', href: 'https://patawee-erc.github.io/profile/' },
             { icon: 'fa-solid fa-share-nodes', title: 'Short URL', desc: 'ระบบย่อลิงก์เพื่อการแชร์ที่ง่ายขึ้น', href: 'https://patawee-erc.github.io/shoturl' },
@@ -595,7 +590,8 @@
             { icon: 'fa-solid fa-file-pdf', title: 'PDF Tool', desc: 'PDF Watermark & Page Numbering Tool', href: 'https://patawee-erc.github.io/WatermarkPDF/v2.html' },
             { icon: 'fa-solid fa-palette', title: 'Color Contrast Checker', desc: 'เครื่องมือช่วยสำหรับ การจับคู่สีของตัวหนังสือกับพื้นหลัง', href: 'https://patawee-erc.github.io/colorchecker/' },
             { icon: 'fa-solid fa-guitar', title: 'Guitar Chord Player Studio', desc: 'simulation guitar chord player', href: 'https://patawee-erc.github.io/GuitarPlayer/' },
-            { icon: 'fa-solid fa-hat-wizard', title: 'Split PDF', desc: 'PDF Splitter & Compressor with Progress', href: 'https://patawee-erc.github.io/pdfsplit/' }
+            { icon: 'fa-solid fa-hat-wizard', title: 'Split PDF', desc: 'PDF Splitter & Compressor with Progress', href: 'https://patawee-erc.github.io/pdfsplit/' },
+            { icon: 'fa-solid fa-hat-wizard', title: 'ADB กขค', desc: 'PDF Splitter & Compressor with Progress', href: 'https://patawee-erc.github.io/pdfsplit/' }
         ];
         const grid = document.getElementById('appGrid');
         const input = document.getElementById('appSearch');
@@ -620,7 +616,6 @@
             entries.forEach(e => {
                 if (!e.isIntersecting) return;
                 e.target.classList.add('in');
-                
                 setTimeout(() => e.target.classList.add('settled'), 1100);
                 io.unobserve(e.target);
             });
