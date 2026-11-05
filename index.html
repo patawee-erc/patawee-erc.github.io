@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th" data-theme="milk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +22,7 @@
             --cream: #f1ece0;
             --mist: #e4eaeb;
             --line: #e8e4d9;
-            
+
             --accent-from: #e53935;
             --accent-to: #b71c1c;
             --accent-fg: #ffffff;
@@ -35,6 +36,7 @@
             --ease: cubic-bezier(.22, .8, .24, 1);
             --font: 'Nunito', 'Noto Sans Thai', sans-serif;
         }
+
         [data-theme="night"] {
             --ink: #f4f1ea;
             --ink-soft: #d9d5ca;
@@ -44,7 +46,7 @@
             --cream: #263032;
             --mist: #2a3436;
             --line: #2b3537;
-            
+
             --accent-from: #ef5350;
             --accent-to: #c62828;
             --accent-fg: #ffffff;
@@ -54,22 +56,26 @@
             --shadow-2: 0 2px 4px rgba(0, 0, 0, .35), 0 14px 34px rgba(0, 0, 0, .35);
             --shadow-3: 0 4px 8px rgba(0, 0, 0, .4), 0 26px 56px rgba(0, 0, 0, .5);
         }
+
         *,
         *::before,
         *::after {
             box-sizing: border-box;
         }
-        
+
         ::selection {
             background: #ef5350;
             color: #ffffff;
         }
+
         [hidden] {
             display: none !important;
         }
+
         html {
             scroll-behavior: smooth;
         }
+
         body {
             margin: 0;
             min-height: 100vh;
@@ -82,6 +88,7 @@
             transition: background .4s var(--ease), color .4s var(--ease);
             -webkit-font-smoothing: antialiased;
         }
+
         .ambient {
             position: fixed;
             inset: 0;
@@ -89,6 +96,7 @@
             pointer-events: none;
             overflow: hidden;
         }
+
         .ambient span {
             position: absolute;
             border-radius: 50%;
@@ -96,6 +104,7 @@
             opacity: .75;
             transition: background .4s var(--ease);
         }
+
         .ambient .a {
             width: 560px;
             height: 560px;
@@ -103,6 +112,7 @@
             top: -180px;
             right: -120px;
         }
+
         .ambient .b {
             width: 460px;
             height: 460px;
@@ -110,10 +120,12 @@
             bottom: -160px;
             left: -140px;
         }
+
         header {
             text-align: center;
             padding: 56px 20px 36px;
         }
+
         .logo-plate {
             display: block;
             width: clamp(170px, 26vw, 230px);
@@ -127,12 +139,14 @@
             overflow: hidden;
             animation: logoIn 1s var(--ease) both, float 7s ease-in-out 1s infinite;
         }
+
         .logo {
             display: block;
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
+
         h1 {
             margin: 0;
             font-size: clamp(2rem, 5vw, 3.1rem);
@@ -145,18 +159,21 @@
             -webkit-text-fill-color: transparent;
             animation: fadeUp .8s var(--ease) .15s both;
         }
+
         .subtitle {
             margin: 10px 0 30px;
             color: var(--muted);
             font-size: 1.05rem;
             animation: fadeUp .8s var(--ease) .25s both;
         }
+
         .search {
             position: relative;
             max-width: 520px;
             margin: 0 auto;
             animation: fadeUp .8s var(--ease) .35s both;
         }
+
         .search i.fa-magnifying-glass {
             position: absolute;
             left: 22px;
@@ -165,6 +182,7 @@
             color: var(--muted);
             pointer-events: none;
         }
+
         .search input {
             width: 100%;
             padding: 16px 64px 16px 52px;
@@ -178,14 +196,17 @@
             outline: none;
             transition: box-shadow .3s var(--ease), border-color .3s var(--ease);
         }
+
         .search input::placeholder {
             color: var(--muted);
             opacity: .8;
         }
+
         .search input:focus-visible {
             border-color: var(--accent-from);
             box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-from) 18%, transparent), var(--shadow-2);
         }
+
         .search kbd {
             position: absolute;
             right: 18px;
@@ -201,28 +222,33 @@
             border-radius: 8px;
             pointer-events: none;
         }
+
         .count {
             margin: 18px 0 0;
             font-size: .9rem;
             color: var(--muted);
             animation: fadeUp .8s var(--ease) .45s both;
         }
+
         .container {
             max-width: 1180px;
             margin: 0 auto;
             padding: 12px 24px 24px;
         }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 18px;
         }
+
         [data-layout="list"] .grid {
             grid-template-columns: 1fr;
             max-width: 760px;
             margin: 0 auto;
             gap: 12px;
         }
+
         .card {
             --d: 0ms;
             position: relative;
@@ -244,13 +270,16 @@
                 box-shadow .35s var(--ease),
                 border-color .35s var(--ease);
         }
+
         .card.in {
             opacity: 1;
             transform: none;
         }
+
         .card.in.settled {
             transition-delay: 0ms;
         }
+
         .tile {
             position: relative;
             flex: 0 0 auto;
@@ -264,6 +293,7 @@
             border-radius: var(--r-tile);
             transition: background .35s var(--ease), color .35s var(--ease), transform .35s var(--ease);
         }
+
         .tile::after {
             content: "";
             position: absolute;
@@ -272,10 +302,12 @@
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
             pointer-events: none;
         }
+
         .body {
             flex: 1 1 auto;
             min-width: 0;
         }
+
         .body h3 {
             margin: 0;
             font-size: 1.12rem;
@@ -284,6 +316,7 @@
             color: var(--ink);
             text-wrap: pretty;
         }
+
         .body p {
             margin: 4px 0 0;
             font-size: .9rem;
@@ -291,6 +324,7 @@
             color: var(--muted);
             text-wrap: pretty;
         }
+
         .index {
             position: absolute;
             top: 12px;
@@ -301,6 +335,7 @@
             color: var(--muted);
             opacity: .55;
         }
+
         .arrow {
             flex: 0 0 auto;
             display: grid;
@@ -313,10 +348,12 @@
             border-radius: 50%;
             transition: all .35s var(--ease);
         }
+
         .card:focus-visible {
             outline: 3px solid var(--accent-from);
             outline-offset: 3px;
         }
+
         @media (hover: hover) {
             .card.in:hover {
                 transform: translateY(-6px);
@@ -324,11 +361,13 @@
                 box-shadow: var(--shadow-3);
                 transition-delay: 0ms;
             }
+
             .card:hover .tile {
                 color: var(--accent-fg);
                 background: linear-gradient(145deg, var(--accent-from), var(--accent-to));
                 transform: rotate(-6deg) scale(1.06);
             }
+
             .card:hover .arrow {
                 color: var(--accent-fg);
                 background: linear-gradient(145deg, var(--accent-from), var(--accent-to));
@@ -336,24 +375,28 @@
                 transform: translateX(4px);
             }
         }
+
         .empty {
             grid-column: 1 / -1;
             padding: 56px 20px;
             text-align: center;
             color: var(--muted);
         }
+
         .empty i {
             display: block;
             margin-bottom: 12px;
             font-size: 1.8rem;
             opacity: .6;
         }
+
         footer {
             padding: 48px 20px 64px;
             text-align: center;
             font-size: .88rem;
             color: var(--muted);
         }
+
         .tweaks-toggle {
             position: fixed;
             right: 18px;
@@ -372,14 +415,17 @@
             opacity: .55;
             transition: opacity .3s, transform .3s var(--ease);
         }
+
         .tweaks-toggle:hover,
         .tweaks-toggle:focus-visible,
         .tweaks-toggle[aria-expanded="true"] {
             opacity: 1;
         }
+
         .tweaks-toggle:hover {
             transform: rotate(40deg);
         }
+
         .tweaks {
             position: fixed;
             right: 18px;
@@ -393,6 +439,7 @@
             box-shadow: var(--shadow-3);
             animation: fadeUp .35s var(--ease) both;
         }
+
         .tweaks h2 {
             margin: 0 0 12px;
             font-size: .8rem;
@@ -400,9 +447,11 @@
             text-transform: uppercase;
             color: var(--muted);
         }
+
         .tweak-row+.tweak-row {
             margin-top: 12px;
         }
+
         .tweak-row label,
         .tweak-row .lbl {
             display: block;
@@ -410,6 +459,7 @@
             font-size: .85rem;
             font-weight: 600;
         }
+
         .seg {
             display: grid;
             grid-auto-flow: column;
@@ -419,6 +469,7 @@
             border: 1px solid var(--line);
             border-radius: 12px;
         }
+
         .seg button {
             padding: 6px 8px;
             font: 600 .85rem var(--font);
@@ -429,41 +480,49 @@
             cursor: pointer;
             transition: all .25s var(--ease);
         }
-        
+
         .seg button[aria-pressed="true"] {
             color: var(--accent-fg);
             background: linear-gradient(145deg, var(--accent-from), var(--accent-to));
             box-shadow: var(--shadow-1);
         }
+
         @keyframes fadeUp {
             from {
                 opacity: 0;
                 transform: translateY(14px);
             }
+
             to {
                 opacity: 1;
                 transform: none;
             }
         }
+
         @keyframes logoIn {
             from {
                 opacity: 0;
                 transform: translateY(10px) scale(.96);
             }
+
             to {
                 opacity: 1;
                 transform: none;
             }
         }
+
         @keyframes float {
+
             0%,
             100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-7px);
             }
         }
+
         [data-motion="off"] *,
         [data-motion="off"] *::before,
         [data-motion="off"] *::after {
@@ -471,7 +530,9 @@
             transition-duration: .01ms !important;
             transition-delay: 0ms !important;
         }
+
         @media (prefers-reduced-motion: reduce) {
+
             *,
             *::before,
             *::after {
@@ -479,40 +540,49 @@
                 transition-duration: .01ms !important;
                 transition-delay: 0ms !important;
             }
+
             .card {
                 opacity: 1;
                 transform: none;
             }
         }
+
         @media (max-width: 600px) {
             header {
                 padding-top: 40px;
             }
+
             .container {
                 padding: 8px 16px 16px;
             }
+
             .grid {
                 grid-template-columns: 1fr;
                 gap: 14px;
             }
+
             .card {
                 padding: 18px;
                 gap: 14px;
             }
+
             .tile {
                 width: 52px;
                 height: 52px;
                 font-size: 1.3rem;
             }
+
             .search kbd {
                 display: none;
             }
+
             .search input {
                 padding-right: 20px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="ambient" aria-hidden="true"><span class="a"></span><span class="b"></span></div>
     <header>
@@ -591,7 +661,7 @@
             { icon: 'fa-solid fa-palette', title: 'Color Contrast Checker', desc: 'เครื่องมือช่วยสำหรับ การจับคู่สีของตัวหนังสือกับพื้นหลัง', href: 'https://patawee-erc.github.io/colorchecker/' },
             { icon: 'fa-solid fa-guitar', title: 'Guitar Chord Player Studio', desc: 'simulation guitar chord player', href: 'https://patawee-erc.github.io/GuitarPlayer/' },
             { icon: 'fa-solid fa-hat-wizard', title: 'Split PDF', desc: 'PDF Splitter & Compressor with Progress', href: 'https://patawee-erc.github.io/pdfsplit/' },
-            { icon: 'fa-solid fa-hat-wizard', title: 'ADB กขค', desc: 'PDF Splitter & Compressor with Progress', href: 'https://patawee-erc.github.io/pdfsplit/' }
+            { icon: 'fa-solid fa-route', title: 'Gas Pipeline System', desc: 'ระบบแผนที่แนวท่อส่งก๊าซธรรมชาติ', href: 'https://patawee-erc.github.io/mappin/gaspipeline.html' }
         ];
         const grid = document.getElementById('appGrid');
         const input = document.getElementById('appSearch');
@@ -676,4 +746,5 @@
         applyPrefs();
     </script>
 </body>
+
 </html>
