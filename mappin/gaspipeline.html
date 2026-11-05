@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>ระบบแผนที่แนวท่อส่งก๊าซธรรมชาติ (Gas Pipeline System)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --card: #fff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e9f0;
+            --pri: #2563eb;
+            --pri2: #1d4ed8;
+            --ok: #10b981;
+            --bad: #ef4444;
+            --soft: #eff4ff;
+            --shadow: 0 8px 30px rgba(15, 23, 42, .12);
+            --ease: cubic-bezier(.4, 0, .2, 1)
+        }
+        :root[data-theme=dark] {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --line: #334155;
+            --soft: #1e3a5f;
+            --shadow: 0 8px 30px rgba(0, 0, 0, .5)
+        }
+        * {
+            box-sizing: border-box
+        }
+        body,
+        html {
+            margin: 0;
+            height: 100%;
+            font-family: 'Sarabun', sans-serif;
+            overflow: hidden;
+            color: var(--text);
+            background: var(--bg);
+        }
+        #app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative
+        }
+        #sidebar {
+            width: 410px;
+            min-width: 410px;
+            height: 100%;
+            background: var(--bg);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            overflow-y: auto;
+            transition: margin .35s var(--ease), opacity .35s;
+            animation: slideIn .6s var(--ease) both
+        }
+        #sidebar.collapsed {
+            margin-left: -410px;
+            opacity: .4
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(-40px);
+                opacity: 0
+            }
+        }
+        @keyframes fadeUp {
+            from {
+                transform: translateY(12px);
+                opacity: 0
+            }
+        }
+        @keyframes pop {
+            from {
+                transform: scale(.85);
+                opacity: 0
+            }
+        }
+        #sidebar::-webkit-scrollbar,
+        .nodes::-webkit-scrollbar {
+            width: 6px
+        }
+        #sidebar::-webkit-scrollbar-thumb,
+        .nodes::-webkit-scrollbar-thumb {
+            background: var(--line);
+            border-radius: 6px
+        }
+        #sidebar-toggle-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 410px;
+            z-index: 1100;
+            background: var(--card);
+            color: var(--muted);
+            border: 1px solid var(--line);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            width: 26px;
+            height: 60px;
+            box-shadow: var(--shadow);
+            transition: left .35s var(--ease), color .2s, width .2s
+        }
+        #sidebar-toggle-btn:hover {
+            color: var(--pri);
+            width: 32px
+        }
+        #sidebar.collapsed~#sidebar-toggle-btn {
+            left: 0
+        }
+        .sidebar-header {
+            background: linear-gradient(135deg, #1d4ed8, #7c3aed, #0ea5e9);
+            background-size: 200% 200%;
+            animation: grad 8s ease infinite;
+            color: #fff;
+            padding: 18px 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, .35)
+        }
+        @keyframes grad {
+            50% {
+                background-position: 100% 50%
+            }
+        }
+        .sidebar-header button {
+            background: rgba(255, 255, 255, .2);
+            color: #fff;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            font-size: 1rem
+        }
+        .section {
+            margin: 12px;
+            padding: 10px 14px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+            animation: fadeUp .5s var(--ease) both
+        }
+        .section-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 0;
+            transition: color .15s
+        }
+        .section-title:hover {
+            color: var(--pri)
+        }
+        .toggle-icon {
+            font-size: .7rem;
+            color: var(--muted);
+            margin-left: 6px;
+            display: inline-block;
+            transition: transform .3s var(--ease)
+        }
+        .collapsed-h .toggle-icon {
+            transform: rotate(-90deg)
+        }
+        .section-body {
+            margin-top: 10px;
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows .35s var(--ease), opacity .3s
+        }
+        .section-body>.inner {
+            overflow: hidden;
+            min-height: 0
+        }
+        .section-body.collapsed {
+            grid-template-rows: 0fr;
+            opacity: 0;
+            margin-top: 0
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 11px;
+            font-family: inherit;
+            font-size: .85rem;
+            transition: transform .15s, box-shadow .2s, background .2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            position: relative;
+            overflow: hidden
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .15)
+        }
+        button:active:not(:disabled) {
+            transform: scale(.96)
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--pri), #4f46e5);
+            color: #fff
+        }
+        .btn-success {
+            background: linear-gradient(135deg, var(--ok), #059669);
+            color: #fff
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f87171, var(--bad));
+            color: #fff
+        }
+        .btn-outline {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--line)
+        }
+        .btn-outline:hover {
+            background: var(--soft)
+        }
+        .btn-xs {
+            padding: 3px 7px;
+            font-size: .75rem;
+            border-radius: 6px
+        }
+        .form-group {
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+        .form-group label {
+            font-size: .85rem;
+            color: var(--muted)
+        }
+        .form-row {
+            display: flex;
+            gap: 8px
+        }
+        input[type=text],
+        input[type=number] {
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-family: inherit;
+            width: 100%;
+            background: var(--bg);
+            color: var(--text);
+            transition: border .2s, box-shadow .2s
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--pri);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .2)
+        }
+        .pipeline-item {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 9px 11px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: all .25s var(--ease);
+            cursor: pointer;
+            animation: pop .35s var(--ease) both
+        }
+        .pipeline-item:hover {
+            border-color: var(--pri);
+            transform: translateX(3px)
+        }
+        .pipeline-item.active {
+            border-left: 5px solid var(--pri);
+            background: var(--soft);
+            box-shadow: 0 3px 10px rgba(37, 99, 235, .15)
+        }
+        .pipeline-top-row,
+        .pipeline-bottom-row,
+        .node-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+        .pipeline-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600
+        }
+        .color-badge {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, .06)
+        }
+        .pipeline-bottom-row {
+            font-size: .8rem;
+            color: var(--muted)
+        }
+        .distance-badge {
+            background: var(--soft);
+            color: var(--pri);
+            padding: 2px 9px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: .75rem
+        }
+        .nodes {
+            max-height: 260px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 2px
+        }
+        .node-item {
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            padding: 7px 9px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: .82rem;
+            transition: .2s;
+            animation: fadeUp .35s var(--ease) both
+        }
+        .node-item:hover {
+            background: var(--card);
+            border-color: #60a5fa;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .08)
+        }
+        .node-badge {
+            font-size: .7rem;
+            font-weight: 700;
+            padding: 1px 8px;
+            border-radius: 12px;
+            color: #fff
+        }
+        .badge-start {
+            background: var(--ok)
+        }
+        .badge-end {
+            background: var(--bad)
+        }
+        .badge-mid {
+            background: var(--pri)
+        }
+        .node-coord {
+            font-size: .75rem;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between
+        }
+        .hint {
+            font-size: .75rem;
+            color: var(--muted);
+            margin: 0 0 8px
+        }
+        .empty {
+            color: var(--muted);
+            font-size: .8rem;
+            text-align: center;
+            padding: 15px 0
+        }
+        #map {
+            flex: 1;
+            height: 100%;
+            background: #e5e3df
+        }
+        @keyframes dashFlow {
+            to {
+                stroke-dashoffset: -32
+            }
+        }
+        .flow-animation {
+            stroke-dasharray: 4, 12;
+            stroke-linecap: round;
+            animation: dashFlow 1s linear infinite;
+            filter: drop-shadow(0 0 3px #fff)
+        }
+        .custom-pipe-marker {
+            cursor: grab
+        }
+        .pm {
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+            position: relative;
+            transition: transform .2s;
+            animation: drop .5s cubic-bezier(.3, 1.6, .5, 1) both
+        }
+        .pm:hover {
+            transform: scale(1.5)
+        }
+        
+        .leaflet-popup-content-wrapper {
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            background: var(--card);
+            color: var(--text);
+            padding: 4px;
+        }
+        .leaflet-popup-tip {
+            background: var(--card);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity .25s var(--ease);
+        }
+        .modal-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal-box {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            width: 90%;
+            max-width: 420px;
+            padding: 22px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .25);
+            transform: scale(1);
+            transition: transform .25s var(--ease);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal-overlay.hidden .modal-box {
+            transform: scale(0.92);
+        }
+        .modal-title {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-desc {
+            margin: 0;
+            font-size: .88rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+        .modal-input {
+            width: 100%;
+            margin-top: 4px;
+            font-size: .95rem;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        #toast-wrap {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center
+        }
+        .toast {
+            background: #111827;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: .9rem;
+            box-shadow: var(--shadow);
+            animation: fadeUp .3s var(--ease), fadeOut .4s 2.4s forwards
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+        }
+        @media (max-width:700px) {
+            #sidebar {
+                position: absolute;
+                height: 100%;
+                width: 88vw;
+                min-width: 0
+            }
+            #sidebar.collapsed {
+                margin-left: -88vw
+            }
+            #sidebar-toggle-btn {
+                left: 88vw
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <span>ระบบแผนที่แนวท่อส่งก๊าซ</span>
+                <button onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง" id="theme-btn">🌙</button>
+            </div>
+            <div class="section">
+                <div class="section-title" onclick="toggleSection('body-section-1', this)">
+                    <span>1. แนวท่อส่งก๊าซ (Pipelines)</span><span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-body" id="body-section-1">
+                    <div class="inner">
+                        <div id="pipeline-list"></div>
+                        <button class="btn-primary" style="width:100%;margin-top:4px" onclick="createNewPipeline()">+ เพิ่มเส้นท่อใหม่</button>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title" onclick="toggleSection('body-section-2', this)">
+                    <span id="active-nodes-title">2. จุดในเส้น</span>
+                    <div style="display:flex;align-items:center">
+                        <span id="active-nodes-count" class="distance-badge">0 จุด</span><span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="section-body" id="body-section-2">
+                    <div class="inner">
+                        <p class="hint">💡 กด 🔍 เพื่อซูมไปหา | ▲▼ สลับลำดับ | ลากหมุดบนแผนที่เพื่อย้ายได้</p>
+                        <div id="active-nodes-list" class="nodes"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title" onclick="toggleSection('body-section-3', this)">
+                    <span>3. ปักหมุดด้วยพิกัด (Manual Input)</span><span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-body" id="body-section-3">
+                    <div class="inner">
+                        <div class="form-group"><label>ชื่อสถานี / วาล์ว:</label><input type="text" id="node-name" placeholder="เช่น สถานีควบคุมก๊าซ BV-01">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1"><label>Lat:</label><input type="number" id="node-lat" step="any" placeholder="13.7563">
+                            </div>
+                            <div class="form-group" style="flex:1"><label>Lng:</label><input type="number" id="node-lng" step="any" placeholder="100.5018">
+                            </div>
+                        </div>
+                        <button class="btn-success" style="width:100%" onclick="addManualNode()">เพิ่มจุดลงในเส้นท่อปัจจุบัน</button>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title" onclick="toggleSection('body-section-4', this)">
+                    <span>4. สำรองข้อมูล & ส่งออก</span><span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-body" id="body-section-4">
+                    <div class="inner">
+                        <div class="form-row" style="margin-bottom:8px">
+                            <button class="btn-outline" style="flex:1" onclick="exportJSON()">💾 Save JSON</button>
+                            <label class="btn-outline" style="flex:1;text-align:center;cursor:pointer;line-height:22px;border-radius:8px;padding:5px">📂 Load JSON<input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
+                        </div>
+                        <div class="form-row">
+                            <button class="btn-primary" style="flex:1" onclick="exportPDF()">📄 Export PDF</button>
+                            <button class="btn-success" style="flex:1" onclick="printScreenMap()">🖨️ พิมพ์แผนที่</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button id="sidebar-toggle-btn" title="ซ่อน/แสดงแถบเครื่องมือ" onclick="toggleSidebar()">◀</button>
+        <div id="map"></div>
+    </div>
+    
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 id="modal-title" class="modal-title">หัวข้อ</h3>
+            <p id="modal-desc" class="modal-desc">คำอธิบาย</p>
+            <div id="modal-input-container">
+                <input type="text" id="modal-input" class="modal-input" autocomplete="off" />
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel-btn" class="btn-outline">ยกเลิก</button>
+                <button id="modal-confirm-btn" class="btn-primary">ตกลง</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast-wrap"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        
+        function toggleSection(bodyId, headerEl) {
+            const c = document.getElementById(bodyId).classList.toggle('collapsed');
+            headerEl.classList.toggle('collapsed-h', c);
+        }
+        function toast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast'; t.textContent = msg;
+            document.getElementById('toast-wrap').appendChild(t);
+            setTimeout(() => t.remove(), 2900);
+        }
+        function toggleTheme() {
+            const r = document.documentElement;
+            const dark = r.dataset.theme !== 'dark';
+            r.dataset.theme = dark ? 'dark' : 'light';
+            document.getElementById('theme-btn').textContent = dark ? '☀️' : '🌙';
+            try { localStorage.setItem('gp-theme', r.dataset.theme); } catch (e) {}
+        }
+        try { if (localStorage.getItem('gp-theme') === 'dark') { document.documentElement.dataset.theme = 'dark'; document.getElementById('theme-btn').textContent = '☀️'; } } catch (e) {}
+        
+        let modalResolve = null;
+        function showHtmlPrompt({ title, desc, defaultValue = '', placeholder = '' }) {
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+                const modal = document.getElementById('custom-modal');
+                const titleEl = document.getElementById('modal-title');
+                const descEl = document.getElementById('modal-desc');
+                const inputContainer = document.getElementById('modal-input-container');
+                const inputEl = document.getElementById('modal-input');
+                const confirmBtn = document.getElementById('modal-confirm-btn');
+                titleEl.innerHTML = title;
+                descEl.textContent = desc;
+                inputContainer.style.display = 'block';
+                inputEl.value = defaultValue;
+                inputEl.placeholder = placeholder;
+                confirmBtn.className = 'btn-primary';
+                confirmBtn.textContent = 'ตกลง';
+                modal.classList.remove('hidden');
+                setTimeout(() => { inputEl.focus(); inputEl.select(); }, 50);
+            });
+        }
+        function showHtmlConfirm({ title, desc, confirmText = 'ยืนยัน', isDanger = false }) {
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+                const modal = document.getElementById('custom-modal');
+                const titleEl = document.getElementById('modal-title');
+                const descEl = document.getElementById('modal-desc');
+                const inputContainer = document.getElementById('modal-input-container');
+                const confirmBtn = document.getElementById('modal-confirm-btn');
+                titleEl.innerHTML = title;
+                descEl.textContent = desc;
+                inputContainer.style.display = 'none';
+                confirmBtn.className = isDanger ? 'btn-danger' : 'btn-primary';
+                confirmBtn.textContent = confirmText;
+                modal.classList.remove('hidden');
+                confirmBtn.focus();
+            });
+        }
+        function closeHtmlModal(result) {
+            document.getElementById('custom-modal').classList.add('hidden');
+            if (modalResolve) {
+                modalResolve(result);
+                modalResolve = null;
+            }
+        }
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            const inputContainer = document.getElementById('modal-input-container');
+            if (inputContainer.style.display === 'none') {
+                closeHtmlModal(true);
+            } else {
+                closeHtmlModal(document.getElementById('modal-input').value);
+            }
+        });
+        document.getElementById('modal-cancel-btn').addEventListener('click', () => closeHtmlModal(null));
+        
+        window.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('custom-modal');
+            if (!modal.classList.contains('hidden')) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('modal-confirm-btn').click();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    document.getElementById('modal-cancel-btn').click();
+                }
+            }
+        });
+        
+        let pipelines = [{
+            id: "pipe_1", name: "ท่อส่งก๊าซสายหลัก (Mainline 1)", color: "#e63946", visible: true,
+            points: [
+                { id: 1, name: "สถานีต้นทาง (ระยอง)", lat: 12.68, lng: 101.28 },
+                { id: 2, name: "สถานีควบคุมวาล์ว BV-01", lat: 13.36, lng: 100.98 },
+                { id: 3, name: "สถานีปลายทาง (กรุงเทพฯ)", lat: 13.72, lng: 100.75 }
+            ]
+        }];
+        let activePipeId = "pipe_1";
+        let mapLayers = {};
+        
+        const map = L.map('map', { center: [13.2, 101.0], zoom: 8 });
+        const googleRoads = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Map &copy; Google' });
+        const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Imagery &copy; Google' });
+        googleRoads.addTo(map);
+        L.control.layers({ "🗺️ Google Maps (ถนน)": googleRoads, "🛰️ Google Maps (ดาวเทียม)": googleHybrid }, null, { position: 'topright' }).addTo(map);
+        function calculatePipelineDistance(points) {
+            let t = 0;
+            for (let i = 0; i < points.length - 1; i++) t += L.latLng(points[i].lat, points[i].lng).distanceTo(L.latLng(points[i+1].lat, points[i+1].lng));
+            return t;
+        }
+        function formatDistance(m) { return m >= 1000 ? (m / 1000).toFixed(2) + " กม." : m.toFixed(0) + " เมตร"; }
+        function createDraggableIcon(color, isStart, isEnd) {
+            const c = isStart ? '#10b981' : isEnd ? '#ef4444' : color;
+            return L.divIcon({ className: 'custom-pipe-marker', html: `<div class="pm" style="background:${c};color:${c}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] });
+        }
+        function getActivePipeline() { return pipelines.find(p => p.id === activePipeId); }
+        
+        function renderPipelineControls() {
+            const listEl = document.getElementById('pipeline-list');
+            listEl.innerHTML = '';
+            pipelines.forEach(pipe => {
+                const isActive = pipe.id === activePipeId;
+                const item = document.createElement('div');
+                item.className = `pipeline-item ${isActive ? 'active' : ''}`;
+                item.onclick = () => selectActivePipe(pipe.id);
+                item.innerHTML = `
+                    <div class="pipeline-top-row">
+                        <div class="pipeline-title"><span class="color-badge" style="background:${pipe.color}"></span><span>${pipe.name}</span>
+                            ${isActive ? '<span style="font-size:.75rem;color:var(--pri);font-weight:normal">(กำลังเลือก)</span>' : ''}</div>
+                        <label style="font-size:.8rem;cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" ${pipe.visible ? 'checked' : ''} onchange="togglePipelineVisibility('${pipe.id}', this.checked)"> แสดง</label>
+                    </div>
+                    <div class="pipeline-bottom-row">
+                        <div><span class="distance-badge">${formatDistance(calculatePipelineDistance(pipe.points))}</span><span style="margin-left:4px">(${pipe.points.length} จุด)</span></div>
+                        <div class="pipeline-actions" onclick="event.stopPropagation()">
+                            <button class="btn-xs btn-outline" onclick="editPipelineName('${pipe.id}')">✏️ แก้ไข</button>
+                            <button class="btn-xs btn-danger" onclick="deletePipeline('${pipe.id}')">🗑️ ลบ</button>
+                        </div>
+                    </div>`;
+                listEl.appendChild(item);
+            });
+            renderActivePipelineNodes();
+        }
+        function renderActivePipelineNodes() {
+            const pipe = getActivePipeline();
+            const box = document.getElementById('active-nodes-list');
+            if (!pipe) { box.innerHTML = '<div class="empty">ไม่พบแนวท่อที่เลือก</div>'; return; }
+            document.getElementById('active-nodes-title').innerHTML = `2. จุดในเส้น: <span style="color:${pipe.color};font-weight:700">${pipe.name}</span>`;
+            document.getElementById('active-nodes-count').innerText = `${pipe.points.length} จุด`;
+            box.innerHTML = '';
+            if (!pipe.points.length) { box.innerHTML = '<div class="empty">ยังไม่มีจุดปักหมุดในเส้นนี้<br>👉 คลิกบนแผนที่เพื่อเริ่มปักจุดต้นทาง</div>'; return; }
+            pipe.points.forEach((pt, idx) => {
+                const isStart = idx === 0, isEnd = idx === pipe.points.length - 1 && pipe.points.length > 1;
+                let bc = 'badge-mid', bt = `จุดที่ ${idx + 1}`;
+                if (isStart) { bc = 'badge-start'; bt = 'ต้นทาง'; } else if (isEnd) { bc = 'badge-end'; bt = 'ปลายทาง'; }
+                let dist = idx > 0 ? `+${formatDistance(L.latLng(pipe.points[idx-1].lat, pipe.points[idx-1].lng).distanceTo(L.latLng(pt.lat, pt.lng)))}` : '';
+                
+                const el = document.createElement('div');
+                el.className = 'node-item';
+                el.innerHTML = `
+                    <div class="node-header">
+                        <div><span class="node-badge ${bc}">${bt}</span><b style="margin-left:4px">${pt.name}</b></div>
+                        <div class="node-actions">
+                            <button class="btn-xs btn-outline" onclick="movePointOrder('${pipe.id}', ${idx}, -1)" ${isStart ? 'disabled style="opacity:.4"' : ''}>▲</button>
+                            <button class="btn-xs btn-outline" onclick="movePointOrder('${pipe.id}', ${idx}, 1)" ${idx === pipe.points.length - 1 ? 'disabled style="opacity:.4"' : ''}>▼</button>
+                            <button class="btn-xs btn-primary" onclick="zoomToPoint('${pipe.id}', ${idx})">🔍</button>
+                            <button class="btn-xs btn-outline" onclick="editPointName('${pipe.id}', ${idx})">✏️</button>
+                            <button class="btn-xs btn-danger" onclick="removePoint('${pipe.id}', ${idx})">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="node-coord"><span>พิกัด: ${pt.lat.toFixed(4)}, ${pt.lng.toFixed(4)}</span><span style="color:var(--pri);font-weight:600">${dist}</span></div>`;
+                box.appendChild(el);
+            });
+        }
+        function zoomToPoint(pipeId, i) {
+            const pipe = pipelines.find(p => p.id === pipeId);
+            if (!pipe || !pipe.points[i]) return;
+            const pt = pipe.points[i];
+            map.flyTo([pt.lat, pt.lng], 14, { duration: 1.2 });
+            const m = mapLayers[pipeId]?.markerInstances[i];
+            if (m) setTimeout(() => m.openPopup(), 1200);
+        }
+        function movePointOrder(pipeId, i, dir) {
+            const pipe = pipelines.find(p => p.id === pipeId);
+            const j = i + dir;
+            if (!pipe || j < 0 || j >= pipe.points.length) return;
+            [pipe.points[i], pipe.points[j]] = [pipe.points[j], pipe.points[i]];
+            refreshMapLayers(); renderPipelineControls();
+        }
+        
+        function refreshMapLayers() {
+            for (let id in mapLayers) {
+                const l = mapLayers[id];
+                ['baseLine', 'glowLine', 'flowLine', 'markersGroup'].forEach(k => l[k] && map.removeLayer(l[k]));
+            }
+            mapLayers = {};
+            pipelines.forEach(pipe => {
+                const ll = pipe.points.map(p => [p.lat, p.lng]);
+                const glowLine = L.polyline(ll, { color: pipe.color, weight: 12, opacity: .18, interactive: false });
+                const baseLine = L.polyline(ll, { color: pipe.color, weight: 6, opacity: .75, lineCap: 'round', lineJoin: 'round' });
+                const flowLine = L.polyline(ll, { color: '#ffffff', weight: 3, opacity: .9, className: 'flow-animation', interactive: false });
+                const markersGroup = L.featureGroup(), markerInstances = [];
+                pipe.points.forEach((p, idx) => {
+                    const isStart = idx === 0, isEnd = idx === pipe.points.length - 1 && pipe.points.length > 1;
+                    const marker = L.marker([p.lat, p.lng], { icon: createDraggableIcon(pipe.color, isStart, isEnd), draggable: true });
+                    marker.on('dragend', e => { const n = e.target.getLatLng(); p.lat = n.lat; p.lng = n.lng; refreshMapLayers(); renderPipelineControls(); });
+                    
+                    let seg = '';
+                    if (idx > 0) { const pr = pipe.points[idx - 1]; seg = `<br>ระยะห่าง: <b>${formatDistance(L.latLng(pr.lat, pr.lng).distanceTo(L.latLng(p.lat, p.lng)))}</b>`; }
+                    
+                    
+                    marker.bindPopup(`
+                        <div style="font-family:'Sarabun';min-width:190px">
+                            <h4 style="margin:0 0 4px;color:var(--pri)">📍 ${p.name}</h4>
+                            <b>เส้นท่อ:</b> ${pipe.name}<br>
+                            <b>ลำดับ:</b> จุดที่ ${idx + 1} ${isStart ? '(ต้นทาง)' : (isEnd ? '(ปลายทาง)' : '')}<br>
+                            <b>พิกัด:</b> ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}${seg}
+                            <hr style="margin:8px 0;border:none;border-top:1px solid #eee">
+                            <div style="display:flex;gap:6px">
+                                <button onclick="editPointName('${pipe.id}', ${idx})" style="flex:1;background:#2563eb;color:#fff;padding:4px;border-radius:6px;font-size:12px">✏️ แก้ชื่อ</button>
+                                <button onclick="removePoint('${pipe.id}', ${idx})" style="background:#ef4444;color:#fff;padding:4px 8px;border-radius:6px;font-size:12px">🗑️ ลบ</button>
+                            </div>
+                        </div>`);
+                    markersGroup.addLayer(marker);
+                    markerInstances.push(marker);
+                });
+                mapLayers[pipe.id] = { baseLine, glowLine, flowLine, markersGroup, markerInstances };
+                if (pipe.visible) {
+                    glowLine.addTo(map); baseLine.addTo(map); flowLine.addTo(map); markersGroup.addTo(map);
+                }
+            });
+        }
+        
+        function selectActivePipe(id) { activePipeId = id; renderPipelineControls(); }
+        map.on('click', async e => {
+            const pipe = getActivePipeline();
+            if (!pipe) return toast('⚠️ กรุณาเลือกหรือสร้างแนวท่อก่อน');
+            const def = pipe.points.length === 0 ? "สถานีต้นทาง" : `สถานี/วาล์วที่ ${pipe.points.length + 1}`;
+            
+            
+            const name = await showHtmlPrompt({
+                title: '📍 ปักหมุดจุดใหม่ในแนวท่อ',
+                desc: 'กรอกชื่อสถานี จุดเชื่อมต่อ หรือวาล์วควบคุม:',
+                defaultValue: def
+            });
+            if (name === null) return;
+            pipe.points.push({ id: Date.now(), name: name.trim() || def, lat: e.latlng.lat, lng: e.latlng.lng });
+            refreshMapLayers(); renderPipelineControls(); toast('📍 เพิ่มจุดแล้ว');
+        });
+        async function addManualNode() {
+            const pipe = getActivePipeline();
+            if (!pipe) return toast('⚠️ กรุณาเลือกแนวท่อก่อน');
+            const name = document.getElementById('node-name').value.trim() || `จุดที่ ${pipe.points.length + 1}`;
+            const lat = parseFloat(document.getElementById('node-lat').value), lng = parseFloat(document.getElementById('node-lng').value);
+            if (isNaN(lat) || isNaN(lng)) return toast('⚠️ กรุณากรอกพิกัด Lat/Lng ให้ถูกต้อง');
+            pipe.points.push({ id: Date.now(), name, lat, lng });
+            ['node-name', 'node-lat', 'node-lng'].forEach(i => document.getElementById(i).value = '');
+            map.flyTo([lat, lng], Math.max(map.getZoom(), 10), { duration: 1 });
+            refreshMapLayers(); renderPipelineControls(); toast('📍 เพิ่มจุดแล้ว');
+        }
+        async function createNewPipeline() {
+            
+            const name = await showHtmlPrompt({
+                title: '➕ สร้างแนวท่อส่งก๊าซใหม่',
+                desc: 'ตั้งชื่อแนวท่อที่ต้องการเพิ่มในระบบ:',
+                defaultValue: `แนวท่อที่ ${pipelines.length + 1}`
+            });
+            if (!name || !name.trim()) return;
+            const colors = ['#e63946', '#2a9d8f', '#e76f51', '#457b9d', '#9b5de5', '#f15bb5', '#00bbf9'];
+            const p = { id: 'pipe_' + Date.now(), name: name.trim(), color: colors[pipelines.length % colors.length], visible: true, points: [] };
+            pipelines.push(p); activePipeId = p.id;
+            renderPipelineControls(); refreshMapLayers(); toast('✅ สร้างเส้นท่อใหม่แล้ว');
+        }
+        async function editPipelineName(id) {
+            const p = pipelines.find(x => x.id === id); if (!p) return;
+            
+            
+            const n = await showHtmlPrompt({
+                title: '✏️ แก้ไขชื่อแนวท่อ',
+                desc: 'ระบุชื่อแนวท่อใหม่:',
+                defaultValue: p.name
+            });
+            if (n && n.trim()) { p.name = n.trim(); renderPipelineControls(); refreshMapLayers(); }
+        }
+        async function deletePipeline(id) {
+            if (pipelines.length <= 1) return toast("⚠️ ต้องมีแนวท่ออย่างน้อย 1 เส้นในระบบ");
+            const p = pipelines.find(x => x.id === id);
+            
+            const confirmed = await showHtmlConfirm({
+                title: '🗑️ ยืนยันการลบแนวท่อ',
+                desc: `คุณแน่ใจหรือไม่ว่าต้องการลบแนวท่อ "${p.name}" และข้อมูลจุดทั้งหมดในเส้นนี้?`,
+                confirmText: 'ลบแนวท่อ',
+                isDanger: true
+            });
+            if (!confirmed) return;
+            pipelines = pipelines.filter(x => x.id !== id);
+            if (activePipeId === id) activePipeId = pipelines[0].id;
+            renderPipelineControls(); refreshMapLayers(); toast('🗑️ ลบแนวท่อแล้ว');
+        }
+        function togglePipelineVisibility(id, v) { const p = pipelines.find(x => x.id === id); if (p) { p.visible = v; refreshMapLayers(); } }
+        async function editPointName(pipeId, i) {
+            const p = pipelines.find(x => x.id === pipeId); if (!p || !p.points[i]) return;
+            
+            const n = await showHtmlPrompt({
+                title: '✏️ แก้ไขชื่อจุดปักหมุด',
+                desc: 'แก้ไขชื่อสถานีหรือจุดเชื่อมต่อ:',
+                defaultValue: p.points[i].name
+            });
+            if (n !== null && n.trim()) { p.points[i].name = n.trim(); refreshMapLayers(); renderPipelineControls(); }
+        }
+        async function removePoint(pipeId, i) {
+            const p = pipelines.find(x => x.id === pipeId);
+            if (!p || !p.points[i]) return;
+            
+            const confirmed = await showHtmlConfirm({
+                title: '🗑️ ยืนยันการลบจุด',
+                desc: `ต้องการลบจุด "${p.points[i].name}" ออกจากแนวท่อใช่หรือไม่?`,
+                confirmText: 'ลบจุดนี้',
+                isDanger: true
+            });
+            if (confirmed) {
+                p.points.splice(i, 1);
+                refreshMapLayers(); renderPipelineControls(); toast('🗑️ ลบจุดแล้ว');
+            }
+        }
+        
+        function toggleSidebar() {
+            const s = document.getElementById('sidebar');
+            s.classList.toggle('collapsed');
+            document.getElementById('sidebar-toggle-btn').innerText = s.classList.contains('collapsed') ? '▶' : '◀';
+            setTimeout(() => map.invalidateSize(), 350);
+        }
+        function printScreenMap() { window.print(); }
+        function exportJSON() {
+            const url = URL.createObjectURL(new Blob([JSON.stringify(pipelines, null, 2)], { type: "application/json" }));
+            const a = document.createElement('a'); a.href = url; a.download = `gas_pipelines_${new Date().toISOString().slice(0, 10)}.json`; a.click();
+            URL.revokeObjectURL(url); toast('💾 บันทึก JSON แล้ว');
+        }
+        function importJSON(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = e => {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    if (Array.isArray(d)) {
+                        pipelines = d; activePipeId = pipelines[0]?.id || null;
+                        renderPipelineControls(); refreshMapLayers(); toast('✅ โหลดข้อมูลสำเร็จ');
+                        const pts = pipelines.flatMap(p => p.points.map(q => [q.lat, q.lng]));
+                        if (pts.length) map.flyToBounds(pts, { padding: [60, 60], duration: 1.5 });
+                    }
+                } catch (err) { toast('❌ ไฟล์ JSON ไม่ถูกต้อง'); }
+            };
+            r.readAsText(file); event.target.value = '';
+        }
+        function exportPDF() {
+            const el = document.createElement('div');
+            el.style.cssText = 'padding:20px;font-family:Sarabun,sans-serif';
+            let h = `<h2 style="text-align:center;color:#1a73e8;margin-bottom:5px">รายงานข้อมูลแนวท่อส่งก๊าซธรรมชาติ</h2>
+                <p style="text-align:center;color:#666;font-size:12px;margin-top:0">ออกรายงานเมื่อ: ${new Date().toLocaleString('th-TH')}</p>
+                <hr style="border:0;border-top:1px solid #ccc;margin:15px 0">`;
+            pipelines.forEach((p, idx) => {
+                h += `<div style="margin-bottom:20px"><h3 style="margin:5px 0;color:#333">${idx + 1}. ${p.name} <span style="font-size:13px;font-weight:normal;color:#555">(ระยะทางรวม: <b>${formatDistance(calculatePipelineDistance(p.points))}</b>)</span></h3>
+                <table border="1" cellspacing="0" cellpadding="6" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px">
+                <tr style="background:#f0f4f8"><th width="10%">ลำดับ</th><th width="40%">ชื่อสถานี / วาล์ว</th><th width="25%">Latitude</th><th width="25%">Longitude</th></tr>`;
+                if (!p.points.length) h += `<tr><td colspan="4" align="center" style="color:#888">ไม่มีข้อมูลจุดพิกัด</td></tr>`;
+                else p.points.forEach((pt, i) => {
+                    h += `<tr><td align="center">${i + 1}</td><td><b>${pt.name}</b> ${i === 0 ? '(ต้นทาง)' : (i === p.points.length - 1 ? '(ปลายทาง)' : '')}</td><td>${pt.lat.toFixed(6)}</td><td>${pt.lng.toFixed(6)}</td></tr>`;
+                });
+                h += `</table></div>`;
+            });
+            el.innerHTML = h;
+            toast('📄 กำลังสร้าง PDF...');
+            html2pdf().set({ margin: 10, filename: `รายงานแนวท่อก๊าซ_${new Date().toISOString().slice(0, 10)}.pdf`, image: { type: 'jpeg', quality: .98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save();
+        }
+        renderPipelineControls();
+        refreshMapLayers();
+    </script>
+</body>
+</html>
