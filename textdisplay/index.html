@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ตัวหนังสือวิ่ง (Marquee Controller & Display)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Kanit:wght@400;600;800&family=Noto+Sans+Thai:wght@400;700&family=Prompt:wght@400;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #0f172a;
+      --bg-card: #1e293b;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Noto Sans Thai', 'Sarabun', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+    
+    .marquee-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      user-select: none;
+    }
+    
+    .marquee-stage.led-effect::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(rgba(0, 0, 0, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 50%, transparent 50%);
+      background-size: 4px 4px, 100% 4px;
+      z-index: 2;
+    }
+    .marquee-text {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      white-space: nowrap;
+      will-change: transform;
+      line-height: 1.25;
+      z-index: 1;
+      padding: 0 12px;
+    }
+    .marquee-text.blink-active {
+      animation: blinkAnim 1s infinite;
+    }
+    @keyframes blinkAnim {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.15; }
+    }
+    
+    body.display-mode {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      background: #000;
+    }
+    body.display-mode .settings-wrapper {
+      display: none !important;
+    }
+    body.display-mode .display-only-wrapper {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    .display-only-wrapper {
+      display: none;
+    }
+    .floating-controls {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    body.display-mode:hover .floating-controls,
+    .floating-controls.visible {
+      opacity: 1;
+    }
+    .float-btn {
+      background: rgba(15, 23, 42, 0.78);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      backdrop-filter: blur(6px);
+    }
+    .float-btn:hover {
+      background: rgba(59, 130, 246, 0.9);
+    }
+    
+    .settings-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-card);
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .header-title h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .status-badge.connected {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #334155;
+      color: #fff;
+    }
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+    .btn-success:hover {
+      filter: brightness(1.1);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+    
+    .preview-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .preview-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: rgba(15, 23, 42, 0.5);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .preview-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .preview-stage-wrap {
+      height: 180px;
+      width: 100%;
+      position: relative;
+    }
+    
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    label {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    label span.val {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+    textarea, input[type="text"], select {
+      width: 100%;
+      background: #0f172a;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    textarea:focus, input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .color-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+    input[type="color"] {
+      width: 32px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    .color-code {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--text-main);
+    }
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--text-main);
+    }
+    .toggle-item input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .preset-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      transition: transform 0.15s ease;
+    }
+    .preset-btn:hover {
+      transform: scale(1.04);
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="settings-wrapper" id="settingsView">
+    <header class="header">
+      <div class="header-title">
+        <h1>📺 ระบบควบคุมตัวหนังสือวิ่ง</h1>
+        <p>ปรับแต่งข้อความและรูปแบบได้แบบ Real-time พร้อมปุ่ม Pop-out แยกหน้าต่างแสดงผล</p>
+      </div>
+      <div class="header-actions">
+        <div class="status-badge" id="popoutStatus">
+          <span class="status-dot"></span>
+          <span id="popoutStatusText">ยังไม่เปิดหน้า Pop-out</span>
+        </div>
+        <button class="btn btn-primary" id="btnPopout">↗ Pop-out หน้าแสดงผล</button>
+      </div>
+    </header>
+    
+    <section class="preview-card">
+      <div class="preview-toolbar">
+        <span>ตัวอย่างหน้าแสดงผล (Live Preview)</span>
+        <div class="preview-controls">
+          <button class="btn btn-secondary" id="btnPlayPause" style="padding: 5px 12px; font-size: 0.82rem;">⏸ หยุดชั่วคราว</button>
+          <button class="btn btn-secondary" id="btnResetPos" style="padding: 5px 12px; font-size: 0.82rem;">↺ เริ่มวิ่งใหม่</button>
+        </div>
+      </div>
+      <div class="preview-stage-wrap">
+        <div class="marquee-stage" id="previewStage">
+          <div class="marquee-text" id="previewText"></div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="settings-grid">
+      
+      <div class="card">
+        <div class="card-title">📝 ข้อความและการเคลื่อนไหว</div>
+        <div class="form-group">
+          <label for="inputText">ข้อความตัวหนังสือวิ่ง (ขึ้นบรรทัดใหม่จะเชื่อมด้วยตัวคั่นอัตโนมัติ)</label>
+          <textarea id="inputText" placeholder="พิมพ์ข้อความที่ต้องการให้วิ่งที่นี่..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="inputSeparator">ตัวคั่นระหว่างบรรทัด</label>
+            <input type="text" id="inputSeparator" value="  ★  " />
+          </div>
+          <div class="form-group">
+            <label for="inputDirection">ทิศทางการวิ่ง</label>
+            <select id="inputDirection">
+              <option value="rtl">ขวา → ซ้าย (มาตรฐาน)</option>
+              <option value="ltr">ซ้าย → ขวา</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ความเร็วในการวิ่ง <span class="val" id="valSpeed">180 px/s</span></label>
+          <input type="range" id="inputSpeed" min="30" max="800" step="10" />
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">🔤 รูปแบบและขนาดตัวอักษร</div>
+        <div class="form-group">
+          <label for="inputFont">เลือกฟอนต์</label>
+          <select id="inputFont">
+            <option value="'Chakra Petch', sans-serif">Chakra Petch (ป้ายไฟ/เทค)</option>
+            <option value="'Kanit', sans-serif">Kanit (ทันสมัย อ่านง่าย)</option>
+            <option value="'Prompt', sans-serif">Prompt (เรียบหรู)</option>
+            <option value="'Noto Sans Thai', sans-serif">Noto Sans Thai (มาตรฐาน)</option>
+            <option value="'Sarabun', sans-serif">Sarabun (ทางการ)</option>
+            <option value="monospace">Monospace</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ขนาดตัวอักษร <span class="val" id="valFontSize">72 px</span></label>
+          <input type="range" id="inputFontSize" min="20" max="240" step="2" />
+        </div>
+        <div class="form-group">
+          <label>ระยะห่างตัวอักษร (Letter Spacing) <span class="val" id="valSpacing">0 px</span></label>
+          <input type="range" id="inputSpacing" min="-4" max="25" step="1" />
+        </div>
+        <div class="checkbox-grid">
+          <label class="toggle-item">
+            <input type="checkbox" id="inputBold" /> ตัวหนา (Bold)
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="inputItalic" /> ตัวเอียง (Italic)
+          </label>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">🎨 สีและเอฟเฟกต์พิเศษ</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>สีตัวอักษร</label>
+            <div class="color-input-wrap">
+              <input type="color" id="inputTextColor" />
+              <span class="color-code" id="codeTextColor">#ff2a2a</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>สีพื้นหลัง</label>
+            <div class="color-input-wrap">
+              <input type="color" id="inputBgColor" />
+              <span class="color-code" id="codeBgColor">#050505</span>
+            </div>
+          </div>
+        </div>
+        <div class="checkbox-grid">
+          <label class="toggle-item">
+            <input type="checkbox" id="inputGlow" /> เรืองแสง (Neon Glow)
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="inputLed" /> ลายจุดป้ายไฟ LED
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="inputBlink" /> กระพริบ (Blink)
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="inputOutline" /> ขอบตัวอักษรสีดำ
+          </label>
+        </div>
+        <div class="form-group">
+          <label>ธีมสีด่วน (Presets)</label>
+          <div class="presets">
+            <button class="preset-btn" data-preset="led-red" style="background:#050505;color:#ff2a2a;">ป้ายไฟแดง</button>
+            <button class="preset-btn" data-preset="led-amber" style="background:#0a0600;color:#ffaa00;">LED เหลืองส้ม</button>
+            <button class="preset-btn" data-preset="matrix" style="background:#001205;color:#00ff66;">Matrix เขียว</button>
+            <button class="preset-btn" data-preset="cyber" style="background:#09001a;color:#00f0ff;">Cyber ฟ้า</button>
+            <button class="preset-btn" data-preset="greenscreen" style="background:#00b140;color:#ffffff;">Green Screen (OBS)</button>
+          </div>
+        </div>
+        <div style="margin-top:auto; padding-top: 6px; display:flex; justify-content:flex-end;">
+          <button class="btn btn-danger" id="btnResetDefault" style="padding: 8px 12px; font-size: 0.82rem;">รีเซ็ตค่าเริ่มต้น</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+  <div class="display-only-wrapper" id="displayView">
+    <div class="floating-controls" id="floatingControls">
+      <button class="float-btn" id="btnFullscreen">⛶ เต็มจอ (Fullscreen)</button>
+    </div>
+    <div class="marquee-stage" id="displayStage">
+      <div class="marquee-text" id="displayText"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const STORAGE_KEY = 'thai_marquee_state_v1';
+      const CHANNEL_NAME = 'thai_marquee_channel_v1';
+      const isDisplayMode = window.location.hash === '#display';
+      const DEFAULT_STATE = {
+        text: "ยินดีต้อนรับเข้าสู่ระบบตัวหนังสือวิ่ง\nสามารถแก้ไขข้อความ ความเร็ว สี และกด Pop-out เพื่อแยกหน้าจอได้ทันที",
+        separator: "   ★   ",
+        direction: "rtl",
+        speed: 200,
+        fontFamily: "'Chakra Petch', sans-serif",
+        fontSize: 80,
+        letterSpacing: 1,
+        bold: true,
+        italic: false,
+        textColor: "#ff2a2a",
+        bgColor: "#050505",
+        glow: true,
+        led: true,
+        blink: false,
+        outline: false,
+        paused: false
+      };
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) return { ...DEFAULT_STATE, ...JSON.parse(raw) };
+        } catch (e) {}
+        return { ...DEFAULT_STATE };
+      }
+      let state = loadState();
+      let channel = null;
+      try {
+        channel = new BroadcastChannel(CHANNEL_NAME);
+      } catch (e) {}
+      
+      function createMarqueeRunner(stageEl, textEl) {
+        let posX = null;
+        let lastTime = null;
+        let currentState = { ...state };
+        function applyStyles(s) {
+          currentState = s;
+          stageEl.style.backgroundColor = s.bgColor;
+          stageEl.classList.toggle('led-effect', !!s.led);
+          const formattedText = s.text
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean)
+            .join(s.separator || ' ');
+          textEl.textContent = formattedText || ' ';
+          textEl.style.fontFamily = s.fontFamily;
+          textEl.style.fontSize = s.fontSize + 'px';
+          textEl.style.letterSpacing = s.letterSpacing + 'px';
+          textEl.style.fontWeight = s.bold ? '700' : '400';
+          textEl.style.fontStyle = s.italic ? 'italic' : 'normal';
+          textEl.style.color = s.textColor;
+          const shadows = [];
+          if (s.outline) {
+            shadows.push(
+              '-2px -2px 0 #000', '2px -2px 0 #000',
+              '-2px 2px 0 #000', '2px 2px 0 #000'
+            );
+          }
+          if (s.glow) {
+            shadows.push(`0 0 10px ${s.textColor}`, `0 0 26px ${s.textColor}`);
+          }
+          textEl.style.textShadow = shadows.length ? shadows.join(', ') : 'none';
+          textEl.classList.toggle('blink-active', !!s.blink);
+        }
+        function resetPosition() {
+          const stageWidth = stageEl.clientWidth || window.innerWidth;
+          const textWidth = textEl.offsetWidth || 0;
+          posX = currentState.direction === 'rtl' ? stageWidth : -textWidth;
+        }
+        function tick(timestamp) {
+          if (lastTime === null) lastTime = timestamp;
+          const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+          lastTime = timestamp;
+          const stageWidth = stageEl.clientWidth;
+          const textWidth = textEl.offsetWidth;
+          if (posX === null) {
+            posX = currentState.direction === 'rtl' ? stageWidth : -textWidth;
+          }
+          if (!currentState.paused) {
+            const delta = currentState.speed * dt;
+            if (currentState.direction === 'rtl') {
+              posX -= delta;
+              if (posX < -textWidth) {
+                posX = stageWidth;
+              }
+            } else {
+              posX += delta;
+              if (posX > stageWidth) {
+                posX = -textWidth;
+              }
+            }
+          }
+          textEl.style.transform = `translate3d(${posX}px, -50%, 0)`;
+          requestAnimationFrame(tick);
+        }
+        applyStyles(state);
+        requestAnimationFrame(tick);
+        return { applyStyles, resetPosition };
+      }
+      
+      if (isDisplayMode) {
+        document.body.classList.add('display-mode');
+        document.title = 'หน้าแสดงผล - ตัวหนังสือวิ่ง';
+        const displayStage = document.getElementById('displayStage');
+        const displayText = document.getElementById('displayText');
+        const runner = createMarqueeRunner(displayStage, displayText);
+        function handleIncoming(msg) {
+          if (!msg) return;
+          if (msg.type === 'STATE_UPDATE' && msg.payload) {
+            state = msg.payload;
+            runner.applyStyles(state);
+          } else if (msg.type === 'RESET_POS') {
+            runner.resetPosition();
+          }
+        }
+        
+        if (channel) {
+          channel.onmessage = (e) => handleIncoming(e.data);
+        }
+        
+        window.addEventListener('message', (e) => handleIncoming(e.data));
+        
+        window.addEventListener('storage', (e) => {
+          if (e.key === STORAGE_KEY && e.newValue) {
+            try {
+              state = JSON.parse(e.newValue);
+              runner.applyStyles(state);
+            } catch (err) {}
+          }
+        });
+        
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage({ type: 'POPOUT_READY' }, '*');
+          } catch (e) {}
+        }
+        
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
+        });
+        document.addEventListener('fullscreenchange', () => {
+          btnFullscreen.textContent = document.fullscreenElement
+            ? '✕ ออกจากเต็มจอ'
+            : '⛶ เต็มจอ (Fullscreen)';
+        });
+        return;
+      }
+      
+      const previewStage = document.getElementById('previewStage');
+      const previewText = document.getElementById('previewText');
+      const previewRunner = createMarqueeRunner(previewStage, previewText);
+      let popoutWindow = null;
+      const els = {
+        text: document.getElementById('inputText'),
+        separator: document.getElementById('inputSeparator'),
+        direction: document.getElementById('inputDirection'),
+        speed: document.getElementById('inputSpeed'),
+        valSpeed: document.getElementById('valSpeed'),
+        fontFamily: document.getElementById('inputFont'),
+        fontSize: document.getElementById('inputFontSize'),
+        valFontSize: document.getElementById('valFontSize'),
+        letterSpacing: document.getElementById('inputSpacing'),
+        valSpacing: document.getElementById('valSpacing'),
+        bold: document.getElementById('inputBold'),
+        italic: document.getElementById('inputItalic'),
+        textColor: document.getElementById('inputTextColor'),
+        codeTextColor: document.getElementById('codeTextColor'),
+        bgColor: document.getElementById('inputBgColor'),
+        codeBgColor: document.getElementById('codeBgColor'),
+        glow: document.getElementById('inputGlow'),
+        led: document.getElementById('inputLed'),
+        blink: document.getElementById('inputBlink'),
+        outline: document.getElementById('inputOutline'),
+        btnPlayPause: document.getElementById('btnPlayPause'),
+        btnResetPos: document.getElementById('btnResetPos'),
+        btnPopout: document.getElementById('btnPopout'),
+        btnResetDefault: document.getElementById('btnResetDefault'),
+        popoutStatus: document.getElementById('popoutStatus'),
+        popoutStatusText: document.getElementById('popoutStatusText')
+      };
+      function syncInputsFromState() {
+        els.text.value = state.text;
+        els.separator.value = state.separator;
+        els.direction.value = state.direction;
+        els.speed.value = state.speed;
+        els.valSpeed.textContent = state.speed + ' px/s';
+        els.fontFamily.value = state.fontFamily;
+        els.fontSize.value = state.fontSize;
+        els.valFontSize.textContent = state.fontSize + ' px';
+        els.letterSpacing.value = state.letterSpacing;
+        els.valSpacing.textContent = state.letterSpacing + ' px';
+        els.bold.checked = state.bold;
+        els.italic.checked = state.italic;
+        els.textColor.value = state.textColor;
+        els.codeTextColor.textContent = state.textColor;
+        els.bgColor.value = state.bgColor;
+        els.codeBgColor.textContent = state.bgColor;
+        els.glow.checked = state.glow;
+        els.led.checked = state.led;
+        els.blink.checked = state.blink;
+        els.outline.checked = state.outline;
+        els.btnPlayPause.textContent = state.paused ? '▶ เล่นต่อ' : '⏸ หยุดชั่วคราว';
+      }
+      function broadcast(msg) {
+        if (channel) {
+          try { channel.postMessage(msg); } catch (e) {}
+        }
+        if (popoutWindow && !popoutWindow.closed) {
+          try { popoutWindow.postMessage(msg, '*'); } catch (e) {}
+        }
+      }
+      function saveAndPropagate() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {}
+        previewRunner.applyStyles(state);
+        broadcast({ type: 'STATE_UPDATE', payload: state });
+      }
+      function updateFromUI() {
+        state.text = els.text.value;
+        state.separator = els.separator.value;
+        state.direction = els.direction.value;
+        state.speed = Number(els.speed.value);
+        state.fontFamily = els.fontFamily.value;
+        state.fontSize = Number(els.fontSize.value);
+        state.letterSpacing = Number(els.letterSpacing.value);
+        state.bold = els.bold.checked;
+        state.italic = els.italic.checked;
+        state.textColor = els.textColor.value;
+        state.bgColor = els.bgColor.value;
+        state.glow = els.glow.checked;
+        state.led = els.led.checked;
+        state.blink = els.blink.checked;
+        state.outline = els.outline.checked;
+        els.valSpeed.textContent = state.speed + ' px/s';
+        els.valFontSize.textContent = state.fontSize + ' px';
+        els.valSpacing.textContent = state.letterSpacing + ' px';
+        els.codeTextColor.textContent = state.textColor;
+        els.codeBgColor.textContent = state.bgColor;
+        saveAndPropagate();
+      }
+      
+      [
+        els.text, els.separator, els.direction, els.speed,
+        els.fontFamily, els.fontSize, els.letterSpacing,
+        els.bold, els.italic, els.textColor, els.bgColor,
+        els.glow, els.led, els.blink, els.outline
+      ].forEach(el => {
+        el.addEventListener('input', updateFromUI);
+        el.addEventListener('change', updateFromUI);
+      });
+      
+      els.btnPlayPause.addEventListener('click', () => {
+        state.paused = !state.paused;
+        els.btnPlayPause.textContent = state.paused ? '▶ เล่นต่อ' : '⏸ หยุดชั่วคราว';
+        saveAndPropagate();
+      });
+      
+      els.btnResetPos.addEventListener('click', () => {
+        previewRunner.resetPosition();
+        broadcast({ type: 'RESET_POS' });
+      });
+      
+      const PRESETS = {
+        'led-red': { textColor: '#ff2a2a', bgColor: '#050505', glow: true, led: true, outline: false },
+        'led-amber': { textColor: '#ffaa00', bgColor: '#0a0600', glow: true, led: true, outline: false },
+        'matrix': { textColor: '#00ff66', bgColor: '#001205', glow: true, led: true, outline: false },
+        'cyber': { textColor: '#00f0ff', bgColor: '#09001a', glow: true, led: false, outline: false },
+        'greenscreen': { textColor: '#ffffff', bgColor: '#00b140', glow: false, led: false, outline: true }
+      };
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = PRESETS[btn.dataset.preset];
+          if (!p) return;
+          state = { ...state, ...p };
+          syncInputsFromState();
+          saveAndPropagate();
+        });
+      });
+      
+      els.btnResetDefault.addEventListener('click', () => {
+        state = { ...DEFAULT_STATE };
+        syncInputsFromState();
+        saveAndPropagate();
+        previewRunner.resetPosition();
+        broadcast({ type: 'RESET_POS' });
+      });
+      
+      function updatePopoutStatus() {
+        const isOpen = popoutWindow && !popoutWindow.closed;
+        els.popoutStatus.classList.toggle('connected', !!isOpen);
+        els.popoutStatusText.textContent = isOpen
+          ? 'เชื่อมต่อหน้า Pop-out แล้ว'
+          : 'ยังไม่เปิดหน้า Pop-out';
+        els.btnPopout.textContent = isOpen
+          ? '↗ โฟกัสหน้า Pop-out'
+          : '↗ Pop-out หน้าแสดงผล';
+      }
+      setInterval(updatePopoutStatus, 800);
+      
+      els.btnPopout.addEventListener('click', () => {
+        if (popoutWindow && !popoutWindow.closed) {
+          popoutWindow.focus();
+          return;
+        }
+        const baseUrl = window.location.href.split('#')[0];
+        const displayUrl = baseUrl + '#display';
+        const features = 'width=1100,height=320,menubar=no,toolbar=no,location=no,status=no,resizable=yes';
+        popoutWindow = window.open(displayUrl, 'ThaiMarqueeDisplayWindow', features);
+        if (!popoutWindow) {
+          alert('เบราว์เซอร์บล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up สำหรับหน้านี้ครับ');
+          return;
+        }
+        updatePopoutStatus();
+      });
+      
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'POPOUT_READY') {
+          broadcast({ type: 'STATE_UPDATE', payload: state });
+        }
+      });
+      
+      syncInputsFromState();
+      saveAndPropagate();
+    })();
+  </script>
+</body>
+</html>
